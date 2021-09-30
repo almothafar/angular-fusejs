@@ -179,7 +179,7 @@ class AppService {
         this._http = _http;
     }
     getBooks() {
-        return this._http.get('./assets/books.json');
+        return this._http.get('./angular-fusejs/assets/books.json');
     }
 }
 AppService.ɵfac = function AppService_Factory(t) { return new (t || AppService)(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵinject"](_angular_common_http__WEBPACK_IMPORTED_MODULE_1__.HttpClient)); };
