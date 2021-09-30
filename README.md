@@ -3,7 +3,7 @@
 Angular module using [fuse.js](http://fusejs.io/) to fuzzy-search through a list of objects.
 Also, easily **highlight** matched terms which is the true added value of this module.
 
-###Forked and Revamped by Al-Mothafar for Angular 10+,
+### Forked and Revamped by Al-Mothafar for Angular 10+,
 
 Demo: <https://almothafar.github.io/angular-fusejs/>
 
