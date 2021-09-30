@@ -2,12 +2,6 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "paths": {
-      "@almothafar/angular-fusejs": [
-        "dist/almothafar/angular-fusejs/almothafar-angular-fusejs",
-        "dist/almothafar/angular-fusejs"
-      ]
-    },
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,

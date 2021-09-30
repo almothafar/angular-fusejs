@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "cli": {
+    "analytics": false
+  },
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "@almothafar/angular-fusejs": {
+      "projectType": "library",
+      "root": "projects/almothafar/angular-fusejs",
+      "sourceRoot": "projects/almothafar/angular-fusejs/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/almothafar/angular-fusejs/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/almothafar/angular-fusejs/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/almothafar/angular-fusejs/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/almothafar/angular-fusejs/src/test.ts",
+            "tsConfig": "projects/almothafar/angular-fusejs/tsconfig.spec.json",
+            "karmaConfig": "projects/almothafar/angular-fusejs/karma.conf.js"
+          }
+        }
+      }
+    }
+  },
+  "defaultProject": "@almothafar/angular-fusejs"
+}

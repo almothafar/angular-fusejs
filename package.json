@@ -1,59 +1,50 @@
 {
-  "$schema": "./node_modules/ng-packagr/package.schema.json",
   "name": "angular-fusejs",
-  "version": "1.0.6",
-  "description": "Angular plugin using fuse.js to search through a list of elements with a string. Supports highlight.",
-  "main": "index.js",
-  "type": "module",
-  "ngPackage": {
-    "lib": {
-      "entryFile": "index.ts"
-    },
-    "allowedNonPeerDependencies": [
-      "."
-    ]
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "build:prod": "rimraf dist && ng build --configuration production",
+    "pack": "cd dist/almothafar/angular-fusejs/ && npm pack",
+    "publish": "cd dist/almothafar/angular-fusejs/ && npm publish --access=public",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
   },
+  "private": true,
   "dependencies": {
-    "@angular/core": "10.2.0",
-    "fuse.js": "^3.6.1",
+    "@angular/animations": "~12.2.7",
+    "@angular/common": "~12.2.7",
+    "@angular/compiler": "~12.2.7",
+    "@angular/core": "~12.2.7",
+    "@angular/forms": "~12.2.7",
+    "@angular/platform-browser": "~12.2.7",
+    "@angular/platform-browser-dynamic": "~12.2.7",
+    "@angular/router": "~12.2.7",
+    "@schematics/angular": "^12.2.7",
+    "fuse.js": "^6.4.6",
     "lodash-es": "^4.17.21",
     "rxjs": "^6.6.7",
-    "tslib": "^2.1.0",
-    "zone.js": "~0.10.3"
-  },
-  "peerDependencies": {
-    "@angular/core": "10.2.0"
+    "tslib": "^2.3.1",
+    "zone.js": "~0.11.4"
   },
   "devDependencies": {
-    "@angular/compiler": "10.2.0",
-    "@angular/compiler-cli": "10.2.0",
-    "@types/lodash-es": "^4.17.4",
-    "@types/lodash.get": "^4.4.2",
-    "@types/lodash.set": "^4.3.2",
-    "@types/node": "^13.1.8",
-    "ng-packagr": "^11.2.4",
-    "typescript": "3.9.7"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "rm -rf ./dist",
-    "copy-files": "cp README.md LICENSE package.json tsconfig.json dist/",
-    "package": "ng-packagr -p package.json",
-    "build": "tsc -p . && yarn copy-files"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/maleblond/angular-fusejs.git"
-  },
-  "keywords": [
-    "fuse.js",
-    "angular",
-    "highlight"
-  ],
-  "author": "Marc-Antoine Leblond",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/maleblond/angular-local-search/issues"
-  },
-  "homepage": "https://github.com/maleblond/angular-local-search#readme"
+    "@angular-devkit/build-angular": "~12.2.7",
+    "@angular/cli": "~12.2.7",
+    "@angular/compiler-cli": "~12.2.7",
+    "@types/jasmine": "~3.9.1",
+    "@types/lodash-es": "^4.17.5",
+    "@types/lodash.get": "^4.4.6",
+    "@types/lodash.set": "^4.3.6",
+    "@types/node": "^16.10.2",
+    "jasmine-core": "~3.9.0",
+    "karma": "~6.3.4",
+    "karma-chrome-launcher": "~3.1.0",
+    "karma-coverage": "~2.0.3",
+    "karma-jasmine": "~4.0.1",
+    "karma-jasmine-html-reporter": "~1.7.0",
+    "ng-packagr": "^12.2.2",
+    "rimraf": "~3.0.2",
+    "typescript": "~4.3.5"
+  }
 }
