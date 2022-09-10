@@ -14,8 +14,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ 5698);
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ 5000);
 /* harmony import */ var _app_service__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./app.service */ 900);
-/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/forms */ 3075);
-/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/common */ 9808);
+/* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/common */ 9808);
+/* harmony import */ var _angular_forms__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @angular/forms */ 3075);
 /* harmony import */ var _almothafar_angular_fusejs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @almothafar/angular-fusejs */ 4596);
 
 
@@ -25,9 +25,7 @@ __webpack_require__.r(__webpack_exports__);
 
 function AppComponent_tr_16_Template(rf, ctx) { if (rf & 1) {
     _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](0, "tr");
-    _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelement"](1, "td", 4);
-    _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelement"](2, "td", 4);
-    _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelement"](3, "td", 4);
+    _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelement"](1, "td", 4)(2, "td", 4)(3, "td", 4);
     _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
 } if (rf & 2) {
     const book_r1 = ctx.$implicit;
@@ -52,20 +50,15 @@ class AppComponent {
 }
 AppComponent.ɵfac = function AppComponent_Factory(t) { return new (t || AppComponent)(_angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdirectiveInject"](_app_service__WEBPACK_IMPORTED_MODULE_0__.AppService)); };
 AppComponent.ɵcmp = /*@__PURE__*/ _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵdefineComponent"]({ type: AppComponent, selectors: [["app-root"]], decls: 18, vars: 6, consts: [[1, "container"], ["type", "search", "placeholder", "Enter search terms here", 1, "form-control", 3, "ngModel", "ngModelChange"], [1, "table"], [4, "ngFor", "ngForOf"], [3, "innerHTML"]], template: function AppComponent_Template(rf, ctx) { if (rf & 1) {
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](0, "div", 0);
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](1, "h1");
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](0, "div", 0)(1, "h1");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵtext"](2, "Angular-fusejs");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](3, "p");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵtext"](4, " This demo will search with book Title or Author, try it ");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](5, "input", 1);
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵlistener"]("ngModelChange", function AppComponent_Template_input_ngModelChange_5_listener($event) { return ctx.searchTerms = $event; });
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](6, "table", 2);
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](7, "thead");
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](8, "tr");
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](9, "th");
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]()();
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](6, "table", 2)(7, "thead")(8, "tr")(9, "th");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵtext"](10, "Title");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](11, "th");
@@ -73,21 +66,17 @@ AppComponent.ɵcmp = /*@__PURE__*/ _angular_core__WEBPACK_IMPORTED_MODULE_1__["�
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](13, "th");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵtext"](14, "Score");
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]()()();
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](15, "tbody");
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵtemplate"](16, AppComponent_tr_16_Template, 4, 3, "tr", 3);
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵpipe"](17, "fuseJs");
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
-        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]();
+        _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementEnd"]()()();
     } if (rf & 2) {
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵadvance"](5);
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵproperty"]("ngModel", ctx.searchTerms);
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵadvance"](11);
         _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵproperty"]("ngForOf", _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵpipeBind3"](17, 2, ctx.books, ctx.searchTerms, ctx.searchOptions));
-    } }, directives: [_angular_forms__WEBPACK_IMPORTED_MODULE_3__.DefaultValueAccessor, _angular_forms__WEBPACK_IMPORTED_MODULE_3__.NgControlStatus, _angular_forms__WEBPACK_IMPORTED_MODULE_3__.NgModel, _angular_common__WEBPACK_IMPORTED_MODULE_4__.NgForOf], pipes: [_almothafar_angular_fusejs__WEBPACK_IMPORTED_MODULE_5__.AngularFuseJsPipe], styles: ["[_nghost-%COMP%]   p[_ngcontent-%COMP%] {\n  padding: 5px 0 0;\n}\n[_nghost-%COMP%]   p[_ngcontent-%COMP%]   input[_ngcontent-%COMP%] {\n  margin-top: 10px;\n}"] });
+    } }, dependencies: [_angular_common__WEBPACK_IMPORTED_MODULE_3__.NgForOf, _angular_forms__WEBPACK_IMPORTED_MODULE_4__.DefaultValueAccessor, _angular_forms__WEBPACK_IMPORTED_MODULE_4__.NgControlStatus, _angular_forms__WEBPACK_IMPORTED_MODULE_4__.NgModel, _almothafar_angular_fusejs__WEBPACK_IMPORTED_MODULE_5__.AngularFuseJsPipe], styles: ["[_nghost-%COMP%]   p[_ngcontent-%COMP%] {\n  padding: 5px 0 0;\n}\n[_nghost-%COMP%]   p[_ngcontent-%COMP%]   input[_ngcontent-%COMP%] {\n  margin-top: 10px;\n}"] });
 
 
 /***/ }),
@@ -122,12 +111,10 @@ AppModule.ɵfac = function AppModule_Factory(t) { return new (t || AppModule)();
 AppModule.ɵmod = /*@__PURE__*/ _angular_core__WEBPACK_IMPORTED_MODULE_2__["ɵɵdefineNgModule"]({ type: AppModule, bootstrap: [_app_component__WEBPACK_IMPORTED_MODULE_0__.AppComponent] });
 AppModule.ɵinj = /*@__PURE__*/ _angular_core__WEBPACK_IMPORTED_MODULE_2__["ɵɵdefineInjector"]({ providers: [
         _app_service__WEBPACK_IMPORTED_MODULE_1__.AppService
-    ], imports: [[
-            _angular_platform_browser__WEBPACK_IMPORTED_MODULE_3__.BrowserModule,
-            _angular_forms__WEBPACK_IMPORTED_MODULE_4__.FormsModule,
-            _almothafar_angular_fusejs__WEBPACK_IMPORTED_MODULE_5__.AngularFuseJsModule,
-            _angular_common_http__WEBPACK_IMPORTED_MODULE_6__.HttpClientModule
-        ]] });
+    ], imports: [_angular_platform_browser__WEBPACK_IMPORTED_MODULE_3__.BrowserModule,
+        _angular_forms__WEBPACK_IMPORTED_MODULE_4__.FormsModule,
+        _almothafar_angular_fusejs__WEBPACK_IMPORTED_MODULE_5__.AngularFuseJsModule,
+        _angular_common_http__WEBPACK_IMPORTED_MODULE_6__.HttpClientModule] });
 (function () { (typeof ngJitMode === "undefined" || ngJitMode) && _angular_core__WEBPACK_IMPORTED_MODULE_2__["ɵɵsetNgModuleScope"](AppModule, { declarations: [_app_component__WEBPACK_IMPORTED_MODULE_0__.AppComponent], imports: [_angular_platform_browser__WEBPACK_IMPORTED_MODULE_3__.BrowserModule,
         _angular_forms__WEBPACK_IMPORTED_MODULE_4__.FormsModule,
         _almothafar_angular_fusejs__WEBPACK_IMPORTED_MODULE_5__.AngularFuseJsModule,
