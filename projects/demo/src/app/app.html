@@ -12,9 +12,11 @@
         placeholder="Search by title or author... (try 'javascript' or 'martin')"
         class="search-input"
       />
-      <span class="search-hint" *ngIf="!searchTerm()">
-        💡 Try: "clean code", "pragmatic", "knuth"
-      </span>
+      @if (!searchTerm()) {
+        <span class="search-hint">
+          💡 Try: "clean code", "pragmatic", "knuth"
+        </span>
+      }
     </div>
 
     <div class="results-container">

@@ -1,7 +1,14 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AngularFuseJsPipe } from '@almothafar/angular-fusejs';
+import { AngularFuseJsPipe, AngularFuseJsResult } from '@almothafar/angular-fusejs';
+
+interface Book {
+  title: string;
+  author: string;
+  year: number;
+  isbn: string;
+}
 
 @Component({
   selector: 'app-root',
@@ -14,7 +21,7 @@ export class App {
 
   searchTerm = signal('');
 
-  books = [
+  books: Book[] = [
     { title: 'JavaScript: The Good Parts', author: 'Douglas Crockford', year: 2008, isbn: '978-0596517748' },
     { title: 'Clean Code', author: 'Robert C. Martin', year: 2008, isbn: '978-0132350884' },
     { title: 'The Pragmatic Programmer', author: 'Andrew Hunt & David Thomas', year: 1999, isbn: '978-0201616224' },
@@ -28,7 +35,7 @@ export class App {
   ];
 
   searchOptions = {
-    keys: ['title', 'author'],
+    keys: ['title', 'author'] as const,
     supportHighlight: true,
     threshold: 0.4,
     minSearchTermLength: 2,

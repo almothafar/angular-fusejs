@@ -21,7 +21,7 @@
     ]
   },
   "private": true,
-  "packageManager": "npm@11.6.3",
+  "packageManager": "npm@11.6.4",
   "dependencies": {
     "@angular/common": "^21.0.2",
     "@angular/compiler": "^21.0.2",
@@ -39,7 +39,7 @@
     "@angular/compiler-cli": "^21.0.2",
     "jsdom": "^27.2.0",
     "ng-packagr": "^21.0.0",
-    "typescript": "~5.9.2",
+    "typescript": "~5.9.3",
     "vitest": "^4.0.14"
   }
 }

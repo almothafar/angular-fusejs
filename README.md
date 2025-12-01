@@ -219,25 +219,59 @@ npm run build
 # Then restart the demo
 ```
 
+### Testing Your Changes
+
+Before publishing, always test your changes:
+
+1. **Build the library:**
+   ```bash
+   npm run build
+   ```
+
+2. **Run unit tests:**
+   ```bash
+   npm test
+   ```
+
+3. **Test in the demo app:**
+   ```bash
+   # The demo automatically uses the local built library
+   npm start
+   # Visit http://localhost:4200 and test the functionality
+   ```
+
+4. **Check for TypeScript errors:**
+   ```bash
+   npx ng build @almothafar/angular-fusejs --configuration production
+   ```
+
 ### Publishing to NPM
 
-1. Build the production version:
-```bash
-npm run build:prod
-```
+The package is configured to automatically publish as public (no need for `--access=public` flag).
 
-2. Navigate to dist folder and publish:
-```bash
-cd dist/almothafar/angular-fusejs
-npm publish --access=public
-```
+1. **Ensure you're logged in to npm:**
+   ```bash
+   npm login
+   ```
 
-Or use the convenience scripts:
-```bash
-npm run build:prod
-npm run pack    # Creates tarball in dist folder
-npm run publish # Publishes to npm (requires auth)
-```
+2. **Build the production version:**
+   ```bash
+   npm run build:prod
+   ```
+
+3. **Publish from the dist folder:**
+   ```bash
+   cd dist/almothafar/angular-fusejs
+   npm publish
+   ```
+
+   Or use the convenience scripts:
+   ```bash
+   npm run build:prod
+   cd dist/almothafar/angular-fusejs && npm publish
+   ```
+
+**Note:** The `publishConfig` in package.json is set to `"access": "public"`, so you don't need to add `--access=public` manually!
 
 ## Migration from v2.x
 

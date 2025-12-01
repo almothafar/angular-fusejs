@@ -20,6 +20,14 @@ export interface AngularFuseJsOptions<T> extends IFuseOptions<T> {
 }
 
 /**
+ * Result type with highlighting and score information
+ */
+export type AngularFuseJsResult<T> = T & {
+  fuseJsHighlighted?: T;
+  fuseJsScore?: number;
+};
+
+/**
  * Helper functions for deep property access without lodash
  */
 class PropertyAccessor {
@@ -90,7 +98,7 @@ export class AngularFuseJsService<T = any> {
     list: T[],
     searchTerms: string,
     options: AngularFuseJsOptions<T> = {}
-  ): T[] {
+  ): AngularFuseJsResult<T>[] {
     const fuseOptions: AngularFuseJsOptions<T> = { ...this.defaultOptions, ...options };
 
     // Return original list if search term is too short
@@ -113,14 +121,14 @@ export class AngularFuseJsService<T = any> {
     }
 
     // Return just the items without FuseResult wrapper
-    return results.map(result => result.item);
+    return results.map(result => result.item) as AngularFuseJsResult<T>[];
   }
 
   /**
    * Handle case when search term is empty or too short
    */
-  private handleEmptySearch(list: T[], options: AngularFuseJsOptions<T>): T[] {
-    const clonedList = this.deepClone(list);
+  private handleEmptySearch(list: T[], options: AngularFuseJsOptions<T>): AngularFuseJsResult<T>[] {
+    const clonedList = this.deepClone(list) as AngularFuseJsResult<T>[];
 
     if (options.supportHighlight) {
       clonedList.forEach((element: any) => {
@@ -137,7 +145,7 @@ export class AngularFuseJsService<T = any> {
   private handleHighlight(
     results: FuseResult<T>[],
     options: AngularFuseJsOptions<T>
-  ): T[] {
+  ): AngularFuseJsResult<T>[] {
     // Filter by maximum score if specified
     if (options.maximumScore !== undefined && options.includeScore) {
       results = results.filter(result =>
@@ -176,7 +184,7 @@ export class AngularFuseJsService<T = any> {
           const tagEnd = `</${options.highlightTag ?? 'em'}>`;
 
           for (const [start, end] of match.indices) {
-            let currentValue = PropertyAccessor.get(item[highlightKey], key) as string;
+            const currentValue = PropertyAccessor.get(item[highlightKey], key);
 
             if (typeof currentValue !== 'string') {
               continue;
