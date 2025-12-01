@@ -1,7 +1,7 @@
 /*
- * Public API Surface of angular-fusejs
+ * Public API Surface of @almothafar/angular-fusejs
  */
 
-export * from './lib/angular-fusejs.service';
-export * from './lib/angular-fusejs.pipe';
-export * from './lib/angular-fusejs.module';
+export { AngularFuseJsService } from './lib/angular-fusejs.service';
+export type { AngularFuseJsOptions } from './lib/angular-fusejs.service';
+export { AngularFuseJsPipe } from './lib/angular-fusejs.pipe';

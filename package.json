@@ -1,50 +1,45 @@
 {
-  "name": "angular-fusejs",
+  "name": "angular-fusejs-temp",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "build:prod": "rimraf dist && ng build --configuration production",
-    "pack": "cd dist/almothafar/angular-fusejs/ && npm pack",
-    "publish": "cd dist/almothafar/angular-fusejs/ && npm publish --access=public",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": "*.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
+  },
   "private": true,
+  "packageManager": "npm@11.6.3",
   "dependencies": {
-    "@angular/animations": "v14-lts",
-    "@angular/common": "v14-lts",
-    "@angular/compiler": "v14-lts",
-    "@angular/core": "v14-lts",
-    "@angular/forms": "v14-lts",
-    "@angular/platform-browser": "v14-lts",
-    "@angular/platform-browser-dynamic": "v14-lts",
-    "@angular/router": "v14-lts",
-    "@schematics/angular": "v14-lts",
+    "@angular/common": "^21.0.2",
+    "@angular/compiler": "^21.0.2",
+    "@angular/core": "^21.0.2",
+    "@angular/forms": "^21.0.2",
+    "@angular/platform-browser": "^21.0.2",
+    "@angular/router": "^21.0.2",
     "fuse.js": "^7.1.0",
-    "lodash-es": "^4.17.21",
-    "rxjs": "^7.8.2",
-    "tslib": "^2.4.0",
-    "zone.js": "~0.11.8"
+    "rxjs": "~7.8.2",
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "v14-lts",
-    "@angular/cli": "v14-lts",
-    "@angular/compiler-cli": "v14-lts",
-    "@types/jasmine": "~4.3.0",
-    "@types/lodash-es": "^4.17.12",
-    "@types/lodash.get": "^4.4.9",
-    "@types/lodash.set": "^4.3.9",
-    "@types/node": "^24.10.1",
-    "jasmine-core": "~4.6.1",
-    "karma": "~6.4.4",
-    "karma-chrome-launcher": "~3.2.0",
-    "karma-coverage": "~2.2.1",
-    "karma-jasmine": "~5.1.0",
-    "karma-jasmine-html-reporter": "~2.1.0",
-    "ng-packagr": "^14.2.2",
-    "rimraf": "~6.1.2",
-    "typescript": "~4.8.4"
+    "@angular/build": "^21.0.1",
+    "@angular/cli": "^21.0.1",
+    "@angular/compiler-cli": "^21.0.2",
+    "jsdom": "^27.2.0",
+    "ng-packagr": "^21.0.0",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.14"
   }
 }
