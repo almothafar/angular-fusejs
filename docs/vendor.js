@@ -1,1830 +1,6 @@
 "use strict";
 (self["webpackChunkdemo"] = self["webpackChunkdemo"] || []).push([["vendor"],{
 
-/***/ 121:
-/*!***********************************************!*\
-  !*** ./node_modules/fuse.js/dist/fuse.esm.js ***!
-  \***********************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ Fuse)
-/* harmony export */ });
-/**
- * Fuse.js v6.6.2 - Lightweight fuzzy-search (http://fusejs.io)
- *
- * Copyright (c) 2022 Kiro Risk (http://kiro.me)
- * All Rights Reserved. Apache Software License 2.0
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- */
-function isArray(value) {
-  return !Array.isArray ? getTag(value) === '[object Array]' : Array.isArray(value);
-} // Adapted from: https://github.com/lodash/lodash/blob/master/.internal/baseToString.js
-
-
-const INFINITY = 1 / 0;
-
-function baseToString(value) {
-  // Exit early for strings to avoid a performance hit in some environments.
-  if (typeof value == 'string') {
-    return value;
-  }
-
-  let result = value + '';
-  return result == '0' && 1 / value == -INFINITY ? '-0' : result;
-}
-
-function toString(value) {
-  return value == null ? '' : baseToString(value);
-}
-
-function isString(value) {
-  return typeof value === 'string';
-}
-
-function isNumber(value) {
-  return typeof value === 'number';
-} // Adapted from: https://github.com/lodash/lodash/blob/master/isBoolean.js
-
-
-function isBoolean(value) {
-  return value === true || value === false || isObjectLike(value) && getTag(value) == '[object Boolean]';
-}
-
-function isObject(value) {
-  return typeof value === 'object';
-} // Checks if `value` is object-like.
-
-
-function isObjectLike(value) {
-  return isObject(value) && value !== null;
-}
-
-function isDefined(value) {
-  return value !== undefined && value !== null;
-}
-
-function isBlank(value) {
-  return !value.trim().length;
-} // Gets the `toStringTag` of `value`.
-// Adapted from: https://github.com/lodash/lodash/blob/master/.internal/getTag.js
-
-
-function getTag(value) {
-  return value == null ? value === undefined ? '[object Undefined]' : '[object Null]' : Object.prototype.toString.call(value);
-}
-
-const EXTENDED_SEARCH_UNAVAILABLE = 'Extended search is not available';
-const INCORRECT_INDEX_TYPE = "Incorrect 'index' type";
-
-const LOGICAL_SEARCH_INVALID_QUERY_FOR_KEY = key => `Invalid value for key ${key}`;
-
-const PATTERN_LENGTH_TOO_LARGE = max => `Pattern length exceeds max of ${max}.`;
-
-const MISSING_KEY_PROPERTY = name => `Missing ${name} property in key`;
-
-const INVALID_KEY_WEIGHT_VALUE = key => `Property 'weight' in key '${key}' must be a positive integer`;
-
-const hasOwn = Object.prototype.hasOwnProperty;
-
-class KeyStore {
-  constructor(keys) {
-    this._keys = [];
-    this._keyMap = {};
-    let totalWeight = 0;
-    keys.forEach(key => {
-      let obj = createKey(key);
-      totalWeight += obj.weight;
-
-      this._keys.push(obj);
-
-      this._keyMap[obj.id] = obj;
-      totalWeight += obj.weight;
-    }); // Normalize weights so that their sum is equal to 1
-
-    this._keys.forEach(key => {
-      key.weight /= totalWeight;
-    });
-  }
-
-  get(keyId) {
-    return this._keyMap[keyId];
-  }
-
-  keys() {
-    return this._keys;
-  }
-
-  toJSON() {
-    return JSON.stringify(this._keys);
-  }
-
-}
-
-function createKey(key) {
-  let path = null;
-  let id = null;
-  let src = null;
-  let weight = 1;
-  let getFn = null;
-
-  if (isString(key) || isArray(key)) {
-    src = key;
-    path = createKeyPath(key);
-    id = createKeyId(key);
-  } else {
-    if (!hasOwn.call(key, 'name')) {
-      throw new Error(MISSING_KEY_PROPERTY('name'));
-    }
-
-    const name = key.name;
-    src = name;
-
-    if (hasOwn.call(key, 'weight')) {
-      weight = key.weight;
-
-      if (weight <= 0) {
-        throw new Error(INVALID_KEY_WEIGHT_VALUE(name));
-      }
-    }
-
-    path = createKeyPath(name);
-    id = createKeyId(name);
-    getFn = key.getFn;
-  }
-
-  return {
-    path,
-    id,
-    weight,
-    src,
-    getFn
-  };
-}
-
-function createKeyPath(key) {
-  return isArray(key) ? key : key.split('.');
-}
-
-function createKeyId(key) {
-  return isArray(key) ? key.join('.') : key;
-}
-
-function get(obj, path) {
-  let list = [];
-  let arr = false;
-
-  const deepGet = (obj, path, index) => {
-    if (!isDefined(obj)) {
-      return;
-    }
-
-    if (!path[index]) {
-      // If there's no path left, we've arrived at the object we care about.
-      list.push(obj);
-    } else {
-      let key = path[index];
-      const value = obj[key];
-
-      if (!isDefined(value)) {
-        return;
-      } // If we're at the last value in the path, and if it's a string/number/bool,
-      // add it to the list
-
-
-      if (index === path.length - 1 && (isString(value) || isNumber(value) || isBoolean(value))) {
-        list.push(toString(value));
-      } else if (isArray(value)) {
-        arr = true; // Search each item in the array.
-
-        for (let i = 0, len = value.length; i < len; i += 1) {
-          deepGet(value[i], path, index + 1);
-        }
-      } else if (path.length) {
-        // An object. Recurse further.
-        deepGet(value, path, index + 1);
-      }
-    }
-  }; // Backwards compatibility (since path used to be a string)
-
-
-  deepGet(obj, isString(path) ? path.split('.') : path, 0);
-  return arr ? list : list[0];
-}
-
-const MatchOptions = {
-  // Whether the matches should be included in the result set. When `true`, each record in the result
-  // set will include the indices of the matched characters.
-  // These can consequently be used for highlighting purposes.
-  includeMatches: false,
-  // When `true`, the matching function will continue to the end of a search pattern even if
-  // a perfect match has already been located in the string.
-  findAllMatches: false,
-  // Minimum number of characters that must be matched before a result is considered a match
-  minMatchCharLength: 1
-};
-const BasicOptions = {
-  // When `true`, the algorithm continues searching to the end of the input even if a perfect
-  // match is found before the end of the same input.
-  isCaseSensitive: false,
-  // When true, the matching function will continue to the end of a search pattern even if
-  includeScore: false,
-  // List of properties that will be searched. This also supports nested properties.
-  keys: [],
-  // Whether to sort the result list, by score
-  shouldSort: true,
-  // Default sort function: sort by ascending score, ascending index
-  sortFn: (a, b) => a.score === b.score ? a.idx < b.idx ? -1 : 1 : a.score < b.score ? -1 : 1
-};
-const FuzzyOptions = {
-  // Approximately where in the text is the pattern expected to be found?
-  location: 0,
-  // At what point does the match algorithm give up. A threshold of '0.0' requires a perfect match
-  // (of both letters and location), a threshold of '1.0' would match anything.
-  threshold: 0.6,
-  // Determines how close the match must be to the fuzzy location (specified above).
-  // An exact letter match which is 'distance' characters away from the fuzzy location
-  // would score as a complete mismatch. A distance of '0' requires the match be at
-  // the exact location specified, a threshold of '1000' would require a perfect match
-  // to be within 800 characters of the fuzzy location to be found using a 0.8 threshold.
-  distance: 100
-};
-const AdvancedOptions = {
-  // When `true`, it enables the use of unix-like search commands
-  useExtendedSearch: false,
-  // The get function to use when fetching an object's properties.
-  // The default will search nested paths *ie foo.bar.baz*
-  getFn: get,
-  // When `true`, search will ignore `location` and `distance`, so it won't matter
-  // where in the string the pattern appears.
-  // More info: https://fusejs.io/concepts/scoring-theory.html#fuzziness-score
-  ignoreLocation: false,
-  // When `true`, the calculation for the relevance score (used for sorting) will
-  // ignore the field-length norm.
-  // More info: https://fusejs.io/concepts/scoring-theory.html#field-length-norm
-  ignoreFieldNorm: false,
-  // The weight to determine how much field length norm effects scoring.
-  fieldNormWeight: 1
-};
-var Config = { ...BasicOptions,
-  ...MatchOptions,
-  ...FuzzyOptions,
-  ...AdvancedOptions
-};
-const SPACE = /[^ ]+/g; // Field-length norm: the shorter the field, the higher the weight.
-// Set to 3 decimals to reduce index size.
-
-function norm(weight = 1, mantissa = 3) {
-  const cache = new Map();
-  const m = Math.pow(10, mantissa);
-  return {
-    get(value) {
-      const numTokens = value.match(SPACE).length;
-
-      if (cache.has(numTokens)) {
-        return cache.get(numTokens);
-      } // Default function is 1/sqrt(x), weight makes that variable
-
-
-      const norm = 1 / Math.pow(numTokens, 0.5 * weight); // In place of `toFixed(mantissa)`, for faster computation
-
-      const n = parseFloat(Math.round(norm * m) / m);
-      cache.set(numTokens, n);
-      return n;
-    },
-
-    clear() {
-      cache.clear();
-    }
-
-  };
-}
-
-class FuseIndex {
-  constructor({
-    getFn = Config.getFn,
-    fieldNormWeight = Config.fieldNormWeight
-  } = {}) {
-    this.norm = norm(fieldNormWeight, 3);
-    this.getFn = getFn;
-    this.isCreated = false;
-    this.setIndexRecords();
-  }
-
-  setSources(docs = []) {
-    this.docs = docs;
-  }
-
-  setIndexRecords(records = []) {
-    this.records = records;
-  }
-
-  setKeys(keys = []) {
-    this.keys = keys;
-    this._keysMap = {};
-    keys.forEach((key, idx) => {
-      this._keysMap[key.id] = idx;
-    });
-  }
-
-  create() {
-    if (this.isCreated || !this.docs.length) {
-      return;
-    }
-
-    this.isCreated = true; // List is Array<String>
-
-    if (isString(this.docs[0])) {
-      this.docs.forEach((doc, docIndex) => {
-        this._addString(doc, docIndex);
-      });
-    } else {
-      // List is Array<Object>
-      this.docs.forEach((doc, docIndex) => {
-        this._addObject(doc, docIndex);
-      });
-    }
-
-    this.norm.clear();
-  } // Adds a doc to the end of the index
-
-
-  add(doc) {
-    const idx = this.size();
-
-    if (isString(doc)) {
-      this._addString(doc, idx);
-    } else {
-      this._addObject(doc, idx);
-    }
-  } // Removes the doc at the specified index of the index
-
-
-  removeAt(idx) {
-    this.records.splice(idx, 1); // Change ref index of every subsquent doc
-
-    for (let i = idx, len = this.size(); i < len; i += 1) {
-      this.records[i].i -= 1;
-    }
-  }
-
-  getValueForItemAtKeyId(item, keyId) {
-    return item[this._keysMap[keyId]];
-  }
-
-  size() {
-    return this.records.length;
-  }
-
-  _addString(doc, docIndex) {
-    if (!isDefined(doc) || isBlank(doc)) {
-      return;
-    }
-
-    let record = {
-      v: doc,
-      i: docIndex,
-      n: this.norm.get(doc)
-    };
-    this.records.push(record);
-  }
-
-  _addObject(doc, docIndex) {
-    let record = {
-      i: docIndex,
-      $: {}
-    }; // Iterate over every key (i.e, path), and fetch the value at that key
-
-    this.keys.forEach((key, keyIndex) => {
-      let value = key.getFn ? key.getFn(doc) : this.getFn(doc, key.path);
-
-      if (!isDefined(value)) {
-        return;
-      }
-
-      if (isArray(value)) {
-        let subRecords = [];
-        const stack = [{
-          nestedArrIndex: -1,
-          value
-        }];
-
-        while (stack.length) {
-          const {
-            nestedArrIndex,
-            value
-          } = stack.pop();
-
-          if (!isDefined(value)) {
-            continue;
-          }
-
-          if (isString(value) && !isBlank(value)) {
-            let subRecord = {
-              v: value,
-              i: nestedArrIndex,
-              n: this.norm.get(value)
-            };
-            subRecords.push(subRecord);
-          } else if (isArray(value)) {
-            value.forEach((item, k) => {
-              stack.push({
-                nestedArrIndex: k,
-                value: item
-              });
-            });
-          } else ;
-        }
-
-        record.$[keyIndex] = subRecords;
-      } else if (isString(value) && !isBlank(value)) {
-        let subRecord = {
-          v: value,
-          n: this.norm.get(value)
-        };
-        record.$[keyIndex] = subRecord;
-      }
-    });
-    this.records.push(record);
-  }
-
-  toJSON() {
-    return {
-      keys: this.keys,
-      records: this.records
-    };
-  }
-
-}
-
-function createIndex(keys, docs, {
-  getFn = Config.getFn,
-  fieldNormWeight = Config.fieldNormWeight
-} = {}) {
-  const myIndex = new FuseIndex({
-    getFn,
-    fieldNormWeight
-  });
-  myIndex.setKeys(keys.map(createKey));
-  myIndex.setSources(docs);
-  myIndex.create();
-  return myIndex;
-}
-
-function parseIndex(data, {
-  getFn = Config.getFn,
-  fieldNormWeight = Config.fieldNormWeight
-} = {}) {
-  const {
-    keys,
-    records
-  } = data;
-  const myIndex = new FuseIndex({
-    getFn,
-    fieldNormWeight
-  });
-  myIndex.setKeys(keys);
-  myIndex.setIndexRecords(records);
-  return myIndex;
-}
-
-function computeScore$1(pattern, {
-  errors = 0,
-  currentLocation = 0,
-  expectedLocation = 0,
-  distance = Config.distance,
-  ignoreLocation = Config.ignoreLocation
-} = {}) {
-  const accuracy = errors / pattern.length;
-
-  if (ignoreLocation) {
-    return accuracy;
-  }
-
-  const proximity = Math.abs(expectedLocation - currentLocation);
-
-  if (!distance) {
-    // Dodge divide by zero error.
-    return proximity ? 1.0 : accuracy;
-  }
-
-  return accuracy + proximity / distance;
-}
-
-function convertMaskToIndices(matchmask = [], minMatchCharLength = Config.minMatchCharLength) {
-  let indices = [];
-  let start = -1;
-  let end = -1;
-  let i = 0;
-
-  for (let len = matchmask.length; i < len; i += 1) {
-    let match = matchmask[i];
-
-    if (match && start === -1) {
-      start = i;
-    } else if (!match && start !== -1) {
-      end = i - 1;
-
-      if (end - start + 1 >= minMatchCharLength) {
-        indices.push([start, end]);
-      }
-
-      start = -1;
-    }
-  } // (i-1 - start) + 1 => i - start
-
-
-  if (matchmask[i - 1] && i - start >= minMatchCharLength) {
-    indices.push([start, i - 1]);
-  }
-
-  return indices;
-} // Machine word size
-
-
-const MAX_BITS = 32;
-
-function search(text, pattern, patternAlphabet, {
-  location = Config.location,
-  distance = Config.distance,
-  threshold = Config.threshold,
-  findAllMatches = Config.findAllMatches,
-  minMatchCharLength = Config.minMatchCharLength,
-  includeMatches = Config.includeMatches,
-  ignoreLocation = Config.ignoreLocation
-} = {}) {
-  if (pattern.length > MAX_BITS) {
-    throw new Error(PATTERN_LENGTH_TOO_LARGE(MAX_BITS));
-  }
-
-  const patternLen = pattern.length; // Set starting location at beginning text and initialize the alphabet.
-
-  const textLen = text.length; // Handle the case when location > text.length
-
-  const expectedLocation = Math.max(0, Math.min(location, textLen)); // Highest score beyond which we give up.
-
-  let currentThreshold = threshold; // Is there a nearby exact match? (speedup)
-
-  let bestLocation = expectedLocation; // Performance: only computer matches when the minMatchCharLength > 1
-  // OR if `includeMatches` is true.
-
-  const computeMatches = minMatchCharLength > 1 || includeMatches; // A mask of the matches, used for building the indices
-
-  const matchMask = computeMatches ? Array(textLen) : [];
-  let index; // Get all exact matches, here for speed up
-
-  while ((index = text.indexOf(pattern, bestLocation)) > -1) {
-    let score = computeScore$1(pattern, {
-      currentLocation: index,
-      expectedLocation,
-      distance,
-      ignoreLocation
-    });
-    currentThreshold = Math.min(score, currentThreshold);
-    bestLocation = index + patternLen;
-
-    if (computeMatches) {
-      let i = 0;
-
-      while (i < patternLen) {
-        matchMask[index + i] = 1;
-        i += 1;
-      }
-    }
-  } // Reset the best location
-
-
-  bestLocation = -1;
-  let lastBitArr = [];
-  let finalScore = 1;
-  let binMax = patternLen + textLen;
-  const mask = 1 << patternLen - 1;
-
-  for (let i = 0; i < patternLen; i += 1) {
-    // Scan for the best match; each iteration allows for one more error.
-    // Run a binary search to determine how far from the match location we can stray
-    // at this error level.
-    let binMin = 0;
-    let binMid = binMax;
-
-    while (binMin < binMid) {
-      const score = computeScore$1(pattern, {
-        errors: i,
-        currentLocation: expectedLocation + binMid,
-        expectedLocation,
-        distance,
-        ignoreLocation
-      });
-
-      if (score <= currentThreshold) {
-        binMin = binMid;
-      } else {
-        binMax = binMid;
-      }
-
-      binMid = Math.floor((binMax - binMin) / 2 + binMin);
-    } // Use the result from this iteration as the maximum for the next.
-
-
-    binMax = binMid;
-    let start = Math.max(1, expectedLocation - binMid + 1);
-    let finish = findAllMatches ? textLen : Math.min(expectedLocation + binMid, textLen) + patternLen; // Initialize the bit array
-
-    let bitArr = Array(finish + 2);
-    bitArr[finish + 1] = (1 << i) - 1;
-
-    for (let j = finish; j >= start; j -= 1) {
-      let currentLocation = j - 1;
-      let charMatch = patternAlphabet[text.charAt(currentLocation)];
-
-      if (computeMatches) {
-        // Speed up: quick bool to int conversion (i.e, `charMatch ? 1 : 0`)
-        matchMask[currentLocation] = +!!charMatch;
-      } // First pass: exact match
-
-
-      bitArr[j] = (bitArr[j + 1] << 1 | 1) & charMatch; // Subsequent passes: fuzzy match
-
-      if (i) {
-        bitArr[j] |= (lastBitArr[j + 1] | lastBitArr[j]) << 1 | 1 | lastBitArr[j + 1];
-      }
-
-      if (bitArr[j] & mask) {
-        finalScore = computeScore$1(pattern, {
-          errors: i,
-          currentLocation,
-          expectedLocation,
-          distance,
-          ignoreLocation
-        }); // This match will almost certainly be better than any existing match.
-        // But check anyway.
-
-        if (finalScore <= currentThreshold) {
-          // Indeed it is
-          currentThreshold = finalScore;
-          bestLocation = currentLocation; // Already passed `loc`, downhill from here on in.
-
-          if (bestLocation <= expectedLocation) {
-            break;
-          } // When passing `bestLocation`, don't exceed our current distance from `expectedLocation`.
-
-
-          start = Math.max(1, 2 * expectedLocation - bestLocation);
-        }
-      }
-    } // No hope for a (better) match at greater error levels.
-
-
-    const score = computeScore$1(pattern, {
-      errors: i + 1,
-      currentLocation: expectedLocation,
-      expectedLocation,
-      distance,
-      ignoreLocation
-    });
-
-    if (score > currentThreshold) {
-      break;
-    }
-
-    lastBitArr = bitArr;
-  }
-
-  const result = {
-    isMatch: bestLocation >= 0,
-    // Count exact matches (those with a score of 0) to be "almost" exact
-    score: Math.max(0.001, finalScore)
-  };
-
-  if (computeMatches) {
-    const indices = convertMaskToIndices(matchMask, minMatchCharLength);
-
-    if (!indices.length) {
-      result.isMatch = false;
-    } else if (includeMatches) {
-      result.indices = indices;
-    }
-  }
-
-  return result;
-}
-
-function createPatternAlphabet(pattern) {
-  let mask = {};
-
-  for (let i = 0, len = pattern.length; i < len; i += 1) {
-    const char = pattern.charAt(i);
-    mask[char] = (mask[char] || 0) | 1 << len - i - 1;
-  }
-
-  return mask;
-}
-
-class BitapSearch {
-  constructor(pattern, {
-    location = Config.location,
-    threshold = Config.threshold,
-    distance = Config.distance,
-    includeMatches = Config.includeMatches,
-    findAllMatches = Config.findAllMatches,
-    minMatchCharLength = Config.minMatchCharLength,
-    isCaseSensitive = Config.isCaseSensitive,
-    ignoreLocation = Config.ignoreLocation
-  } = {}) {
-    this.options = {
-      location,
-      threshold,
-      distance,
-      includeMatches,
-      findAllMatches,
-      minMatchCharLength,
-      isCaseSensitive,
-      ignoreLocation
-    };
-    this.pattern = isCaseSensitive ? pattern : pattern.toLowerCase();
-    this.chunks = [];
-
-    if (!this.pattern.length) {
-      return;
-    }
-
-    const addChunk = (pattern, startIndex) => {
-      this.chunks.push({
-        pattern,
-        alphabet: createPatternAlphabet(pattern),
-        startIndex
-      });
-    };
-
-    const len = this.pattern.length;
-
-    if (len > MAX_BITS) {
-      let i = 0;
-      const remainder = len % MAX_BITS;
-      const end = len - remainder;
-
-      while (i < end) {
-        addChunk(this.pattern.substr(i, MAX_BITS), i);
-        i += MAX_BITS;
-      }
-
-      if (remainder) {
-        const startIndex = len - MAX_BITS;
-        addChunk(this.pattern.substr(startIndex), startIndex);
-      }
-    } else {
-      addChunk(this.pattern, 0);
-    }
-  }
-
-  searchIn(text) {
-    const {
-      isCaseSensitive,
-      includeMatches
-    } = this.options;
-
-    if (!isCaseSensitive) {
-      text = text.toLowerCase();
-    } // Exact match
-
-
-    if (this.pattern === text) {
-      let result = {
-        isMatch: true,
-        score: 0
-      };
-
-      if (includeMatches) {
-        result.indices = [[0, text.length - 1]];
-      }
-
-      return result;
-    } // Otherwise, use Bitap algorithm
-
-
-    const {
-      location,
-      distance,
-      threshold,
-      findAllMatches,
-      minMatchCharLength,
-      ignoreLocation
-    } = this.options;
-    let allIndices = [];
-    let totalScore = 0;
-    let hasMatches = false;
-    this.chunks.forEach(({
-      pattern,
-      alphabet,
-      startIndex
-    }) => {
-      const {
-        isMatch,
-        score,
-        indices
-      } = search(text, pattern, alphabet, {
-        location: location + startIndex,
-        distance,
-        threshold,
-        findAllMatches,
-        minMatchCharLength,
-        includeMatches,
-        ignoreLocation
-      });
-
-      if (isMatch) {
-        hasMatches = true;
-      }
-
-      totalScore += score;
-
-      if (isMatch && indices) {
-        allIndices = [...allIndices, ...indices];
-      }
-    });
-    let result = {
-      isMatch: hasMatches,
-      score: hasMatches ? totalScore / this.chunks.length : 1
-    };
-
-    if (hasMatches && includeMatches) {
-      result.indices = allIndices;
-    }
-
-    return result;
-  }
-
-}
-
-class BaseMatch {
-  constructor(pattern) {
-    this.pattern = pattern;
-  }
-
-  static isMultiMatch(pattern) {
-    return getMatch(pattern, this.multiRegex);
-  }
-
-  static isSingleMatch(pattern) {
-    return getMatch(pattern, this.singleRegex);
-  }
-
-  search() {}
-
-}
-
-function getMatch(pattern, exp) {
-  const matches = pattern.match(exp);
-  return matches ? matches[1] : null;
-} // Token: 'file
-
-
-class ExactMatch extends BaseMatch {
-  constructor(pattern) {
-    super(pattern);
-  }
-
-  static get type() {
-    return 'exact';
-  }
-
-  static get multiRegex() {
-    return /^="(.*)"$/;
-  }
-
-  static get singleRegex() {
-    return /^=(.*)$/;
-  }
-
-  search(text) {
-    const isMatch = text === this.pattern;
-    return {
-      isMatch,
-      score: isMatch ? 0 : 1,
-      indices: [0, this.pattern.length - 1]
-    };
-  }
-
-} // Token: !fire
-
-
-class InverseExactMatch extends BaseMatch {
-  constructor(pattern) {
-    super(pattern);
-  }
-
-  static get type() {
-    return 'inverse-exact';
-  }
-
-  static get multiRegex() {
-    return /^!"(.*)"$/;
-  }
-
-  static get singleRegex() {
-    return /^!(.*)$/;
-  }
-
-  search(text) {
-    const index = text.indexOf(this.pattern);
-    const isMatch = index === -1;
-    return {
-      isMatch,
-      score: isMatch ? 0 : 1,
-      indices: [0, text.length - 1]
-    };
-  }
-
-} // Token: ^file
-
-
-class PrefixExactMatch extends BaseMatch {
-  constructor(pattern) {
-    super(pattern);
-  }
-
-  static get type() {
-    return 'prefix-exact';
-  }
-
-  static get multiRegex() {
-    return /^\^"(.*)"$/;
-  }
-
-  static get singleRegex() {
-    return /^\^(.*)$/;
-  }
-
-  search(text) {
-    const isMatch = text.startsWith(this.pattern);
-    return {
-      isMatch,
-      score: isMatch ? 0 : 1,
-      indices: [0, this.pattern.length - 1]
-    };
-  }
-
-} // Token: !^fire
-
-
-class InversePrefixExactMatch extends BaseMatch {
-  constructor(pattern) {
-    super(pattern);
-  }
-
-  static get type() {
-    return 'inverse-prefix-exact';
-  }
-
-  static get multiRegex() {
-    return /^!\^"(.*)"$/;
-  }
-
-  static get singleRegex() {
-    return /^!\^(.*)$/;
-  }
-
-  search(text) {
-    const isMatch = !text.startsWith(this.pattern);
-    return {
-      isMatch,
-      score: isMatch ? 0 : 1,
-      indices: [0, text.length - 1]
-    };
-  }
-
-} // Token: .file$
-
-
-class SuffixExactMatch extends BaseMatch {
-  constructor(pattern) {
-    super(pattern);
-  }
-
-  static get type() {
-    return 'suffix-exact';
-  }
-
-  static get multiRegex() {
-    return /^"(.*)"\$$/;
-  }
-
-  static get singleRegex() {
-    return /^(.*)\$$/;
-  }
-
-  search(text) {
-    const isMatch = text.endsWith(this.pattern);
-    return {
-      isMatch,
-      score: isMatch ? 0 : 1,
-      indices: [text.length - this.pattern.length, text.length - 1]
-    };
-  }
-
-} // Token: !.file$
-
-
-class InverseSuffixExactMatch extends BaseMatch {
-  constructor(pattern) {
-    super(pattern);
-  }
-
-  static get type() {
-    return 'inverse-suffix-exact';
-  }
-
-  static get multiRegex() {
-    return /^!"(.*)"\$$/;
-  }
-
-  static get singleRegex() {
-    return /^!(.*)\$$/;
-  }
-
-  search(text) {
-    const isMatch = !text.endsWith(this.pattern);
-    return {
-      isMatch,
-      score: isMatch ? 0 : 1,
-      indices: [0, text.length - 1]
-    };
-  }
-
-}
-
-class FuzzyMatch extends BaseMatch {
-  constructor(pattern, {
-    location = Config.location,
-    threshold = Config.threshold,
-    distance = Config.distance,
-    includeMatches = Config.includeMatches,
-    findAllMatches = Config.findAllMatches,
-    minMatchCharLength = Config.minMatchCharLength,
-    isCaseSensitive = Config.isCaseSensitive,
-    ignoreLocation = Config.ignoreLocation
-  } = {}) {
-    super(pattern);
-    this._bitapSearch = new BitapSearch(pattern, {
-      location,
-      threshold,
-      distance,
-      includeMatches,
-      findAllMatches,
-      minMatchCharLength,
-      isCaseSensitive,
-      ignoreLocation
-    });
-  }
-
-  static get type() {
-    return 'fuzzy';
-  }
-
-  static get multiRegex() {
-    return /^"(.*)"$/;
-  }
-
-  static get singleRegex() {
-    return /^(.*)$/;
-  }
-
-  search(text) {
-    return this._bitapSearch.searchIn(text);
-  }
-
-} // Token: 'file
-
-
-class IncludeMatch extends BaseMatch {
-  constructor(pattern) {
-    super(pattern);
-  }
-
-  static get type() {
-    return 'include';
-  }
-
-  static get multiRegex() {
-    return /^'"(.*)"$/;
-  }
-
-  static get singleRegex() {
-    return /^'(.*)$/;
-  }
-
-  search(text) {
-    let location = 0;
-    let index;
-    const indices = [];
-    const patternLen = this.pattern.length; // Get all exact matches
-
-    while ((index = text.indexOf(this.pattern, location)) > -1) {
-      location = index + patternLen;
-      indices.push([index, location - 1]);
-    }
-
-    const isMatch = !!indices.length;
-    return {
-      isMatch,
-      score: isMatch ? 0 : 1,
-      indices
-    };
-  }
-
-} // ❗Order is important. DO NOT CHANGE.
-
-
-const searchers = [ExactMatch, IncludeMatch, PrefixExactMatch, InversePrefixExactMatch, InverseSuffixExactMatch, SuffixExactMatch, InverseExactMatch, FuzzyMatch];
-const searchersLen = searchers.length; // Regex to split by spaces, but keep anything in quotes together
-
-const SPACE_RE = / +(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/;
-const OR_TOKEN = '|'; // Return a 2D array representation of the query, for simpler parsing.
-// Example:
-// "^core go$ | rb$ | py$ xy$" => [["^core", "go$"], ["rb$"], ["py$", "xy$"]]
-
-function parseQuery(pattern, options = {}) {
-  return pattern.split(OR_TOKEN).map(item => {
-    let query = item.trim().split(SPACE_RE).filter(item => item && !!item.trim());
-    let results = [];
-
-    for (let i = 0, len = query.length; i < len; i += 1) {
-      const queryItem = query[i]; // 1. Handle multiple query match (i.e, once that are quoted, like `"hello world"`)
-
-      let found = false;
-      let idx = -1;
-
-      while (!found && ++idx < searchersLen) {
-        const searcher = searchers[idx];
-        let token = searcher.isMultiMatch(queryItem);
-
-        if (token) {
-          results.push(new searcher(token, options));
-          found = true;
-        }
-      }
-
-      if (found) {
-        continue;
-      } // 2. Handle single query matches (i.e, once that are *not* quoted)
-
-
-      idx = -1;
-
-      while (++idx < searchersLen) {
-        const searcher = searchers[idx];
-        let token = searcher.isSingleMatch(queryItem);
-
-        if (token) {
-          results.push(new searcher(token, options));
-          break;
-        }
-      }
-    }
-
-    return results;
-  });
-} // These extended matchers can return an array of matches, as opposed
-// to a singl match
-
-
-const MultiMatchSet = new Set([FuzzyMatch.type, IncludeMatch.type]);
-/**
- * Command-like searching
- * ======================
- *
- * Given multiple search terms delimited by spaces.e.g. `^jscript .python$ ruby !java`,
- * search in a given text.
- *
- * Search syntax:
- *
- * | Token       | Match type                 | Description                            |
- * | ----------- | -------------------------- | -------------------------------------- |
- * | `jscript`   | fuzzy-match                | Items that fuzzy match `jscript`       |
- * | `=scheme`   | exact-match                | Items that are `scheme`                |
- * | `'python`   | include-match              | Items that include `python`            |
- * | `!ruby`     | inverse-exact-match        | Items that do not include `ruby`       |
- * | `^java`     | prefix-exact-match         | Items that start with `java`           |
- * | `!^earlang` | inverse-prefix-exact-match | Items that do not start with `earlang` |
- * | `.js$`      | suffix-exact-match         | Items that end with `.js`              |
- * | `!.go$`     | inverse-suffix-exact-match | Items that do not end with `.go`       |
- *
- * A single pipe character acts as an OR operator. For example, the following
- * query matches entries that start with `core` and end with either`go`, `rb`,
- * or`py`.
- *
- * ```
- * ^core go$ | rb$ | py$
- * ```
- */
-
-class ExtendedSearch {
-  constructor(pattern, {
-    isCaseSensitive = Config.isCaseSensitive,
-    includeMatches = Config.includeMatches,
-    minMatchCharLength = Config.minMatchCharLength,
-    ignoreLocation = Config.ignoreLocation,
-    findAllMatches = Config.findAllMatches,
-    location = Config.location,
-    threshold = Config.threshold,
-    distance = Config.distance
-  } = {}) {
-    this.query = null;
-    this.options = {
-      isCaseSensitive,
-      includeMatches,
-      minMatchCharLength,
-      findAllMatches,
-      ignoreLocation,
-      location,
-      threshold,
-      distance
-    };
-    this.pattern = isCaseSensitive ? pattern : pattern.toLowerCase();
-    this.query = parseQuery(this.pattern, this.options);
-  }
-
-  static condition(_, options) {
-    return options.useExtendedSearch;
-  }
-
-  searchIn(text) {
-    const query = this.query;
-
-    if (!query) {
-      return {
-        isMatch: false,
-        score: 1
-      };
-    }
-
-    const {
-      includeMatches,
-      isCaseSensitive
-    } = this.options;
-    text = isCaseSensitive ? text : text.toLowerCase();
-    let numMatches = 0;
-    let allIndices = [];
-    let totalScore = 0; // ORs
-
-    for (let i = 0, qLen = query.length; i < qLen; i += 1) {
-      const searchers = query[i]; // Reset indices
-
-      allIndices.length = 0;
-      numMatches = 0; // ANDs
-
-      for (let j = 0, pLen = searchers.length; j < pLen; j += 1) {
-        const searcher = searchers[j];
-        const {
-          isMatch,
-          indices,
-          score
-        } = searcher.search(text);
-
-        if (isMatch) {
-          numMatches += 1;
-          totalScore += score;
-
-          if (includeMatches) {
-            const type = searcher.constructor.type;
-
-            if (MultiMatchSet.has(type)) {
-              allIndices = [...allIndices, ...indices];
-            } else {
-              allIndices.push(indices);
-            }
-          }
-        } else {
-          totalScore = 0;
-          numMatches = 0;
-          allIndices.length = 0;
-          break;
-        }
-      } // OR condition, so if TRUE, return
-
-
-      if (numMatches) {
-        let result = {
-          isMatch: true,
-          score: totalScore / numMatches
-        };
-
-        if (includeMatches) {
-          result.indices = allIndices;
-        }
-
-        return result;
-      }
-    } // Nothing was matched
-
-
-    return {
-      isMatch: false,
-      score: 1
-    };
-  }
-
-}
-
-const registeredSearchers = [];
-
-function register(...args) {
-  registeredSearchers.push(...args);
-}
-
-function createSearcher(pattern, options) {
-  for (let i = 0, len = registeredSearchers.length; i < len; i += 1) {
-    let searcherClass = registeredSearchers[i];
-
-    if (searcherClass.condition(pattern, options)) {
-      return new searcherClass(pattern, options);
-    }
-  }
-
-  return new BitapSearch(pattern, options);
-}
-
-const LogicalOperator = {
-  AND: '$and',
-  OR: '$or'
-};
-const KeyType = {
-  PATH: '$path',
-  PATTERN: '$val'
-};
-
-const isExpression = query => !!(query[LogicalOperator.AND] || query[LogicalOperator.OR]);
-
-const isPath = query => !!query[KeyType.PATH];
-
-const isLeaf = query => !isArray(query) && isObject(query) && !isExpression(query);
-
-const convertToExplicit = query => ({
-  [LogicalOperator.AND]: Object.keys(query).map(key => ({
-    [key]: query[key]
-  }))
-}); // When `auto` is `true`, the parse function will infer and initialize and add
-// the appropriate `Searcher` instance
-
-
-function parse(query, options, {
-  auto = true
-} = {}) {
-  const next = query => {
-    let keys = Object.keys(query);
-    const isQueryPath = isPath(query);
-
-    if (!isQueryPath && keys.length > 1 && !isExpression(query)) {
-      return next(convertToExplicit(query));
-    }
-
-    if (isLeaf(query)) {
-      const key = isQueryPath ? query[KeyType.PATH] : keys[0];
-      const pattern = isQueryPath ? query[KeyType.PATTERN] : query[key];
-
-      if (!isString(pattern)) {
-        throw new Error(LOGICAL_SEARCH_INVALID_QUERY_FOR_KEY(key));
-      }
-
-      const obj = {
-        keyId: createKeyId(key),
-        pattern
-      };
-
-      if (auto) {
-        obj.searcher = createSearcher(pattern, options);
-      }
-
-      return obj;
-    }
-
-    let node = {
-      children: [],
-      operator: keys[0]
-    };
-    keys.forEach(key => {
-      const value = query[key];
-
-      if (isArray(value)) {
-        value.forEach(item => {
-          node.children.push(next(item));
-        });
-      }
-    });
-    return node;
-  };
-
-  if (!isExpression(query)) {
-    query = convertToExplicit(query);
-  }
-
-  return next(query);
-} // Practical scoring function
-
-
-function computeScore(results, {
-  ignoreFieldNorm = Config.ignoreFieldNorm
-}) {
-  results.forEach(result => {
-    let totalScore = 1;
-    result.matches.forEach(({
-      key,
-      norm,
-      score
-    }) => {
-      const weight = key ? key.weight : null;
-      totalScore *= Math.pow(score === 0 && weight ? Number.EPSILON : score, (weight || 1) * (ignoreFieldNorm ? 1 : norm));
-    });
-    result.score = totalScore;
-  });
-}
-
-function transformMatches(result, data) {
-  const matches = result.matches;
-  data.matches = [];
-
-  if (!isDefined(matches)) {
-    return;
-  }
-
-  matches.forEach(match => {
-    if (!isDefined(match.indices) || !match.indices.length) {
-      return;
-    }
-
-    const {
-      indices,
-      value
-    } = match;
-    let obj = {
-      indices,
-      value
-    };
-
-    if (match.key) {
-      obj.key = match.key.src;
-    }
-
-    if (match.idx > -1) {
-      obj.refIndex = match.idx;
-    }
-
-    data.matches.push(obj);
-  });
-}
-
-function transformScore(result, data) {
-  data.score = result.score;
-}
-
-function format(results, docs, {
-  includeMatches = Config.includeMatches,
-  includeScore = Config.includeScore
-} = {}) {
-  const transformers = [];
-  if (includeMatches) transformers.push(transformMatches);
-  if (includeScore) transformers.push(transformScore);
-  return results.map(result => {
-    const {
-      idx
-    } = result;
-    const data = {
-      item: docs[idx],
-      refIndex: idx
-    };
-
-    if (transformers.length) {
-      transformers.forEach(transformer => {
-        transformer(result, data);
-      });
-    }
-
-    return data;
-  });
-}
-
-class Fuse {
-  constructor(docs, options = {}, index) {
-    this.options = { ...Config,
-      ...options
-    };
-
-    if (this.options.useExtendedSearch && !true) {}
-
-    this._keyStore = new KeyStore(this.options.keys);
-    this.setCollection(docs, index);
-  }
-
-  setCollection(docs, index) {
-    this._docs = docs;
-
-    if (index && !(index instanceof FuseIndex)) {
-      throw new Error(INCORRECT_INDEX_TYPE);
-    }
-
-    this._myIndex = index || createIndex(this.options.keys, this._docs, {
-      getFn: this.options.getFn,
-      fieldNormWeight: this.options.fieldNormWeight
-    });
-  }
-
-  add(doc) {
-    if (!isDefined(doc)) {
-      return;
-    }
-
-    this._docs.push(doc);
-
-    this._myIndex.add(doc);
-  }
-
-  remove(predicate = () => false) {
-    const results = [];
-
-    for (let i = 0, len = this._docs.length; i < len; i += 1) {
-      const doc = this._docs[i];
-
-      if (predicate(doc, i)) {
-        this.removeAt(i);
-        i -= 1;
-        len -= 1;
-        results.push(doc);
-      }
-    }
-
-    return results;
-  }
-
-  removeAt(idx) {
-    this._docs.splice(idx, 1);
-
-    this._myIndex.removeAt(idx);
-  }
-
-  getIndex() {
-    return this._myIndex;
-  }
-
-  search(query, {
-    limit = -1
-  } = {}) {
-    const {
-      includeMatches,
-      includeScore,
-      shouldSort,
-      sortFn,
-      ignoreFieldNorm
-    } = this.options;
-    let results = isString(query) ? isString(this._docs[0]) ? this._searchStringList(query) : this._searchObjectList(query) : this._searchLogical(query);
-    computeScore(results, {
-      ignoreFieldNorm
-    });
-
-    if (shouldSort) {
-      results.sort(sortFn);
-    }
-
-    if (isNumber(limit) && limit > -1) {
-      results = results.slice(0, limit);
-    }
-
-    return format(results, this._docs, {
-      includeMatches,
-      includeScore
-    });
-  }
-
-  _searchStringList(query) {
-    const searcher = createSearcher(query, this.options);
-    const {
-      records
-    } = this._myIndex;
-    const results = []; // Iterate over every string in the index
-
-    records.forEach(({
-      v: text,
-      i: idx,
-      n: norm
-    }) => {
-      if (!isDefined(text)) {
-        return;
-      }
-
-      const {
-        isMatch,
-        score,
-        indices
-      } = searcher.searchIn(text);
-
-      if (isMatch) {
-        results.push({
-          item: text,
-          idx,
-          matches: [{
-            score,
-            value: text,
-            norm,
-            indices
-          }]
-        });
-      }
-    });
-    return results;
-  }
-
-  _searchLogical(query) {
-    const expression = parse(query, this.options);
-
-    const evaluate = (node, item, idx) => {
-      if (!node.children) {
-        const {
-          keyId,
-          searcher
-        } = node;
-
-        const matches = this._findMatches({
-          key: this._keyStore.get(keyId),
-          value: this._myIndex.getValueForItemAtKeyId(item, keyId),
-          searcher
-        });
-
-        if (matches && matches.length) {
-          return [{
-            idx,
-            item,
-            matches
-          }];
-        }
-
-        return [];
-      }
-
-      const res = [];
-
-      for (let i = 0, len = node.children.length; i < len; i += 1) {
-        const child = node.children[i];
-        const result = evaluate(child, item, idx);
-
-        if (result.length) {
-          res.push(...result);
-        } else if (node.operator === LogicalOperator.AND) {
-          return [];
-        }
-      }
-
-      return res;
-    };
-
-    const records = this._myIndex.records;
-    const resultMap = {};
-    const results = [];
-    records.forEach(({
-      $: item,
-      i: idx
-    }) => {
-      if (isDefined(item)) {
-        let expResults = evaluate(expression, item, idx);
-
-        if (expResults.length) {
-          // Dedupe when adding
-          if (!resultMap[idx]) {
-            resultMap[idx] = {
-              idx,
-              item,
-              matches: []
-            };
-            results.push(resultMap[idx]);
-          }
-
-          expResults.forEach(({
-            matches
-          }) => {
-            resultMap[idx].matches.push(...matches);
-          });
-        }
-      }
-    });
-    return results;
-  }
-
-  _searchObjectList(query) {
-    const searcher = createSearcher(query, this.options);
-    const {
-      keys,
-      records
-    } = this._myIndex;
-    const results = []; // List is Array<Object>
-
-    records.forEach(({
-      $: item,
-      i: idx
-    }) => {
-      if (!isDefined(item)) {
-        return;
-      }
-
-      let matches = []; // Iterate over every key (i.e, path), and fetch the value at that key
-
-      keys.forEach((key, keyIndex) => {
-        matches.push(...this._findMatches({
-          key,
-          value: item[keyIndex],
-          searcher
-        }));
-      });
-
-      if (matches.length) {
-        results.push({
-          idx,
-          item,
-          matches
-        });
-      }
-    });
-    return results;
-  }
-
-  _findMatches({
-    key,
-    value,
-    searcher
-  }) {
-    if (!isDefined(value)) {
-      return [];
-    }
-
-    let matches = [];
-
-    if (isArray(value)) {
-      value.forEach(({
-        v: text,
-        i: idx,
-        n: norm
-      }) => {
-        if (!isDefined(text)) {
-          return;
-        }
-
-        const {
-          isMatch,
-          score,
-          indices
-        } = searcher.searchIn(text);
-
-        if (isMatch) {
-          matches.push({
-            score,
-            key,
-            value: text,
-            idx,
-            norm,
-            indices
-          });
-        }
-      });
-    } else {
-      const {
-        v: text,
-        n: norm
-      } = value;
-      const {
-        isMatch,
-        score,
-        indices
-      } = searcher.searchIn(text);
-
-      if (isMatch) {
-        matches.push({
-          score,
-          key,
-          value: text,
-          norm,
-          indices
-        });
-      }
-    }
-
-    return matches;
-  }
-
-}
-
-Fuse.version = '6.6.2';
-Fuse.createIndex = createIndex;
-Fuse.parseIndex = parseIndex;
-Fuse.config = Config;
-{
-  Fuse.parseQuery = parse;
-}
-{
-  register(ExtendedSearch);
-}
-
-
-/***/ }),
-
 /***/ 3395:
 /*!**********************************************************************!*\
   !*** ./node_modules/rxjs/dist/esm/internal/NotificationFactories.js ***!
@@ -2716,7 +892,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "fromReadableStreamLike": () => (/* binding */ fromReadableStreamLike),
 /* harmony export */   "innerFrom": () => (/* binding */ innerFrom)
 /* harmony export */ });
-/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! tslib */ 655);
+/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! tslib */ 7582);
 /* harmony import */ var _util_isArrayLike__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util/isArrayLike */ 1144);
 /* harmony import */ var _util_isPromise__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../util/isPromise */ 8239);
 /* harmony import */ var _Observable__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../Observable */ 9751);
@@ -3299,7 +1475,7 @@ function handleReset(reset, on, ...args) {
       reset();
     }
   });
-  return on(...args).subscribe(onSubscriber);
+  return (0,_observable_innerFrom__WEBPACK_IMPORTED_MODULE_3__.innerFrom)(on(...args)).subscribe(onSubscriber);
 } //# sourceMappingURL=share.js.map
 
 /***/ }),
@@ -4077,7 +2253,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "isReadableStreamLike": () => (/* binding */ isReadableStreamLike),
 /* harmony export */   "readableStreamLikeToAsyncGenerator": () => (/* binding */ readableStreamLikeToAsyncGenerator)
 /* harmony export */ });
-/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ 655);
+/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ 7582);
 /* harmony import */ var _isFunction__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./isFunction */ 576);
 
 
@@ -4279,292 +2455,6 @@ function createInvalidObservableTypeError(input) {
 
 /***/ }),
 
-/***/ 655:
-/*!*****************************************!*\
-  !*** ./node_modules/tslib/tslib.es6.js ***!
-  \*****************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "__assign": () => (/* binding */ __assign),
-/* harmony export */   "__asyncDelegator": () => (/* binding */ __asyncDelegator),
-/* harmony export */   "__asyncGenerator": () => (/* binding */ __asyncGenerator),
-/* harmony export */   "__asyncValues": () => (/* binding */ __asyncValues),
-/* harmony export */   "__await": () => (/* binding */ __await),
-/* harmony export */   "__awaiter": () => (/* binding */ __awaiter),
-/* harmony export */   "__classPrivateFieldGet": () => (/* binding */ __classPrivateFieldGet),
-/* harmony export */   "__classPrivateFieldIn": () => (/* binding */ __classPrivateFieldIn),
-/* harmony export */   "__classPrivateFieldSet": () => (/* binding */ __classPrivateFieldSet),
-/* harmony export */   "__createBinding": () => (/* binding */ __createBinding),
-/* harmony export */   "__decorate": () => (/* binding */ __decorate),
-/* harmony export */   "__exportStar": () => (/* binding */ __exportStar),
-/* harmony export */   "__extends": () => (/* binding */ __extends),
-/* harmony export */   "__generator": () => (/* binding */ __generator),
-/* harmony export */   "__importDefault": () => (/* binding */ __importDefault),
-/* harmony export */   "__importStar": () => (/* binding */ __importStar),
-/* harmony export */   "__makeTemplateObject": () => (/* binding */ __makeTemplateObject),
-/* harmony export */   "__metadata": () => (/* binding */ __metadata),
-/* harmony export */   "__param": () => (/* binding */ __param),
-/* harmony export */   "__read": () => (/* binding */ __read),
-/* harmony export */   "__rest": () => (/* binding */ __rest),
-/* harmony export */   "__spread": () => (/* binding */ __spread),
-/* harmony export */   "__spreadArray": () => (/* binding */ __spreadArray),
-/* harmony export */   "__spreadArrays": () => (/* binding */ __spreadArrays),
-/* harmony export */   "__values": () => (/* binding */ __values)
-/* harmony export */ });
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-/* global Reflect, Promise */
-
-var extendStatics = function(d, b) {
-    extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-    return extendStatics(d, b);
-};
-
-function __extends(d, b) {
-    if (typeof b !== "function" && b !== null)
-        throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-    extendStatics(d, b);
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-}
-
-var __assign = function() {
-    __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-        }
-        return t;
-    }
-    return __assign.apply(this, arguments);
-}
-
-function __rest(s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-}
-
-function __decorate(decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-}
-
-function __param(paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-}
-
-function __metadata(metadataKey, metadataValue) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
-}
-
-function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-}
-
-function __generator(thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-}
-
-var __createBinding = Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-});
-
-function __exportStar(m, o) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
-}
-
-function __values(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-}
-
-function __read(o, n) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator];
-    if (!m) return o;
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-    }
-    catch (error) { e = { error: error }; }
-    finally {
-        try {
-            if (r && !r.done && (m = i["return"])) m.call(i);
-        }
-        finally { if (e) throw e.error; }
-    }
-    return ar;
-}
-
-/** @deprecated */
-function __spread() {
-    for (var ar = [], i = 0; i < arguments.length; i++)
-        ar = ar.concat(__read(arguments[i]));
-    return ar;
-}
-
-/** @deprecated */
-function __spreadArrays() {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
-    for (var r = Array(s), k = 0, i = 0; i < il; i++)
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
-            r[k] = a[j];
-    return r;
-}
-
-function __spreadArray(to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-}
-
-function __await(v) {
-    return this instanceof __await ? (this.v = v, this) : new __await(v);
-}
-
-function __asyncGenerator(thisArg, _arguments, generator) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var g = generator.apply(thisArg, _arguments || []), i, q = [];
-    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
-    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
-    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
-    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
-    function fulfill(value) { resume("next", value); }
-    function reject(value) { resume("throw", value); }
-    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
-}
-
-function __asyncDelegator(o) {
-    var i, p;
-    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
-    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === "return" } : f ? f(v) : v; } : f; }
-}
-
-function __asyncValues(o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-}
-
-function __makeTemplateObject(cooked, raw) {
-    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
-    return cooked;
-};
-
-var __setModuleDefault = Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-};
-
-function __importStar(mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-}
-
-function __importDefault(mod) {
-    return (mod && mod.__esModule) ? mod : { default: mod };
-}
-
-function __classPrivateFieldGet(receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-}
-
-function __classPrivateFieldSet(receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
-}
-
-function __classPrivateFieldIn(state, receiver) {
-    if (receiver === null || (typeof receiver !== "object" && typeof receiver !== "function")) throw new TypeError("Cannot use 'in' operator on non-object");
-    return typeof state === "function" ? receiver === state : state.has(receiver);
-}
-
-
-/***/ }),
-
 /***/ 4596:
 /*!****************************************************************************************!*\
   !*** ./node_modules/@almothafar/angular-fusejs/fesm2015/almothafar-angular-fusejs.mjs ***!
@@ -4578,7 +2468,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "AngularFuseJsService": () => (/* binding */ AngularFuseJsService)
 /* harmony export */ });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @angular/core */ 5000);
-/* harmony import */ var fuse_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! fuse.js */ 121);
+/* harmony import */ var fuse_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! fuse.js */ 6119);
 /* harmony import */ var lodash_es__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! lodash-es */ 9594);
 /* harmony import */ var lodash_es__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! lodash-es */ 1074);
 
@@ -4801,6 +2691,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "LowerCasePipe": () => (/* binding */ LowerCasePipe),
 /* harmony export */   "NgClass": () => (/* binding */ NgClass),
 /* harmony export */   "NgComponentOutlet": () => (/* binding */ NgComponentOutlet),
+/* harmony export */   "NgFor": () => (/* binding */ NgForOf),
 /* harmony export */   "NgForOf": () => (/* binding */ NgForOf),
 /* harmony export */   "NgForOfContext": () => (/* binding */ NgForOfContext),
 /* harmony export */   "NgIf": () => (/* binding */ NgIf),
@@ -4877,7 +2768,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ 5000);
 /**
- * @license Angular v14.2.1
+ * @license Angular v14.3.0
  * (c) 2010-2022 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -10746,7 +8637,7 @@ class I18nPluralPipe {
   /**
    * @param value the number to be formatted
    * @param pluralMap an object that mimics the ICU format, see
-   * http://userguide.icu-project.org/formatparse/messages.
+   * https://unicode-org.github.io/icu/userguide/format_parse/messages/.
    * @param locale a `string` defining the locale to use (uses the current {@link LOCALE_ID} by
    * default).
    */
@@ -11629,7 +9520,7 @@ function isPlatformWorkerUi(platformId) {
  */
 
 
-const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.Version('14.2.1');
+const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.Version('14.3.0');
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -11898,42 +9789,6 @@ class XhrFactory {}
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-
-/**
- * Asserts that the application is in development mode. Throws an error if the application is in
- * production mode. This assert can be used to make sure that there is no dev-mode code invoked in
- * the prod mode accidentally.
- */
-
-
-function assertDevMode(checkName) {
-  if (!ngDevMode) {
-    throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2958
-    /* RuntimeErrorCode.UNEXPECTED_DEV_MODE_CHECK_IN_PROD_MODE */
-    , `Unexpected invocation of the ${checkName} in the prod mode. ` + `Please make sure that the prod mode is enabled for production builds.`);
-  }
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-// Assembles directive details string, useful for error messages.
-
-
-function imgDirectiveDetails(rawSrc, includeRawSrc = true) {
-  const rawSrcInfo = includeRawSrc ? `(activated on an <img> element with the \`rawSrc="${rawSrc}"\`) ` : '';
-  return `The NgOptimizedImage directive ${rawSrcInfo}has detected that`;
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
 // Converts a string that represents a URL into a URL class instance.
 
 
@@ -11983,28 +9838,454 @@ function normalizeSrc(src) {
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
+
+/**
+ * Noop image loader that does no transformation to the original src and just returns it as is.
+ * This loader is used as a default one if more specific logic is not provided in an app config.
+ *
+ * @see `ImageLoader`
+ * @see `NgOptimizedImage`
+ */
+
+
+const noopImageLoader = config => config.src;
+/**
+ * Injection token that configures the image loader function.
+ *
+ * @see `ImageLoader`
+ * @see `NgOptimizedImage`
+ * @publicApi
+ */
+
+
+const IMAGE_LOADER = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.InjectionToken('ImageLoader', {
+  providedIn: 'root',
+  factory: () => noopImageLoader
+});
+/**
+ * Internal helper function that makes it easier to introduce custom image loaders for the
+ * `NgOptimizedImage` directive. It is enough to specify a URL builder function to obtain full DI
+ * configuration for a given loader: a DI token corresponding to the actual loader function, plus DI
+ * tokens managing preconnect check functionality.
+ * @param buildUrlFn a function returning a full URL based on loader's configuration
+ * @param exampleUrls example of full URLs for a given loader (used in error messages)
+ * @returns a set of DI providers corresponding to the configured image loader
+ */
+
+function createImageLoader(buildUrlFn, exampleUrls) {
+  return function provideImageLoader(path) {
+    if (!isValidPath(path)) {
+      throwInvalidPathError(path, exampleUrls || []);
+    } // The trailing / is stripped (if provided) to make URL construction (concatenation) easier in
+    // the individual loader functions.
+
+
+    path = normalizePath(path);
+
+    const loaderFn = config => {
+      if (isAbsoluteUrl(config.src)) {
+        // Image loader functions expect an image file name (e.g. `my-image.png`)
+        // or a relative path + a file name (e.g. `/a/b/c/my-image.png`) as an input,
+        // so the final absolute URL can be constructed.
+        // When an absolute URL is provided instead - the loader can not
+        // build a final URL, thus the error is thrown to indicate that.
+        throwUnexpectedAbsoluteUrlError(path, config.src);
+      }
+
+      return buildUrlFn(path, Object.assign(Object.assign({}, config), {
+        src: normalizeSrc(config.src)
+      }));
+    };
+
+    const providers = [{
+      provide: IMAGE_LOADER,
+      useValue: loaderFn
+    }];
+    return providers;
+  };
+}
+
+function throwInvalidPathError(path, exampleUrls) {
+  throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2959
+  /* RuntimeErrorCode.INVALID_LOADER_ARGUMENTS */
+  , ngDevMode && `Image loader has detected an invalid path (\`${path}\`). ` + `To fix this, supply a path using one of the following formats: ${exampleUrls.join(' or ')}`);
+}
+
+function throwUnexpectedAbsoluteUrlError(path, url) {
+  throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2959
+  /* RuntimeErrorCode.INVALID_LOADER_ARGUMENTS */
+  , ngDevMode && `Image loader has detected a \`<img>\` tag with an invalid \`ngSrc\` attribute: ${url}. ` + `This image loader expects \`ngSrc\` to be a relative URL - ` + `however the provided value is an absolute URL. ` + `To fix this, provide \`ngSrc\` as a path relative to the base URL ` + `configured for this loader (\`${path}\`).`);
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Function that generates an ImageLoader for [Cloudflare Image
+ * Resizing](https://developers.cloudflare.com/images/image-resizing/) and turns it into an Angular
+ * provider. Note: Cloudflare has multiple image products - this provider is specifically for
+ * Cloudflare Image Resizing; it will not work with Cloudflare Images or Cloudflare Polish.
+ *
+ * @param path Your domain name, e.g. https://mysite.com
+ * @returns Provider that provides an ImageLoader function
+ *
+ * @publicApi
+ */
+
+
+const provideCloudflareLoader = createImageLoader(createCloudflareUrl, ngDevMode ? ['https://<ZONE>/cdn-cgi/image/<OPTIONS>/<SOURCE-IMAGE>'] : undefined);
+
+function createCloudflareUrl(path, config) {
+  let params = `format=auto`;
+
+  if (config.width) {
+    params += `,width=${config.width}`;
+  } // Cloudflare image URLs format:
+  // https://developers.cloudflare.com/images/image-resizing/url-format/
+
+
+  return `${path}/cdn-cgi/image/${params}/${config.src}`;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Name and URL tester for Cloudinary.
+ */
+
+
+const cloudinaryLoaderInfo = {
+  name: 'Cloudinary',
+  testUrl: isCloudinaryUrl
+};
+const CLOUDINARY_LOADER_REGEX = /https?\:\/\/[^\/]+\.cloudinary\.com\/.+/;
+/**
+ * Tests whether a URL is from Cloudinary CDN.
+ */
+
+function isCloudinaryUrl(url) {
+  return CLOUDINARY_LOADER_REGEX.test(url);
+}
+/**
+ * Function that generates an ImageLoader for Cloudinary and turns it into an Angular provider.
+ *
+ * @param path Base URL of your Cloudinary images
+ * This URL should match one of the following formats:
+ * https://res.cloudinary.com/mysite
+ * https://mysite.cloudinary.com
+ * https://subdomain.mysite.com
+ * @returns Set of providers to configure the Cloudinary loader.
+ *
+ * @publicApi
+ */
+
+
+const provideCloudinaryLoader = createImageLoader(createCloudinaryUrl, ngDevMode ? ['https://res.cloudinary.com/mysite', 'https://mysite.cloudinary.com', 'https://subdomain.mysite.com'] : undefined);
+
+function createCloudinaryUrl(path, config) {
+  // Cloudinary image URLformat:
+  // https://cloudinary.com/documentation/image_transformations#transformation_url_structure
+  // Example of a Cloudinary image URL:
+  // https://res.cloudinary.com/mysite/image/upload/c_scale,f_auto,q_auto,w_600/marketing/tile-topics-m.png
+  let params = `f_auto,q_auto`; // sets image format and quality to "auto"
+
+  if (config.width) {
+    params += `,w_${config.width}`;
+  }
+
+  return `${path}/image/upload/${params}/${config.src}`;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Name and URL tester for ImageKit.
+ */
+
+
+const imageKitLoaderInfo = {
+  name: 'ImageKit',
+  testUrl: isImageKitUrl
+};
+const IMAGE_KIT_LOADER_REGEX = /https?\:\/\/[^\/]+\.imagekit\.io\/.+/;
+/**
+ * Tests whether a URL is from ImageKit CDN.
+ */
+
+function isImageKitUrl(url) {
+  return IMAGE_KIT_LOADER_REGEX.test(url);
+}
+/**
+ * Function that generates an ImageLoader for ImageKit and turns it into an Angular provider.
+ *
+ * @param path Base URL of your ImageKit images
+ * This URL should match one of the following formats:
+ * https://ik.imagekit.io/myaccount
+ * https://subdomain.mysite.com
+ * @returns Set of providers to configure the ImageKit loader.
+ *
+ * @publicApi
+ */
+
+
+const provideImageKitLoader = createImageLoader(createImagekitUrl, ngDevMode ? ['https://ik.imagekit.io/mysite', 'https://subdomain.mysite.com'] : undefined);
+
+function createImagekitUrl(path, config) {
+  // Example of an ImageKit image URL:
+  // https://ik.imagekit.io/demo/tr:w-300,h-300/medium_cafe_B1iTdD0C.jpg
+  let params = `tr:q-auto`; // applies the "auto quality" transformation
+
+  if (config.width) {
+    params += `,w-${config.width}`;
+  }
+
+  return `${path}/${params}/${config.src}`;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Name and URL tester for Imgix.
+ */
+
+
+const imgixLoaderInfo = {
+  name: 'Imgix',
+  testUrl: isImgixUrl
+};
+const IMGIX_LOADER_REGEX = /https?\:\/\/[^\/]+\.imgix\.net\/.+/;
+/**
+ * Tests whether a URL is from Imgix CDN.
+ */
+
+function isImgixUrl(url) {
+  return IMGIX_LOADER_REGEX.test(url);
+}
+/**
+ * Function that generates an ImageLoader for Imgix and turns it into an Angular provider.
+ *
+ * @param path path to the desired Imgix origin,
+ * e.g. https://somepath.imgix.net or https://images.mysite.com
+ * @returns Set of providers to configure the Imgix loader.
+ *
+ * @publicApi
+ */
+
+
+const provideImgixLoader = createImageLoader(createImgixUrl, ngDevMode ? ['https://somepath.imgix.net/'] : undefined);
+
+function createImgixUrl(path, config) {
+  const url = new URL(`${path}/${config.src}`); // This setting ensures the smallest allowable format is set.
+
+  url.searchParams.set('auto', 'format');
+
+  if (config.width) {
+    url.searchParams.set('w', config.width.toString());
+  }
+
+  return url.href;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+// Assembles directive details string, useful for error messages.
+
+
+function imgDirectiveDetails(ngSrc, includeNgSrc = true) {
+  const ngSrcInfo = includeNgSrc ? `(activated on an <img> element with the \`ngSrc="${ngSrc}"\`) ` : '';
+  return `The NgOptimizedImage directive ${ngSrcInfo}has detected that`;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Asserts that the application is in development mode. Throws an error if the application is in
+ * production mode. This assert can be used to make sure that there is no dev-mode code invoked in
+ * the prod mode accidentally.
+ */
+
+
+function assertDevMode(checkName) {
+  if (!ngDevMode) {
+    throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2958
+    /* RuntimeErrorCode.UNEXPECTED_DEV_MODE_CHECK_IN_PROD_MODE */
+    , `Unexpected invocation of the ${checkName} in the prod mode. ` + `Please make sure that the prod mode is enabled for production builds.`);
+  }
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Observer that detects whether an image with `NgOptimizedImage`
+ * is treated as a Largest Contentful Paint (LCP) element. If so,
+ * asserts that the image has the `priority` attribute.
+ *
+ * Note: this is a dev-mode only class and it does not appear in prod bundles,
+ * thus there is no `ngDevMode` use in the code.
+ *
+ * Based on https://web.dev/lcp/#measure-lcp-in-javascript.
+ */
+
+
+class LCPImageObserver {
+  constructor() {
+    // Map of full image URLs -> original `ngSrc` values.
+    this.images = new Map(); // Keep track of images for which `console.warn` was produced.
+
+    this.alreadyWarned = new Set();
+    this.window = null;
+    this.observer = null;
+    assertDevMode('LCP checker');
+    const win = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(DOCUMENT).defaultView;
+
+    if (typeof win !== 'undefined' && typeof PerformanceObserver !== 'undefined') {
+      this.window = win;
+      this.observer = this.initPerformanceObserver();
+    }
+  }
+  /**
+   * Inits PerformanceObserver and subscribes to LCP events.
+   * Based on https://web.dev/lcp/#measure-lcp-in-javascript
+   */
+
+
+  initPerformanceObserver() {
+    const observer = new PerformanceObserver(entryList => {
+      var _a, _b;
+
+      const entries = entryList.getEntries();
+      if (entries.length === 0) return; // We use the latest entry produced by the `PerformanceObserver` as the best
+      // signal on which element is actually an LCP one. As an example, the first image to load on
+      // a page, by virtue of being the only thing on the page so far, is often a LCP candidate
+      // and gets reported by PerformanceObserver, but isn't necessarily the LCP element.
+
+      const lcpElement = entries[entries.length - 1]; // Cast to `any` due to missing `element` on the `LargestContentfulPaint` type of entry.
+      // See https://developer.mozilla.org/en-US/docs/Web/API/LargestContentfulPaint
+
+      const imgSrc = (_b = (_a = lcpElement.element) === null || _a === void 0 ? void 0 : _a.src) !== null && _b !== void 0 ? _b : ''; // Exclude `data:` and `blob:` URLs, since they are not supported by the directive.
+
+      if (imgSrc.startsWith('data:') || imgSrc.startsWith('blob:')) return;
+      const imgNgSrc = this.images.get(imgSrc);
+
+      if (imgNgSrc && !this.alreadyWarned.has(imgSrc)) {
+        this.alreadyWarned.add(imgSrc);
+        logMissingPriorityWarning(imgSrc);
+      }
+    });
+    observer.observe({
+      type: 'largest-contentful-paint',
+      buffered: true
+    });
+    return observer;
+  }
+
+  registerImage(rewrittenSrc, originalNgSrc) {
+    if (!this.observer) return;
+    this.images.set(getUrl(rewrittenSrc, this.window).href, originalNgSrc);
+  }
+
+  unregisterImage(rewrittenSrc) {
+    if (!this.observer) return;
+    this.images.delete(getUrl(rewrittenSrc, this.window).href);
+  }
+
+  ngOnDestroy() {
+    if (!this.observer) return;
+    this.observer.disconnect();
+    this.images.clear();
+    this.alreadyWarned.clear();
+  }
+
+}
+
+LCPImageObserver.ɵfac = function LCPImageObserver_Factory(t) {
+  return new (t || LCPImageObserver)();
+};
+
+LCPImageObserver.ɵprov = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjectable"]({
+  token: LCPImageObserver,
+  factory: LCPImageObserver.ɵfac,
+  providedIn: 'root'
+});
+
+(function () {
+  (typeof ngDevMode === "undefined" || ngDevMode) && _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](LCPImageObserver, [{
+    type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Injectable,
+    args: [{
+      providedIn: 'root'
+    }]
+  }], function () {
+    return [];
+  }, null);
+})();
+
+function logMissingPriorityWarning(ngSrc) {
+  const directiveDetails = imgDirectiveDetails(ngSrc);
+  console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2955
+  /* RuntimeErrorCode.LCP_IMG_MISSING_PRIORITY */
+  , `${directiveDetails} this image is the Largest Contentful Paint (LCP) ` + `element but was not marked "priority". This image should be marked ` + `"priority" in order to prioritize its loading. ` + `To fix this, add the "priority" attribute.`));
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
 // Set of origins that are always excluded from the preconnect checks.
 
 
 const INTERNAL_PRECONNECT_CHECK_BLOCKLIST = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 /**
- * Multi-provider injection token to configure which origins should be excluded
+ * Injection token to configure which origins should be excluded
  * from the preconnect checks. It can either be a single string or an array of strings
  * to represent a group of origins, for example:
  *
  * ```typescript
- *  {provide: PRECONNECT_CHECK_BLOCKLIST, multi: true, useValue: 'https://your-domain.com'}
+ *  {provide: PRECONNECT_CHECK_BLOCKLIST, useValue: 'https://your-domain.com'}
  * ```
  *
  * or:
  *
  * ```typescript
- *  {provide: PRECONNECT_CHECK_BLOCKLIST, multi: true,
+ *  {provide: PRECONNECT_CHECK_BLOCKLIST,
  *   useValue: ['https://your-domain-1.com', 'https://your-domain-2.com']}
  * ```
  *
  * @publicApi
- * @developerPreview
  */
 
 const PRECONNECT_CHECK_BLOCKLIST = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.InjectionToken('PRECONNECT_CHECK_BLOCKLIST');
@@ -12054,21 +10335,19 @@ class PreconnectLinkChecker {
         this.blocklist.add(extractHostname(origin));
       });
     } else {
-      throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2957
-      /* RuntimeErrorCode.INVALID_PRECONNECT_CHECK_BLOCKLIST */
-      , `The blocklist for the preconnect check was not provided as an array. ` + `Check that the \`PRECONNECT_CHECK_BLOCKLIST\` token is configured as a \`multi: true\` provider.`);
+      this.blocklist.add(extractHostname(origins));
     }
   }
   /**
-   * Checks that a preconnect resource hint exists in the head fo rthe
+   * Checks that a preconnect resource hint exists in the head for the
    * given src.
    *
    * @param rewrittenSrc src formatted with loader
-   * @param rawSrc rawSrc value
+   * @param originalNgSrc ngSrc value
    */
 
 
-  assertPreconnect(rewrittenSrc, rawSrc) {
+  assertPreconnect(rewrittenSrc, originalNgSrc) {
     if (!this.window) return;
     const imgUrl = getUrl(rewrittenSrc, this.window);
     if (this.blocklist.has(imgUrl.hostname) || this.alreadySeen.has(imgUrl.origin)) return; // Register this origin as seen, so we don't check it again later.
@@ -12086,7 +10365,7 @@ class PreconnectLinkChecker {
     if (!this.preconnectLinks.has(imgUrl.origin)) {
       console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2956
       /* RuntimeErrorCode.PRIORITY_IMG_MISSING_PRECONNECT_TAG */
-      , `${imgDirectiveDetails(rawSrc)} there is no preconnect tag present for this image. ` + `Preconnecting to the origin(s) that serve priority images ensures that these ` + `images are delivered as soon as possible. To fix this, please add the following ` + `element into the <head> of the document:\n` + `  <link rel="preconnect" href="${imgUrl.origin}">`));
+      , `${imgDirectiveDetails(originalNgSrc)} there is no preconnect tag present for this ` + `image. Preconnecting to the origin(s) that serve priority images ensures that these ` + `images are delivered as soon as possible. To fix this, please add the following ` + `element into the <head> of the document:\n` + `  <link rel="preconnect" href="${imgUrl.origin}">`));
     }
   }
 
@@ -12152,95 +10431,27 @@ function deepForEach(input, fn) {
  */
 
 /**
- * Noop image loader that does no transformation to the original src and just returns it as is.
- * This loader is used as a default one if more specific logic is not provided in an app config.
- *
- * @see `ImageLoader`
- * @see `NgOptimizedImage`
+ * In SSR scenarios, a preload `<link>` element is generated for priority images.
+ * Having a large number of preload tags may negatively affect the performance,
+ * so we warn developers (by throwing an error) if the number of preloaded images
+ * is above a certain threshold. This const specifies this threshold.
  */
 
 
-const noopImageLoader = config => config.src;
+const DEFAULT_PRELOADED_IMAGES_LIMIT = 5;
 /**
- * Injection token that configures the image loader function.
+ * Helps to keep track of priority images that already have a corresponding
+ * preload tag (to avoid generating multiple preload tags with the same URL).
  *
- * @see `ImageLoader`
- * @see `NgOptimizedImage`
- * @publicApi
- * @developerPreview
+ * This Set tracks the original src passed into the `ngSrc` input not the src after it has been
+ * run through the specified `IMAGE_LOADER`.
  */
 
-
-const IMAGE_LOADER = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.InjectionToken('ImageLoader', {
+const PRELOADED_IMAGES = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.InjectionToken('NG_OPTIMIZED_PRELOADED_IMAGES', {
   providedIn: 'root',
-  factory: () => noopImageLoader
+  factory: () => new Set()
 });
 /**
- * Internal helper function that makes it easier to introduce custom image loaders for the
- * `NgOptimizedImage` directive. It is enough to specify a URL builder function to obtain full DI
- * configuration for a given loader: a DI token corresponding to the actual loader function, plus DI
- * tokens managing preconnect check functionality.
- * @param buildUrlFn a function returning a full URL based on loader's configuration
- * @param exampleUrls example of full URLs for a given loader (used in error messages)
- * @returns a set of DI providers corresponding to the configured image loader
- */
-
-function createImageLoader(buildUrlFn, exampleUrls) {
-  return function provideImageLoader(path, options = {
-    ensurePreconnect: true
-  }) {
-    if (!isValidPath(path)) {
-      throwInvalidPathError(path, exampleUrls || []);
-    } // The trailing / is stripped (if provided) to make URL construction (concatenation) easier in
-    // the individual loader functions.
-
-
-    path = normalizePath(path);
-
-    const loaderFn = config => {
-      if (isAbsoluteUrl(config.src)) {
-        // Image loader functions expect an image file name (e.g. `my-image.png`)
-        // or a relative path + a file name (e.g. `/a/b/c/my-image.png`) as an input,
-        // so the final absolute URL can be constructed.
-        // When an absolute URL is provided instead - the loader can not
-        // build a final URL, thus the error is thrown to indicate that.
-        throwUnexpectedAbsoluteUrlError(path, config.src);
-      }
-
-      return buildUrlFn(path, Object.assign(Object.assign({}, config), {
-        src: normalizeSrc(config.src)
-      }));
-    };
-
-    const providers = [{
-      provide: IMAGE_LOADER,
-      useValue: loaderFn
-    }];
-
-    if (ngDevMode && options.ensurePreconnect === false) {
-      providers.push({
-        provide: PRECONNECT_CHECK_BLOCKLIST,
-        useValue: [path],
-        multi: true
-      });
-    }
-
-    return providers;
-  };
-}
-
-function throwInvalidPathError(path, exampleUrls) {
-  throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2959
-  /* RuntimeErrorCode.INVALID_LOADER_ARGUMENTS */
-  , ngDevMode && `Image loader has detected an invalid path (\`${path}\`). ` + `To fix this, supply a path using one of the following formats: ${exampleUrls.join(' or ')}`);
-}
-
-function throwUnexpectedAbsoluteUrlError(path, url) {
-  throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2959
-  /* RuntimeErrorCode.INVALID_LOADER_ARGUMENTS */
-  , ngDevMode && `Image loader has detected a \`<img>\` tag with an invalid \`rawSrc\` attribute: ${url}. ` + `This image loader expects \`rawSrc\` to be a relative URL - ` + `however the provided value is an absolute URL. ` + `To fix this, provide \`rawSrc\` as a path relative to the base URL ` + `configured for this loader (\`${path}\`).`);
-}
-/**
  * @license
  * Copyright Google LLC All Rights Reserved.
  *
@@ -12249,272 +10460,88 @@ function throwUnexpectedAbsoluteUrlError(path, url) {
  */
 
 /**
- * Function that generates an ImageLoader for [Cloudflare Image
- * Resizing](https://developers.cloudflare.com/images/image-resizing/) and turns it into an Angular
- * provider. Note: Cloudflare has multiple image products - this provider is specifically for
- * Cloudflare Image Resizing; it will not work with Cloudflare Images or Cloudflare Polish.
+ * @description Contains the logic needed to track and add preload link tags to the `<head>` tag. It
+ * will also track what images have already had preload link tags added so as to not duplicate link
+ * tags.
  *
- * @param path Your domain name, e.g. https://mysite.com
- * @param options An object with extra configuration:
- * - `ensurePreconnect`: boolean flag indicating whether the NgOptimizedImage directive
- *                       should verify that there is a corresponding `<link rel="preconnect">`
- *                       present in the document's `<head>`.
- * @returns Provider that provides an ImageLoader function
- *
- * @publicApi
- * @developerPreview
+ * In dev mode this service will validate that the number of preloaded images does not exceed the
+ * configured default preloaded images limit: {@link DEFAULT_PRELOADED_IMAGES_LIMIT}.
  */
 
-
-const provideCloudflareLoader = createImageLoader(createCloudflareUrl, ngDevMode ? ['https://<ZONE>/cdn-cgi/image/<OPTIONS>/<SOURCE-IMAGE>'] : undefined);
-
-function createCloudflareUrl(path, config) {
-  let params = `format=auto`;
-
-  if (config.width) {
-    params += `,width=${config.width}`;
-  } // Cloudflare image URLs format:
-  // https://developers.cloudflare.com/images/image-resizing/url-format/
-
-
-  return `${path}/cdn-cgi/image/${params}/${config.src}`;
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * Function that generates an ImageLoader for Cloudinary and turns it into an Angular provider.
- *
- * @param path Base URL of your Cloudinary images
- * This URL should match one of the following formats:
- * https://res.cloudinary.com/mysite
- * https://mysite.cloudinary.com
- * https://subdomain.mysite.com
- * @param options An object with extra configuration:
- * - `ensurePreconnect`: boolean flag indicating whether the NgOptimizedImage directive
- *                       should verify that there is a corresponding `<link rel="preconnect">`
- *                       present in the document's `<head>`.
- * @returns Set of providers to configure the Cloudinary loader.
- *
- * @publicApi
- * @developerPreview
- */
-
-
-const provideCloudinaryLoader = createImageLoader(createCloudinaryUrl, ngDevMode ? ['https://res.cloudinary.com/mysite', 'https://mysite.cloudinary.com', 'https://subdomain.mysite.com'] : undefined);
-
-function createCloudinaryUrl(path, config) {
-  // Cloudinary image URLformat:
-  // https://cloudinary.com/documentation/image_transformations#transformation_url_structure
-  // Example of a Cloudinary image URL:
-  // https://res.cloudinary.com/mysite/image/upload/c_scale,f_auto,q_auto,w_600/marketing/tile-topics-m.png
-  let params = `f_auto,q_auto`; // sets image format and quality to "auto"
-
-  if (config.width) {
-    params += `,w_${config.width}`;
-  }
-
-  return `${path}/image/upload/${params}/${config.src}`;
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * Function that generates an ImageLoader for ImageKit and turns it into an Angular provider.
- *
- * @param path Base URL of your ImageKit images
- * This URL should match one of the following formats:
- * https://ik.imagekit.io/myaccount
- * https://subdomain.mysite.com
- * @param options An object with extra configuration:
- * - `ensurePreconnect`: boolean flag indicating whether the NgOptimizedImage directive
- *                       should verify that there is a corresponding `<link rel="preconnect">`
- *                       present in the document's `<head>`.
- * @returns Set of providers to configure the ImageKit loader.
- *
- * @publicApi
- * @developerPreview
- */
-
-
-const provideImageKitLoader = createImageLoader(createImagekitUrl, ngDevMode ? ['https://ik.imagekit.io/mysite', 'https://subdomain.mysite.com'] : undefined);
-
-function createImagekitUrl(path, config) {
-  // Example of an ImageKit image URL:
-  // https://ik.imagekit.io/demo/tr:w-300,h-300/medium_cafe_B1iTdD0C.jpg
-  let params = `tr:q-auto`; // applies the "auto quality" transformation
-
-  if (config.width) {
-    params += `,w-${config.width}`;
-  }
-
-  return `${path}/${params}/${config.src}`;
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * Function that generates an ImageLoader for Imgix and turns it into an Angular provider.
- *
- * @param path path to the desired Imgix origin,
- * e.g. https://somepath.imgix.net or https://images.mysite.com
- * @param options An object with extra configuration:
- * - `ensurePreconnect`: boolean flag indicating whether the NgOptimizedImage directive
- *                       should verify that there is a corresponding `<link rel="preconnect">`
- *                       present in the document's `<head>`.
- * @returns Set of providers to configure the Imgix loader.
- *
- * @publicApi
- * @developerPreview
- */
-
-
-const provideImgixLoader = createImageLoader(createImgixUrl, ngDevMode ? ['https://somepath.imgix.net/'] : undefined);
-
-function createImgixUrl(path, config) {
-  const url = new URL(`${path}/${config.src}`); // This setting ensures the smallest allowable format is set.
-
-  url.searchParams.set('auto', 'format');
-
-  if (config.width) {
-    url.searchParams.set('w', config.width.toString());
-  }
-
-  return url.href;
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * Observer that detects whether an image with `NgOptimizedImage`
- * is treated as a Largest Contentful Paint (LCP) element. If so,
- * asserts that the image has the `priority` attribute.
- *
- * Note: this is a dev-mode only class and it does not appear in prod bundles,
- * thus there is no `ngDevMode` use in the code.
- *
- * Based on https://web.dev/lcp/#measure-lcp-in-javascript.
- */
-
-
-class LCPImageObserver {
+class PreloadLinkCreator {
   constructor() {
-    // Map of full image URLs -> original `rawSrc` values.
-    this.images = new Map(); // Keep track of images for which `console.warn` was produced.
-
-    this.alreadyWarned = new Set();
-    this.window = null;
-    this.observer = null;
-    assertDevMode('LCP checker');
-    const win = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(DOCUMENT).defaultView;
-
-    if (typeof win !== 'undefined' && typeof PerformanceObserver !== 'undefined') {
-      this.window = win;
-      this.observer = this.initPerformanceObserver();
-    }
+    this.preloadedImages = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(PRELOADED_IMAGES);
+    this.document = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(DOCUMENT);
   }
   /**
-   * Inits PerformanceObserver and subscribes to LCP events.
-   * Based on https://web.dev/lcp/#measure-lcp-in-javascript
+   * @description Add a preload `<link>` to the `<head>` of the `index.html` that is served from the
+   * server while using Angular Universal and SSR to kick off image loads for high priority images.
+   *
+   * The `sizes` (passed in from the user) and `srcset` (parsed and formatted from `ngSrcset`)
+   * properties used to set the corresponding attributes, `imagesizes` and `imagesrcset`
+   * respectively, on the preload `<link>` tag so that the correctly sized image is preloaded from
+   * the CDN.
+   *
+   * {@link https://web.dev/preload-responsive-images/#imagesrcset-and-imagesizes}
+   *
+   * @param renderer The `Renderer2` passed in from the directive
+   * @param src The original src of the image that is set on the `ngSrc` input.
+   * @param srcset The parsed and formatted srcset created from the `ngSrcset` input
+   * @param sizes The value of the `sizes` attribute passed in to the `<img>` tag
    */
 
 
-  initPerformanceObserver() {
-    const observer = new PerformanceObserver(entryList => {
-      var _a, _b;
-
-      const entries = entryList.getEntries();
-      if (entries.length === 0) return; // We use the latest entry produced by the `PerformanceObserver` as the best
-      // signal on which element is actually an LCP one. As an example, the first image to load on
-      // a page, by virtue of being the only thing on the page so far, is often a LCP candidate
-      // and gets reported by PerformanceObserver, but isn't necessarily the LCP element.
-
-      const lcpElement = entries[entries.length - 1]; // Cast to `any` due to missing `element` on the `LargestContentfulPaint` type of entry.
-      // See https://developer.mozilla.org/en-US/docs/Web/API/LargestContentfulPaint
-
-      const imgSrc = (_b = (_a = lcpElement.element) === null || _a === void 0 ? void 0 : _a.src) !== null && _b !== void 0 ? _b : ''; // Exclude `data:` and `blob:` URLs, since they are not supported by the directive.
-
-      if (imgSrc.startsWith('data:') || imgSrc.startsWith('blob:')) return;
-      const imgRawSrc = this.images.get(imgSrc);
-
-      if (imgRawSrc && !this.alreadyWarned.has(imgSrc)) {
-        this.alreadyWarned.add(imgSrc);
-        logMissingPriorityWarning(imgSrc);
+  createPreloadLinkTag(renderer, src, srcset, sizes) {
+    if (ngDevMode) {
+      if (this.preloadedImages.size >= DEFAULT_PRELOADED_IMAGES_LIMIT) {
+        throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2961
+        /* RuntimeErrorCode.TOO_MANY_PRELOADED_IMAGES */
+        , ngDevMode && `The \`NgOptimizedImage\` directive has detected that more than ` + `${DEFAULT_PRELOADED_IMAGES_LIMIT} images were marked as priority. ` + `This might negatively affect an overall performance of the page. ` + `To fix this, remove the "priority" attribute from images with less priority.`);
       }
-    });
-    observer.observe({
-      type: 'largest-contentful-paint',
-      buffered: true
-    });
-    return observer;
-  }
+    }
 
-  registerImage(rewrittenSrc, rawSrc) {
-    if (!this.observer) return;
-    this.images.set(getUrl(rewrittenSrc, this.window).href, rawSrc);
-  }
+    if (this.preloadedImages.has(src)) {
+      return;
+    }
 
-  unregisterImage(rewrittenSrc) {
-    if (!this.observer) return;
-    this.images.delete(getUrl(rewrittenSrc, this.window).href);
-  }
+    this.preloadedImages.add(src);
+    const preload = renderer.createElement('link');
+    renderer.setAttribute(preload, 'as', 'image');
+    renderer.setAttribute(preload, 'href', src);
+    renderer.setAttribute(preload, 'rel', 'preload');
+    renderer.setAttribute(preload, 'fetchpriority', 'high');
 
-  ngOnDestroy() {
-    if (!this.observer) return;
-    this.observer.disconnect();
-    this.images.clear();
-    this.alreadyWarned.clear();
+    if (sizes) {
+      renderer.setAttribute(preload, 'imageSizes', sizes);
+    }
+
+    if (srcset) {
+      renderer.setAttribute(preload, 'imageSrcset', srcset);
+    }
+
+    renderer.appendChild(this.document.head, preload);
   }
 
 }
 
-LCPImageObserver.ɵfac = function LCPImageObserver_Factory(t) {
-  return new (t || LCPImageObserver)();
+PreloadLinkCreator.ɵfac = function PreloadLinkCreator_Factory(t) {
+  return new (t || PreloadLinkCreator)();
 };
 
-LCPImageObserver.ɵprov = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjectable"]({
-  token: LCPImageObserver,
-  factory: LCPImageObserver.ɵfac,
+PreloadLinkCreator.ɵprov = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineInjectable"]({
+  token: PreloadLinkCreator,
+  factory: PreloadLinkCreator.ɵfac,
   providedIn: 'root'
 });
 
 (function () {
-  (typeof ngDevMode === "undefined" || ngDevMode) && _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](LCPImageObserver, [{
+  (typeof ngDevMode === "undefined" || ngDevMode) && _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵsetClassMetadata"](PreloadLinkCreator, [{
     type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Injectable,
     args: [{
       providedIn: 'root'
     }]
-  }], function () {
-    return [];
-  }, null);
+  }], null, null);
 })();
-
-function logMissingPriorityWarning(rawSrc) {
-  const directiveDetails = imgDirectiveDetails(rawSrc);
-  console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2955
-  /* RuntimeErrorCode.LCP_IMG_MISSING_PRIORITY */
-  , `${directiveDetails} this image is the Largest Contentful Paint (LCP) ` + `element but was not marked "priority". This image should be marked ` + `"priority" in order to prioritize its loading. ` + `To fix this, add the "priority" attribute.`));
-}
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -12559,6 +10586,16 @@ const ABSOLUTE_SRCSET_DENSITY_CAP = 3;
 
 const RECOMMENDED_SRCSET_DENSITY_CAP = 2;
 /**
+ * Used in generating automatic density-based srcsets
+ */
+
+const DENSITY_SRCSET_MULTIPLIERS = [1, 2];
+/**
+ * Used to determine which breakpoints to use on full-width images
+ */
+
+const VIEWPORT_BREAKPOINT_CUTOFF = 640;
+/**
  * Used to determine whether two aspect ratios are similar in value.
  */
 
@@ -12571,6 +10608,31 @@ const ASPECT_RATIO_TOLERANCE = .1;
 
 const OVERSIZED_IMAGE_TOLERANCE = 1000;
 /**
+ * Used to limit automatic srcset generation of very large sources for
+ * fixed-size images. In pixels.
+ */
+
+const FIXED_SRCSET_WIDTH_LIMIT = 1920;
+const FIXED_SRCSET_HEIGHT_LIMIT = 1080;
+/** Info about built-in loaders we can test for. */
+
+const BUILT_IN_LOADERS = [imgixLoaderInfo, imageKitLoaderInfo, cloudinaryLoaderInfo];
+const defaultConfig = {
+  breakpoints: [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840]
+};
+/**
+ * Injection token that configures the image optimized image functionality.
+ *
+ * @see `NgOptimizedImage`
+ * @publicApi
+ * @developerPreview
+ */
+
+const IMAGE_CONFIG = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.InjectionToken('ImageConfig', {
+  providedIn: 'root',
+  factory: () => defaultConfig
+});
+/**
  * Directive that improves image loading performance by enforcing best practices.
  *
  * `NgOptimizedImage` ensures that the loading of the Largest Contentful Paint (LCP) image is
@@ -12581,6 +10643,7 @@ const OVERSIZED_IMAGE_TOLERANCE = 1000;
  *
  * In addition, the directive:
  * - Generates appropriate asset URLs if a corresponding `ImageLoader` function is provided
+ * - Automatically generates a srcset
  * - Requires that `width` and `height` are set
  * - Warns if `width` or `height` have been set incorrectly
  * - Warns if the image will be visually distorted when rendered
@@ -12592,8 +10655,8 @@ const OVERSIZED_IMAGE_TOLERANCE = 1000;
  * Follow the steps below to enable and use the directive:
  * 1. Import it into the necessary NgModule or a standalone Component.
  * 2. Optionally provide an `ImageLoader` if you use an image hosting service.
- * 3. Update the necessary `<img>` tags in templates and replace `src` attributes with `rawSrc`.
- * Using a `rawSrc` allows the directive to control when the `src` gets set, which triggers an image
+ * 3. Update the necessary `<img>` tags in templates and replace `src` attributes with `ngSrc`.
+ * Using a `ngSrc` allows the directive to control when the `src` gets set, which triggers an image
  * download.
  *
  * Step 1: import the `NgOptimizedImage` directive.
@@ -12619,7 +10682,7 @@ const OVERSIZED_IMAGE_TOLERANCE = 1000;
  *
  * To use the **default loader**: no additional code changes are necessary. The URL returned by the
  * generic loader will always match the value of "src". In other words, this loader applies no
- * transformations to the resource URL and the value of the `rawSrc` attribute will be used as is.
+ * transformations to the resource URL and the value of the `ngSrc` attribute will be used as is.
  *
  * To use an existing loader for a **third-party image service**: add the provider factory for your
  * chosen service to the `providers` array. In the example below, the Imgix loader is used:
@@ -12659,22 +10722,24 @@ const OVERSIZED_IMAGE_TOLERANCE = 1000;
  * ],
  * ```
  *
- * Step 3: update `<img>` tags in templates to use `rawSrc` instead of `src`.
+ * Step 3: update `<img>` tags in templates to use `ngSrc` instead of `src`.
  *
  * ```
- * <img rawSrc="logo.png" width="200" height="100">
+ * <img ngSrc="logo.png" width="200" height="100">
  * ```
  *
  * @publicApi
- * @developerPreview
  */
 
 class NgOptimizedImage {
   constructor() {
     this.imageLoader = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(IMAGE_LOADER);
+    this.config = processConfig((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(IMAGE_CONFIG));
     this.renderer = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_core__WEBPACK_IMPORTED_MODULE_0__.Renderer2);
     this.imgElement = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_core__WEBPACK_IMPORTED_MODULE_0__.ElementRef).nativeElement;
-    this.injector = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_core__WEBPACK_IMPORTED_MODULE_0__.Injector); // a LCP image observer - should be injected only in the dev mode
+    this.injector = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_core__WEBPACK_IMPORTED_MODULE_0__.Injector);
+    this.isServer = isPlatformServer((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_core__WEBPACK_IMPORTED_MODULE_0__.PLATFORM_ID));
+    this.preloadLinkChecker = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(PreloadLinkCreator); // a LCP image observer - should be injected only in the dev mode
 
     this.lcpObserver = ngDevMode ? this.injector.get(LCPImageObserver) : null;
     /**
@@ -12686,9 +10751,12 @@ class NgOptimizedImage {
 
     this._renderedSrc = null;
     this._priority = false;
+    this._disableOptimizedSrcset = false;
+    this._fill = false;
   }
   /**
-   * The intrinsic width of the image in pixels.
+   * For responsive images: the intrinsic width of the image in pixels.
+   * For fixed size images: the desired rendered width of the image in pixels.
    */
 
 
@@ -12701,7 +10769,9 @@ class NgOptimizedImage {
     return this._width;
   }
   /**
-   * The intrinsic height of the image in pixels.
+   * For responsive images: the intrinsic height of the image in pixels.
+   * For fixed size images: the desired rendered height of the image in pixels.* The intrinsic
+   * height of the image in pixels.
    */
 
 
@@ -12725,22 +10795,72 @@ class NgOptimizedImage {
   get priority() {
     return this._priority;
   }
+  /**
+   * Disables automatic srcset generation for this image.
+   */
+
+
+  set disableOptimizedSrcset(value) {
+    this._disableOptimizedSrcset = inputToBoolean(value);
+  }
+
+  get disableOptimizedSrcset() {
+    return this._disableOptimizedSrcset;
+  }
+  /**
+   * Sets the image to "fill mode", which eliminates the height/width requirement and adds
+   * styles such that the image fills its containing element.
+   *
+   * @developerPreview
+   */
+
+
+  set fill(value) {
+    this._fill = inputToBoolean(value);
+  }
+
+  get fill() {
+    return this._fill;
+  }
+  /** @nodoc */
+
 
   ngOnInit() {
     if (ngDevMode) {
-      assertNonEmptyInput(this, 'rawSrc', this.rawSrc);
-      assertValidRawSrcset(this, this.rawSrcset);
+      assertNonEmptyInput(this, 'ngSrc', this.ngSrc);
+      assertValidNgSrcset(this, this.ngSrcset);
       assertNoConflictingSrc(this);
-      assertNoConflictingSrcset(this);
+
+      if (this.ngSrcset) {
+        assertNoConflictingSrcset(this);
+      }
+
       assertNotBase64Image(this);
       assertNotBlobUrl(this);
-      assertNonEmptyWidthAndHeight(this);
+
+      if (this.fill) {
+        assertEmptyWidthAndHeight(this);
+        assertNonZeroRenderedHeight(this, this.imgElement, this.renderer);
+      } else {
+        assertNonEmptyWidthAndHeight(this); // Only check for distorted images when not in fill mode, where
+        // images may be intentionally stretched, cropped or letterboxed.
+
+        assertNoImageDistortion(this, this.imgElement, this.renderer);
+      }
+
       assertValidLoadingInput(this);
-      assertNoImageDistortion(this, this.imgElement, this.renderer);
+
+      if (!this.ngSrcset) {
+        assertNoComplexSizes(this);
+      }
+
+      assertNotMissingBuiltInLoader(this.ngSrc, this.imageLoader);
+      assertNoNgSrcsetWithoutLoader(this, this.imageLoader);
+      assertNoLoaderParamsWithoutLoader(this, this.imageLoader);
 
       if (this.priority) {
         const checker = this.injector.get(PreconnectLinkChecker);
-        checker.assertPreconnect(this.getRewrittenSrc(), this.rawSrc);
+        checker.assertPreconnect(this.getRewrittenSrc(), this.ngSrc);
       } else {
         // Monitor whether an image is an LCP element only in case
         // the `priority` attribute is missing. Otherwise, an image
@@ -12748,7 +10868,7 @@ class NgOptimizedImage {
         if (this.lcpObserver !== null) {
           const ngZone = this.injector.get(_angular_core__WEBPACK_IMPORTED_MODULE_0__.NgZone);
           ngZone.runOutsideAngular(() => {
-            this.lcpObserver.registerImage(this.getRewrittenSrc(), this.rawSrc);
+            this.lcpObserver.registerImage(this.getRewrittenSrc(), this.ngSrc);
           });
         }
       }
@@ -12760,23 +10880,61 @@ class NgOptimizedImage {
   setHostAttributes() {
     // Must set width/height explicitly in case they are bound (in which case they will
     // only be reflected and not found by the browser)
-    this.setHostAttribute('width', this.width.toString());
-    this.setHostAttribute('height', this.height.toString());
+    if (this.fill) {
+      if (!this.sizes) {
+        this.sizes = '100vw';
+      }
+    } else {
+      this.setHostAttribute('width', this.width.toString());
+      this.setHostAttribute('height', this.height.toString());
+    }
+
     this.setHostAttribute('loading', this.getLoadingBehavior());
-    this.setHostAttribute('fetchpriority', this.getFetchPriority()); // The `src` and `srcset` attributes should be set last since other attributes
+    this.setHostAttribute('fetchpriority', this.getFetchPriority()); // The `data-ng-img` attribute flags an image as using the directive, to allow
+    // for analysis of the directive's performance.
+
+    this.setHostAttribute('ng-img', 'true'); // The `src` and `srcset` attributes should be set last since other attributes
     // could affect the image's loading behavior.
 
-    this.setHostAttribute('src', this.getRewrittenSrc());
+    const rewrittenSrc = this.getRewrittenSrc();
+    this.setHostAttribute('src', rewrittenSrc);
+    let rewrittenSrcset = undefined;
 
-    if (this.rawSrcset) {
-      this.setHostAttribute('srcset', this.getRewrittenSrcset());
+    if (this.sizes) {
+      this.setHostAttribute('sizes', this.sizes);
+    }
+
+    if (this.ngSrcset) {
+      rewrittenSrcset = this.getRewrittenSrcset();
+    } else if (this.shouldGenerateAutomaticSrcset()) {
+      rewrittenSrcset = this.getAutomaticSrcset();
+    }
+
+    if (rewrittenSrcset) {
+      this.setHostAttribute('srcset', rewrittenSrcset);
+    }
+
+    if (this.isServer && this.priority) {
+      this.preloadLinkChecker.createPreloadLinkTag(this.renderer, rewrittenSrc, rewrittenSrcset, this.sizes);
     }
   }
+  /** @nodoc */
+
 
   ngOnChanges(changes) {
     if (ngDevMode) {
-      assertNoPostInitInputChange(this, changes, ['rawSrc', 'rawSrcset', 'width', 'height', 'priority']);
+      assertNoPostInitInputChange(this, changes, ['ngSrc', 'ngSrcset', 'width', 'height', 'priority', 'fill', 'loading', 'sizes', 'loaderParams', 'disableOptimizedSrcset']);
     }
+  }
+
+  callImageLoader(configWithoutCustomParams) {
+    let augmentedConfig = configWithoutCustomParams;
+
+    if (this.loaderParams) {
+      augmentedConfig.loaderParams = this.loaderParams;
+    }
+
+    return this.imageLoader(augmentedConfig);
   }
 
   getLoadingBehavior() {
@@ -12797,27 +10955,73 @@ class NgOptimizedImage {
     // attribute, the image requested may be too small for 2x+ screens.
     if (!this._renderedSrc) {
       const imgConfig = {
-        src: this.rawSrc
+        src: this.ngSrc
       }; // Cache calculated image src to reuse it later in the code.
 
-      this._renderedSrc = this.imageLoader(imgConfig);
+      this._renderedSrc = this.callImageLoader(imgConfig);
     }
 
     return this._renderedSrc;
   }
 
   getRewrittenSrcset() {
-    const widthSrcSet = VALID_WIDTH_DESCRIPTOR_SRCSET.test(this.rawSrcset);
-    const finalSrcs = this.rawSrcset.split(',').filter(src => src !== '').map(srcStr => {
+    const widthSrcSet = VALID_WIDTH_DESCRIPTOR_SRCSET.test(this.ngSrcset);
+    const finalSrcs = this.ngSrcset.split(',').filter(src => src !== '').map(srcStr => {
       srcStr = srcStr.trim();
       const width = widthSrcSet ? parseFloat(srcStr) : parseFloat(srcStr) * this.width;
-      return `${this.imageLoader({
-        src: this.rawSrc,
+      return `${this.callImageLoader({
+        src: this.ngSrc,
         width
       })} ${srcStr}`;
     });
     return finalSrcs.join(', ');
   }
+
+  getAutomaticSrcset() {
+    if (this.sizes) {
+      return this.getResponsiveSrcset();
+    } else {
+      return this.getFixedSrcset();
+    }
+  }
+
+  getResponsiveSrcset() {
+    var _a;
+
+    const {
+      breakpoints
+    } = this.config;
+    let filteredBreakpoints = breakpoints;
+
+    if (((_a = this.sizes) === null || _a === void 0 ? void 0 : _a.trim()) === '100vw') {
+      // Since this is a full-screen-width image, our srcset only needs to include
+      // breakpoints with full viewport widths.
+      filteredBreakpoints = breakpoints.filter(bp => bp >= VIEWPORT_BREAKPOINT_CUTOFF);
+    }
+
+    const finalSrcs = filteredBreakpoints.map(bp => `${this.callImageLoader({
+      src: this.ngSrc,
+      width: bp
+    })} ${bp}w`);
+    return finalSrcs.join(', ');
+  }
+
+  getFixedSrcset() {
+    const finalSrcs = DENSITY_SRCSET_MULTIPLIERS.map(multiplier => {
+      const imgUrl = this.callImageLoader({
+        src: this.ngSrc,
+        width: this.width * multiplier
+      });
+      return `${imgUrl} ${multiplier}x`;
+    });
+    return finalSrcs.join(', ');
+  }
+
+  shouldGenerateAutomaticSrcset() {
+    return !this._disableOptimizedSrcset && !this.srcset && this.imageLoader !== noopImageLoader && !(this.width > FIXED_SRCSET_WIDTH_LIMIT || this.height > FIXED_SRCSET_HEIGHT_LIMIT);
+  }
+  /** @nodoc */
+
 
   ngOnDestroy() {
     if (ngDevMode) {
@@ -12839,14 +11043,24 @@ NgOptimizedImage.ɵfac = function NgOptimizedImage_Factory(t) {
 
 NgOptimizedImage.ɵdir = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineDirective"]({
   type: NgOptimizedImage,
-  selectors: [["img", "rawSrc", ""]],
+  selectors: [["img", "ngSrc", ""]],
+  hostVars: 8,
+  hostBindings: function NgOptimizedImage_HostBindings(rf, ctx) {
+    if (rf & 2) {
+      _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵstyleProp"]("position", ctx.fill ? "absolute" : null)("width", ctx.fill ? "100%" : null)("height", ctx.fill ? "100%" : null)("inset", ctx.fill ? "0px" : null);
+    }
+  },
   inputs: {
-    rawSrc: "rawSrc",
-    rawSrcset: "rawSrcset",
+    ngSrc: "ngSrc",
+    ngSrcset: "ngSrcset",
+    sizes: "sizes",
     width: "width",
     height: "height",
     loading: "loading",
     priority: "priority",
+    loaderParams: "loaderParams",
+    disableOptimizedSrcset: "disableOptimizedSrcset",
+    fill: "fill",
     src: "src",
     srcset: "srcset"
   },
@@ -12859,13 +11073,22 @@ NgOptimizedImage.ɵdir = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODULE_0
     type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Directive,
     args: [{
       standalone: true,
-      selector: 'img[rawSrc]'
+      selector: 'img[ngSrc]',
+      host: {
+        '[style.position]': 'fill ? "absolute" : null',
+        '[style.width]': 'fill ? "100%" : null',
+        '[style.height]': 'fill ? "100%" : null',
+        '[style.inset]': 'fill ? "0px" : null'
+      }
     }]
   }], null, {
-    rawSrc: [{
+    ngSrc: [{
       type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
     }],
-    rawSrcset: [{
+    ngSrcset: [{
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
+    }],
+    sizes: [{
       type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
     }],
     width: [{
@@ -12878,6 +11101,15 @@ NgOptimizedImage.ɵdir = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODULE_0
       type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
     }],
     priority: [{
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
+    }],
+    loaderParams: [{
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
+    }],
+    disableOptimizedSrcset: [{
+      type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
+    }],
+    fill: [{
       type: _angular_core__WEBPACK_IMPORTED_MODULE_0__.Input
     }],
     src: [{
@@ -12906,6 +11138,20 @@ function inputToInteger(value) {
 function inputToBoolean(value) {
   return value != null && `${value}` !== 'false';
 }
+/**
+ * Sorts provided config breakpoints and uses defaults.
+ */
+
+
+function processConfig(config) {
+  let sortedBreakpoints = {};
+
+  if (config.breakpoints) {
+    sortedBreakpoints.breakpoints = config.breakpoints.sort((a, b) => a - b);
+  }
+
+  return Object.assign({}, defaultConfig, config, sortedBreakpoints);
+}
 /***** Assert functions *****/
 
 /**
@@ -12917,7 +11163,7 @@ function assertNoConflictingSrc(dir) {
   if (dir.src) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2950
     /* RuntimeErrorCode.UNEXPECTED_SRC_ATTR */
-    , `${imgDirectiveDetails(dir.rawSrc)} both \`src\` and \`rawSrc\` have been set. ` + `Supplying both of these attributes breaks lazy loading. ` + `The NgOptimizedImage directive sets \`src\` itself based on the value of \`rawSrc\`. ` + `To fix this, please remove the \`src\` attribute.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} both \`src\` and \`ngSrc\` have been set. ` + `Supplying both of these attributes breaks lazy loading. ` + `The NgOptimizedImage directive sets \`src\` itself based on the value of \`ngSrc\`. ` + `To fix this, please remove the \`src\` attribute.`);
   }
 }
 /**
@@ -12929,39 +11175,53 @@ function assertNoConflictingSrcset(dir) {
   if (dir.srcset) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2951
     /* RuntimeErrorCode.UNEXPECTED_SRCSET_ATTR */
-    , `${imgDirectiveDetails(dir.rawSrc)} both \`srcset\` and \`rawSrcset\` have been set. ` + `Supplying both of these attributes breaks lazy loading. ` + `The NgOptimizedImage directive sets \`srcset\` itself based on the value of ` + `\`rawSrcset\`. To fix this, please remove the \`srcset\` attribute.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} both \`srcset\` and \`ngSrcset\` have been set. ` + `Supplying both of these attributes breaks lazy loading. ` + `The NgOptimizedImage directive sets \`srcset\` itself based on the value of ` + `\`ngSrcset\`. To fix this, please remove the \`srcset\` attribute.`);
   }
 }
 /**
- * Verifies that the `rawSrc` is not a Base64-encoded image.
+ * Verifies that the `ngSrc` is not a Base64-encoded image.
  */
 
 
 function assertNotBase64Image(dir) {
-  let rawSrc = dir.rawSrc.trim();
+  let ngSrc = dir.ngSrc.trim();
 
-  if (rawSrc.startsWith('data:')) {
-    if (rawSrc.length > BASE64_IMG_MAX_LENGTH_IN_ERROR) {
-      rawSrc = rawSrc.substring(0, BASE64_IMG_MAX_LENGTH_IN_ERROR) + '...';
+  if (ngSrc.startsWith('data:')) {
+    if (ngSrc.length > BASE64_IMG_MAX_LENGTH_IN_ERROR) {
+      ngSrc = ngSrc.substring(0, BASE64_IMG_MAX_LENGTH_IN_ERROR) + '...';
     }
 
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc, false)} \`rawSrc\` is a Base64-encoded string ` + `(${rawSrc}). NgOptimizedImage does not support Base64-encoded strings. ` + `To fix this, disable the NgOptimizedImage directive for this element ` + `by removing \`rawSrc\` and using a standard \`src\` attribute instead.`);
+    , `${imgDirectiveDetails(dir.ngSrc, false)} \`ngSrc\` is a Base64-encoded string ` + `(${ngSrc}). NgOptimizedImage does not support Base64-encoded strings. ` + `To fix this, disable the NgOptimizedImage directive for this element ` + `by removing \`ngSrc\` and using a standard \`src\` attribute instead.`);
   }
 }
 /**
- * Verifies that the `rawSrc` is not a Blob URL.
+ * Verifies that the 'sizes' only includes responsive values.
+ */
+
+
+function assertNoComplexSizes(dir) {
+  let sizes = dir.sizes;
+
+  if (sizes === null || sizes === void 0 ? void 0 : sizes.match(/((\)|,)\s|^)\d+px/)) {
+    throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
+    /* RuntimeErrorCode.INVALID_INPUT */
+    , `${imgDirectiveDetails(dir.ngSrc, false)} \`sizes\` was set to a string including ` + `pixel values. For automatic \`srcset\` generation, \`sizes\` must only include responsive ` + `values, such as \`sizes="50vw"\` or \`sizes="(min-width: 768px) 50vw, 100vw"\`. ` + `To fix this, modify the \`sizes\` attribute, or provide your own \`ngSrcset\` value directly.`);
+  }
+}
+/**
+ * Verifies that the `ngSrc` is not a Blob URL.
  */
 
 
 function assertNotBlobUrl(dir) {
-  const rawSrc = dir.rawSrc.trim();
+  const ngSrc = dir.ngSrc.trim();
 
-  if (rawSrc.startsWith('blob:')) {
+  if (ngSrc.startsWith('blob:')) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc)} \`rawSrc\` was set to a blob URL (${rawSrc}). ` + `Blob URLs are not supported by the NgOptimizedImage directive. ` + `To fix this, disable the NgOptimizedImage directive for this element ` + `by removing \`rawSrc\` and using a regular \`src\` attribute instead.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} \`ngSrc\` was set to a blob URL (${ngSrc}). ` + `Blob URLs are not supported by the NgOptimizedImage directive. ` + `To fix this, disable the NgOptimizedImage directive for this element ` + `by removing \`ngSrc\` and using a regular \`src\` attribute instead.`);
   }
 }
 /**
@@ -12976,17 +11236,17 @@ function assertNonEmptyInput(dir, name, value) {
   if (!isString || isEmptyString) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc)} \`${name}\` has an invalid value ` + `(\`${value}\`). To fix this, change the value to a non-empty string.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} \`${name}\` has an invalid value ` + `(\`${value}\`). To fix this, change the value to a non-empty string.`);
   }
 }
 /**
- * Verifies that the `rawSrcset` is in a valid format, e.g. "100w, 200w" or "1x, 2x".
+ * Verifies that the `ngSrcset` is in a valid format, e.g. "100w, 200w" or "1x, 2x".
  */
 
 
-function assertValidRawSrcset(dir, value) {
+function assertValidNgSrcset(dir, value) {
   if (value == null) return;
-  assertNonEmptyInput(dir, 'rawSrcset', value);
+  assertNonEmptyInput(dir, 'ngSrcset', value);
   const stringVal = value;
   const isValidWidthDescriptor = VALID_WIDTH_DESCRIPTOR_SRCSET.test(stringVal);
   const isValidDensityDescriptor = VALID_DENSITY_DESCRIPTOR_SRCSET.test(stringVal);
@@ -13000,7 +11260,7 @@ function assertValidRawSrcset(dir, value) {
   if (!isValidSrcset) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc)} \`rawSrcset\` has an invalid value (\`${value}\`). ` + `To fix this, supply \`rawSrcset\` using a comma-separated list of one or more width ` + `descriptors (e.g. "100w, 200w") or density descriptors (e.g. "1x, 2x").`);
+    , `${imgDirectiveDetails(dir.ngSrc)} \`ngSrcset\` has an invalid value (\`${value}\`). ` + `To fix this, supply \`ngSrcset\` using a comma-separated list of one or more width ` + `descriptors (e.g. "100w, 200w") or density descriptors (e.g. "1x, 2x").`);
   }
 }
 
@@ -13010,7 +11270,7 @@ function assertUnderDensityCap(dir, value) {
   if (!underDensityCap) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc)} the \`rawSrcset\` contains an unsupported image density:` + `\`${value}\`. NgOptimizedImage generally recommends a max image density of ` + `${RECOMMENDED_SRCSET_DENSITY_CAP}x but supports image densities up to ` + `${ABSOLUTE_SRCSET_DENSITY_CAP}x. The human eye cannot distinguish between image densities ` + `greater than ${RECOMMENDED_SRCSET_DENSITY_CAP}x - which makes them unnecessary for ` + `most use cases. Images that will be pinch-zoomed are typically the primary use case for ` + `${ABSOLUTE_SRCSET_DENSITY_CAP}x images. Please remove the high density descriptor and try again.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} the \`ngSrcset\` contains an unsupported image density:` + `\`${value}\`. NgOptimizedImage generally recommends a max image density of ` + `${RECOMMENDED_SRCSET_DENSITY_CAP}x but supports image densities up to ` + `${ABSOLUTE_SRCSET_DENSITY_CAP}x. The human eye cannot distinguish between image densities ` + `greater than ${RECOMMENDED_SRCSET_DENSITY_CAP}x - which makes them unnecessary for ` + `most use cases. Images that will be pinch-zoomed are typically the primary use case for ` + `${ABSOLUTE_SRCSET_DENSITY_CAP}x images. Please remove the high density descriptor and try again.`);
   }
 }
 /**
@@ -13020,9 +11280,17 @@ function assertUnderDensityCap(dir, value) {
 
 
 function postInitInputChangeError(dir, inputName) {
+  let reason;
+
+  if (inputName === 'width' || inputName === 'height') {
+    reason = `Changing \`${inputName}\` may result in different attribute value ` + `applied to the underlying image element and cause layout shifts on a page.`;
+  } else {
+    reason = `Changing the \`${inputName}\` would have no effect on the underlying ` + `image element, because the resource loading has already occurred.`;
+  }
+
   return new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2953
   /* RuntimeErrorCode.UNEXPECTED_INPUT_CHANGE */
-  , `${imgDirectiveDetails(dir.rawSrc)} \`${inputName}\` was updated after initialization. ` + `The NgOptimizedImage directive will not react to this input change. ` + `To fix this, switch \`${inputName}\` a static value or wrap the image element ` + `in an *ngIf that is gated on the necessary value.`);
+  , `${imgDirectiveDetails(dir.ngSrc)} \`${inputName}\` was updated after initialization. ` + `The NgOptimizedImage directive will not react to this input change. ${reason} ` + `To fix this, either switch \`${inputName}\` to a static value ` + `or wrap the image element in an *ngIf that is gated on the necessary value.`);
 }
 /**
  * Verify that none of the listed inputs has changed.
@@ -13034,13 +11302,13 @@ function assertNoPostInitInputChange(dir, changes, inputs) {
     const isUpdated = changes.hasOwnProperty(input);
 
     if (isUpdated && !changes[input].isFirstChange()) {
-      if (input === 'rawSrc') {
-        // When the `rawSrc` input changes, we detect that only in the
-        // `ngOnChanges` hook, thus the `rawSrc` is already set. We use
-        // `rawSrc` in the error message, so we use a previous value, but
+      if (input === 'ngSrc') {
+        // When the `ngSrc` input changes, we detect that only in the
+        // `ngOnChanges` hook, thus the `ngSrc` is already set. We use
+        // `ngSrc` in the error message, so we use a previous value, but
         // not the updated one in it.
         dir = {
-          rawSrc: changes[input].previousValue
+          ngSrc: changes[input].previousValue
         };
       }
 
@@ -13060,7 +11328,7 @@ function assertGreaterThanZero(dir, inputValue, inputName) {
   if (!validNumber && !validString) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc)} \`${inputName}\` has an invalid value ` + `(\`${inputValue}\`). To fix this, provide \`${inputName}\` ` + `as a number greater than 0.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} \`${inputName}\` has an invalid value ` + `(\`${inputValue}\`). To fix this, provide \`${inputName}\` ` + `as a number greater than 0.`);
   }
 }
 /**
@@ -13072,16 +11340,13 @@ function assertGreaterThanZero(dir, inputValue, inputName) {
 
 function assertNoImageDistortion(dir, img, renderer) {
   const removeListenerFn = renderer.listen(img, 'load', () => {
-    removeListenerFn(); // TODO: `clientWidth`, `clientHeight`, `naturalWidth` and `naturalHeight`
-    // are typed as number, but we run `parseFloat` (which accepts strings only).
-    // Verify whether `parseFloat` is needed in the cases below.
-
-    const renderedWidth = parseFloat(img.clientWidth);
-    const renderedHeight = parseFloat(img.clientHeight);
+    removeListenerFn();
+    const renderedWidth = img.clientWidth;
+    const renderedHeight = img.clientHeight;
     const renderedAspectRatio = renderedWidth / renderedHeight;
     const nonZeroRenderedDimensions = renderedWidth !== 0 && renderedHeight !== 0;
-    const intrinsicWidth = parseFloat(img.naturalWidth);
-    const intrinsicHeight = parseFloat(img.naturalHeight);
+    const intrinsicWidth = img.naturalWidth;
+    const intrinsicHeight = img.naturalHeight;
     const intrinsicAspectRatio = intrinsicWidth / intrinsicHeight;
     const suppliedWidth = dir.width;
     const suppliedHeight = dir.height;
@@ -13097,13 +11362,13 @@ function assertNoImageDistortion(dir, img, renderer) {
     if (inaccurateDimensions) {
       console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2952
       /* RuntimeErrorCode.INVALID_INPUT */
-      , `${imgDirectiveDetails(dir.rawSrc)} the aspect ratio of the image does not match ` + `the aspect ratio indicated by the width and height attributes. ` + `\nIntrinsic image size: ${intrinsicWidth}w x ${intrinsicHeight}h ` + `(aspect-ratio: ${intrinsicAspectRatio}). \nSupplied width and height attributes: ` + `${suppliedWidth}w x ${suppliedHeight}h (aspect-ratio: ${suppliedAspectRatio}). ` + `\nTo fix this, update the width and height attributes.`));
+      , `${imgDirectiveDetails(dir.ngSrc)} the aspect ratio of the image does not match ` + `the aspect ratio indicated by the width and height attributes. ` + `\nIntrinsic image size: ${intrinsicWidth}w x ${intrinsicHeight}h ` + `(aspect-ratio: ${intrinsicAspectRatio}). \nSupplied width and height attributes: ` + `${suppliedWidth}w x ${suppliedHeight}h (aspect-ratio: ${suppliedAspectRatio}). ` + `\nTo fix this, update the width and height attributes.`));
     } else if (stylingDistortion) {
       console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2952
       /* RuntimeErrorCode.INVALID_INPUT */
-      , `${imgDirectiveDetails(dir.rawSrc)} the aspect ratio of the rendered image ` + `does not match the image's intrinsic aspect ratio. ` + `\nIntrinsic image size: ${intrinsicWidth}w x ${intrinsicHeight}h ` + `(aspect-ratio: ${intrinsicAspectRatio}). \nRendered image size: ` + `${renderedWidth}w x ${renderedHeight}h (aspect-ratio: ` + `${renderedAspectRatio}). \nThis issue can occur if "width" and "height" ` + `attributes are added to an image without updating the corresponding ` + `image styling. To fix this, adjust image styling. In most cases, ` + `adding "height: auto" or "width: auto" to the image styling will fix ` + `this issue.`));
-    } else if (!dir.rawSrcset && nonZeroRenderedDimensions) {
-      // If `rawSrcset` hasn't been set, sanity check the intrinsic size.
+      , `${imgDirectiveDetails(dir.ngSrc)} the aspect ratio of the rendered image ` + `does not match the image's intrinsic aspect ratio. ` + `\nIntrinsic image size: ${intrinsicWidth}w x ${intrinsicHeight}h ` + `(aspect-ratio: ${intrinsicAspectRatio}). \nRendered image size: ` + `${renderedWidth}w x ${renderedHeight}h (aspect-ratio: ` + `${renderedAspectRatio}). \nThis issue can occur if "width" and "height" ` + `attributes are added to an image without updating the corresponding ` + `image styling. To fix this, adjust image styling. In most cases, ` + `adding "height: auto" or "width: auto" to the image styling will fix ` + `this issue.`));
+    } else if (!dir.ngSrcset && nonZeroRenderedDimensions) {
+      // If `ngSrcset` hasn't been set, sanity check the intrinsic size.
       const recommendedWidth = RECOMMENDED_SRCSET_DENSITY_CAP * renderedWidth;
       const recommendedHeight = RECOMMENDED_SRCSET_DENSITY_CAP * renderedHeight;
       const oversizedWidth = intrinsicWidth - recommendedWidth >= OVERSIZED_IMAGE_TOLERANCE;
@@ -13112,7 +11377,7 @@ function assertNoImageDistortion(dir, img, renderer) {
       if (oversizedWidth || oversizedHeight) {
         console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2960
         /* RuntimeErrorCode.OVERSIZED_IMAGE */
-        , `${imgDirectiveDetails(dir.rawSrc)} the intrinsic image is significantly ` + `larger than necessary. ` + `\nRendered image size: ${renderedWidth}w x ${renderedHeight}h. ` + `\nIntrinsic image size: ${intrinsicWidth}w x ${intrinsicHeight}h. ` + `\nRecommended intrinsic image size: ${recommendedWidth}w x ${recommendedHeight}h. ` + `\nNote: Recommended intrinsic image size is calculated assuming a maximum DPR of ` + `${RECOMMENDED_SRCSET_DENSITY_CAP}. To improve loading time, resize the image ` + `or consider using the "rawSrcset" and "sizes" attributes.`));
+        , `${imgDirectiveDetails(dir.ngSrc)} the intrinsic image is significantly ` + `larger than necessary. ` + `\nRendered image size: ${renderedWidth}w x ${renderedHeight}h. ` + `\nIntrinsic image size: ${intrinsicWidth}w x ${intrinsicHeight}h. ` + `\nRecommended intrinsic image size: ${recommendedWidth}w x ${recommendedHeight}h. ` + `\nNote: Recommended intrinsic image size is calculated assuming a maximum DPR of ` + `${RECOMMENDED_SRCSET_DENSITY_CAP}. To improve loading time, resize the image ` + `or consider using the "ngSrcset" and "sizes" attributes.`));
       }
     }
   });
@@ -13130,8 +11395,39 @@ function assertNonEmptyWidthAndHeight(dir) {
   if (missingAttributes.length > 0) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2954
     /* RuntimeErrorCode.REQUIRED_INPUT_MISSING */
-    , `${imgDirectiveDetails(dir.rawSrc)} these required attributes ` + `are missing: ${missingAttributes.map(attr => `"${attr}"`).join(', ')}. ` + `Including "width" and "height" attributes will prevent image-related layout shifts. ` + `To fix this, include "width" and "height" attributes on the image tag.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} these required attributes ` + `are missing: ${missingAttributes.map(attr => `"${attr}"`).join(', ')}. ` + `Including "width" and "height" attributes will prevent image-related layout shifts. ` + `To fix this, include "width" and "height" attributes on the image tag or turn on ` + `"fill" mode with the \`fill\` attribute.`);
   }
+}
+/**
+ * Verifies that width and height are not set. Used in fill mode, where those attributes don't make
+ * sense.
+ */
+
+
+function assertEmptyWidthAndHeight(dir) {
+  if (dir.width || dir.height) {
+    throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
+    /* RuntimeErrorCode.INVALID_INPUT */
+    , `${imgDirectiveDetails(dir.ngSrc)} the attributes \`height\` and/or \`width\` are present ` + `along with the \`fill\` attribute. Because \`fill\` mode causes an image to fill its containing ` + `element, the size attributes have no effect and should be removed.`);
+  }
+}
+/**
+ * Verifies that the rendered image has a nonzero height. If the image is in fill mode, provides
+ * guidance that this can be caused by the containing element's CSS position property.
+ */
+
+
+function assertNonZeroRenderedHeight(dir, img, renderer) {
+  const removeListenerFn = renderer.listen(img, 'load', () => {
+    removeListenerFn();
+    const renderedHeight = img.clientHeight;
+
+    if (dir.fill && renderedHeight === 0) {
+      console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2952
+      /* RuntimeErrorCode.INVALID_INPUT */
+      , `${imgDirectiveDetails(dir.ngSrc)} the height of the fill-mode image is zero. ` + `This is likely because the containing element does not have the CSS 'position' ` + `property set to one of the following: "relative", "fixed", or "absolute". ` + `To fix this problem, make sure the container element has the CSS 'position' ` + `property defined and the height of the element is not zero.`));
+    }
+  });
 }
 /**
  * Verifies that the `loading` attribute is set to a valid input &
@@ -13143,7 +11439,7 @@ function assertValidLoadingInput(dir) {
   if (dir.loading && dir.priority) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc)} the \`loading\` attribute ` + `was used on an image that was marked "priority". ` + `Setting \`loading\` on priority images is not allowed ` + `because these images will always be eagerly loaded. ` + `To fix this, remove the “loading” attribute from the priority image.`);
+    , `${imgDirectiveDetails(dir.ngSrc)} the \`loading\` attribute ` + `was used on an image that was marked "priority". ` + `Setting \`loading\` on priority images is not allowed ` + `because these images will always be eagerly loaded. ` + `To fix this, remove the “loading” attribute from the priority image.`);
   }
 
   const validInputs = ['auto', 'eager', 'lazy'];
@@ -13151,7 +11447,61 @@ function assertValidLoadingInput(dir) {
   if (typeof dir.loading === 'string' && !validInputs.includes(dir.loading)) {
     throw new _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵRuntimeError"](2952
     /* RuntimeErrorCode.INVALID_INPUT */
-    , `${imgDirectiveDetails(dir.rawSrc)} the \`loading\` attribute ` + `has an invalid value (\`${dir.loading}\`). ` + `To fix this, provide a valid value ("lazy", "eager", or "auto").`);
+    , `${imgDirectiveDetails(dir.ngSrc)} the \`loading\` attribute ` + `has an invalid value (\`${dir.loading}\`). ` + `To fix this, provide a valid value ("lazy", "eager", or "auto").`);
+  }
+}
+/**
+ * Warns if NOT using a loader (falling back to the generic loader) and
+ * the image appears to be hosted on one of the image CDNs for which
+ * we do have a built-in image loader. Suggests switching to the
+ * built-in loader.
+ *
+ * @param ngSrc Value of the ngSrc attribute
+ * @param imageLoader ImageLoader provided
+ */
+
+
+function assertNotMissingBuiltInLoader(ngSrc, imageLoader) {
+  if (imageLoader === noopImageLoader) {
+    let builtInLoaderName = '';
+
+    for (const loader of BUILT_IN_LOADERS) {
+      if (loader.testUrl(ngSrc)) {
+        builtInLoaderName = loader.name;
+        break;
+      }
+    }
+
+    if (builtInLoaderName) {
+      console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2962
+      /* RuntimeErrorCode.MISSING_BUILTIN_LOADER */
+      , `NgOptimizedImage: It looks like your images may be hosted on the ` + `${builtInLoaderName} CDN, but your app is not using Angular's ` + `built-in loader for that CDN. We recommend switching to use ` + `the built-in by calling \`provide${builtInLoaderName}Loader()\` ` + `in your \`providers\` and passing it your instance's base URL. ` + `If you don't want to use the built-in loader, define a custom ` + `loader function using IMAGE_LOADER to silence this warning.`));
+    }
+  }
+}
+/**
+ * Warns if ngSrcset is present and no loader is configured (i.e. the default one is being used).
+ */
+
+
+function assertNoNgSrcsetWithoutLoader(dir, imageLoader) {
+  if (dir.ngSrcset && imageLoader === noopImageLoader) {
+    console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2963
+    /* RuntimeErrorCode.MISSING_NECESSARY_LOADER */
+    , `${imgDirectiveDetails(dir.ngSrc)} the \`ngSrcset\` attribute is present but ` + `no image loader is configured (i.e. the default one is being used), ` + `which would result in the same image being used for all configured sizes. ` + `To fix this, provide a loader or remove the \`ngSrcset\` attribute from the image.`));
+  }
+}
+/**
+ * Warns if loaderParams is present and no loader is configured (i.e. the default one is being
+ * used).
+ */
+
+
+function assertNoLoaderParamsWithoutLoader(dir, imageLoader) {
+  if (dir.loaderParams && imageLoader === noopImageLoader) {
+    console.warn((0,_angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵformatRuntimeError"])(2963
+    /* RuntimeErrorCode.MISSING_NECESSARY_LOADER */
+    , `${imgDirectiveDetails(dir.ngSrc)} the \`loaderParams\` attribute is present but ` + `no image loader is configured (i.e. the default one is being used), ` + `which means that the loaderParams data will not be consumed and will not affect the URL. ` + `To fix this, provide a custom loader or remove the \`loaderParams\` attribute from the image.`));
   }
 }
 /**
@@ -13237,7 +11587,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ 9300);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/operators */ 4004);
 /**
- * @license Angular v14.2.1
+ * @license Angular v14.3.0
  * (c) 2010-2022 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -16433,6 +14783,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "ɵɵtextInterpolateV": () => (/* binding */ ɵɵtextInterpolateV),
 /* harmony export */   "ɵɵtrustConstantHtml": () => (/* binding */ ɵɵtrustConstantHtml),
 /* harmony export */   "ɵɵtrustConstantResourceUrl": () => (/* binding */ ɵɵtrustConstantResourceUrl),
+/* harmony export */   "ɵɵvalidateIframeAttribute": () => (/* binding */ ɵɵvalidateIframeAttribute),
 /* harmony export */   "ɵɵviewQuery": () => (/* binding */ ɵɵviewQuery)
 /* harmony export */ });
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs */ 6758);
@@ -16441,7 +14792,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ 6451);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/operators */ 3099);
 /**
- * @license Angular v14.2.1
+ * @license Angular v14.3.0
  * (c) 2010-2022 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -20260,7 +18611,7 @@ function injectAttributeImpl(tNode, attrNameToInject) {
 }
 
 function notFoundValueOrThrow(notFoundValue, token, flags) {
-  if (flags & InjectFlags.Optional) {
+  if (flags & InjectFlags.Optional || notFoundValue !== undefined) {
     return notFoundValue;
   } else {
     throwProviderNotFoundError(token, 'NodeInjector');
@@ -22572,56 +20923,2112 @@ function setAllowDuplicateNgModuleIdsForTest(allowDuplicates) {
  */
 
 /**
- * Most of the use of `document` in Angular is from within the DI system so it is possible to simply
- * inject the `DOCUMENT` token and are done.
+ * Defines a schema that allows an NgModule to contain the following:
+ * - Non-Angular elements named with dash case (`-`).
+ * - Element properties named with dash case (`-`).
+ * Dash case is the naming convention for custom elements.
  *
- * Ivy is special because it does not rely upon the DI and must get hold of the document some other
- * way.
- *
- * The solution is to define `getDocument()` and `setDocument()` top-level functions for ivy.
- * Wherever ivy needs the global document, it calls `getDocument()` instead.
- *
- * When running ivy outside of a browser environment, it is necessary to call `setDocument()` to
- * tell ivy what the global `document` is.
- *
- * Angular does this for us in each of the standard platforms (`Browser`, `Server`, and `WebWorker`)
- * by calling `setDocument()` when providing the `DOCUMENT` token.
+ * @publicApi
  */
 
 
-let DOCUMENT = undefined;
+const CUSTOM_ELEMENTS_SCHEMA = {
+  name: 'custom-elements'
+};
 /**
- * Tell ivy what the `document` is for this platform.
+ * Defines a schema that allows any property on any element.
  *
- * It is only necessary to call this if the current platform is not a browser.
+ * This schema allows you to ignore the errors related to any unknown elements or properties in a
+ * template. The usage of this schema is generally discouraged because it prevents useful validation
+ * and may hide real errors in your template. Consider using the `CUSTOM_ELEMENTS_SCHEMA` instead.
  *
- * @param document The object representing the global `document` in this environment.
+ * @publicApi
  */
 
-function setDocument(document) {
-  DOCUMENT = document;
+const NO_ERRORS_SCHEMA = {
+  name: 'no-errors-schema'
+};
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+let shouldThrowErrorOnUnknownElement = false;
+/**
+ * Sets a strict mode for JIT-compiled components to throw an error on unknown elements,
+ * instead of just logging the error.
+ * (for AOT-compiled ones this check happens at build time).
+ */
+
+function ɵsetUnknownElementStrictMode(shouldThrow) {
+  shouldThrowErrorOnUnknownElement = shouldThrow;
 }
 /**
- * Access the object that represents the `document` for this platform.
- *
- * Ivy calls this whenever it needs to access the `document` object.
- * For example to create the renderer or to do sanitization.
+ * Gets the current value of the strict mode.
  */
 
 
-function getDocument() {
-  if (DOCUMENT !== undefined) {
-    return DOCUMENT;
-  } else if (typeof document !== 'undefined') {
-    return document;
-  } // No "document" can be found. This should only happen if we are running ivy outside Angular and
-  // the current platform is not a browser. Since this is not a supported scenario at the moment
-  // this should not happen in Angular apps.
-  // Once we support running ivy outside of Angular we will need to publish `setDocument()` as a
-  // public API. Meanwhile we just return `undefined` and let the application fail.
+function ɵgetUnknownElementStrictMode() {
+  return shouldThrowErrorOnUnknownElement;
+}
+
+let shouldThrowErrorOnUnknownProperty = false;
+/**
+ * Sets a strict mode for JIT-compiled components to throw an error on unknown properties,
+ * instead of just logging the error.
+ * (for AOT-compiled ones this check happens at build time).
+ */
+
+function ɵsetUnknownPropertyStrictMode(shouldThrow) {
+  shouldThrowErrorOnUnknownProperty = shouldThrow;
+}
+/**
+ * Gets the current value of the strict mode.
+ */
 
 
-  return undefined;
+function ɵgetUnknownPropertyStrictMode() {
+  return shouldThrowErrorOnUnknownProperty;
+}
+/**
+ * Validates that the element is known at runtime and produces
+ * an error if it's not the case.
+ * This check is relevant for JIT-compiled components (for AOT-compiled
+ * ones this check happens at build time).
+ *
+ * The element is considered known if either:
+ * - it's a known HTML element
+ * - it's a known custom element
+ * - the element matches any directive
+ * - the element is allowed by one of the schemas
+ *
+ * @param element Element to validate
+ * @param lView An `LView` that represents a current component that is being rendered
+ * @param tagName Name of the tag to check
+ * @param schemas Array of schemas
+ * @param hasDirectives Boolean indicating that the element matches any directive
+ */
+
+
+function validateElementIsKnown(element, lView, tagName, schemas, hasDirectives) {
+  // If `schemas` is set to `null`, that's an indication that this Component was compiled in AOT
+  // mode where this check happens at compile time. In JIT mode, `schemas` is always present and
+  // defined as an array (as an empty array in case `schemas` field is not defined) and we should
+  // execute the check below.
+  if (schemas === null) return; // If the element matches any directive, it's considered as valid.
+
+  if (!hasDirectives && tagName !== null) {
+    // The element is unknown if it's an instance of HTMLUnknownElement, or it isn't registered
+    // as a custom element. Note that unknown elements with a dash in their name won't be instances
+    // of HTMLUnknownElement in browsers that support web components.
+    const isUnknown = // Note that we can't check for `typeof HTMLUnknownElement === 'function'`,
+    // because while most browsers return 'function', IE returns 'object'.
+    typeof HTMLUnknownElement !== 'undefined' && HTMLUnknownElement && element instanceof HTMLUnknownElement || typeof customElements !== 'undefined' && tagName.indexOf('-') > -1 && !customElements.get(tagName);
+
+    if (isUnknown && !matchingSchemas(schemas, tagName)) {
+      const isHostStandalone = isHostComponentStandalone(lView);
+      const templateLocation = getTemplateLocationDetails(lView);
+      const schemas = `'${isHostStandalone ? '@Component' : '@NgModule'}.schemas'`;
+      let message = `'${tagName}' is not a known element${templateLocation}:\n`;
+      message += `1. If '${tagName}' is an Angular component, then verify that it is ${isHostStandalone ? 'included in the \'@Component.imports\' of this component' : 'a part of an @NgModule where this component is declared'}.\n`;
+
+      if (tagName && tagName.indexOf('-') > -1) {
+        message += `2. If '${tagName}' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the ${schemas} of this component to suppress this message.`;
+      } else {
+        message += `2. To allow any element add 'NO_ERRORS_SCHEMA' to the ${schemas} of this component.`;
+      }
+
+      if (shouldThrowErrorOnUnknownElement) {
+        throw new RuntimeError(304
+        /* RuntimeErrorCode.UNKNOWN_ELEMENT */
+        , message);
+      } else {
+        console.error(formatRuntimeError(304
+        /* RuntimeErrorCode.UNKNOWN_ELEMENT */
+        , message));
+      }
+    }
+  }
+}
+/**
+ * Validates that the property of the element is known at runtime and returns
+ * false if it's not the case.
+ * This check is relevant for JIT-compiled components (for AOT-compiled
+ * ones this check happens at build time).
+ *
+ * The property is considered known if either:
+ * - it's a known property of the element
+ * - the element is allowed by one of the schemas
+ * - the property is used for animations
+ *
+ * @param element Element to validate
+ * @param propName Name of the property to check
+ * @param tagName Name of the tag hosting the property
+ * @param schemas Array of schemas
+ */
+
+
+function isPropertyValid(element, propName, tagName, schemas) {
+  // If `schemas` is set to `null`, that's an indication that this Component was compiled in AOT
+  // mode where this check happens at compile time. In JIT mode, `schemas` is always present and
+  // defined as an array (as an empty array in case `schemas` field is not defined) and we should
+  // execute the check below.
+  if (schemas === null) return true; // The property is considered valid if the element matches the schema, it exists on the element,
+  // or it is synthetic, and we are in a browser context (web worker nodes should be skipped).
+
+  if (matchingSchemas(schemas, tagName) || propName in element || isAnimationProp(propName)) {
+    return true;
+  } // Note: `typeof Node` returns 'function' in most browsers, but on IE it is 'object' so we
+  // need to account for both here, while being careful with `typeof null` also returning 'object'.
+
+
+  return typeof Node === 'undefined' || Node === null || !(element instanceof Node);
+}
+/**
+ * Logs or throws an error that a property is not supported on an element.
+ *
+ * @param propName Name of the invalid property
+ * @param tagName Name of the tag hosting the property
+ * @param nodeType Type of the node hosting the property
+ * @param lView An `LView` that represents a current component
+ */
+
+
+function handleUnknownPropertyError(propName, tagName, nodeType, lView) {
+  // Special-case a situation when a structural directive is applied to
+  // an `<ng-template>` element, for example: `<ng-template *ngIf="true">`.
+  // In this case the compiler generates the `ɵɵtemplate` instruction with
+  // the `null` as the tagName. The directive matching logic at runtime relies
+  // on this effect (see `isInlineTemplate`), thus using the 'ng-template' as
+  // a default value of the `tNode.value` is not feasible at this moment.
+  if (!tagName && nodeType === 4
+  /* TNodeType.Container */
+  ) {
+    tagName = 'ng-template';
+  }
+
+  const isHostStandalone = isHostComponentStandalone(lView);
+  const templateLocation = getTemplateLocationDetails(lView);
+  let message = `Can't bind to '${propName}' since it isn't a known property of '${tagName}'${templateLocation}.`;
+  const schemas = `'${isHostStandalone ? '@Component' : '@NgModule'}.schemas'`;
+  const importLocation = isHostStandalone ? 'included in the \'@Component.imports\' of this component' : 'a part of an @NgModule where this component is declared';
+
+  if (KNOWN_CONTROL_FLOW_DIRECTIVES.has(propName)) {
+    // Most likely this is a control flow directive (such as `*ngIf`) used in
+    // a template, but the directive or the `CommonModule` is not imported.
+    const correspondingImport = KNOWN_CONTROL_FLOW_DIRECTIVES.get(propName);
+    message += `\nIf the '${propName}' is an Angular control flow directive, ` + `please make sure that either the '${correspondingImport}' directive or the 'CommonModule' is ${importLocation}.`;
+  } else {
+    // May be an Angular component, which is not imported/declared?
+    message += `\n1. If '${tagName}' is an Angular component and it has the ` + `'${propName}' input, then verify that it is ${importLocation}.`; // May be a Web Component?
+
+    if (tagName && tagName.indexOf('-') > -1) {
+      message += `\n2. If '${tagName}' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' ` + `to the ${schemas} of this component to suppress this message.`;
+      message += `\n3. To allow any property add 'NO_ERRORS_SCHEMA' to ` + `the ${schemas} of this component.`;
+    } else {
+      // If it's expected, the error can be suppressed by the `NO_ERRORS_SCHEMA` schema.
+      message += `\n2. To allow any property add 'NO_ERRORS_SCHEMA' to ` + `the ${schemas} of this component.`;
+    }
+  }
+
+  reportUnknownPropertyError(message);
+}
+
+function reportUnknownPropertyError(message) {
+  if (shouldThrowErrorOnUnknownProperty) {
+    throw new RuntimeError(303
+    /* RuntimeErrorCode.UNKNOWN_BINDING */
+    , message);
+  } else {
+    console.error(formatRuntimeError(303
+    /* RuntimeErrorCode.UNKNOWN_BINDING */
+    , message));
+  }
+}
+/**
+ * WARNING: this is a **dev-mode only** function (thus should always be guarded by the `ngDevMode`)
+ * and must **not** be used in production bundles. The function makes megamorphic reads, which might
+ * be too slow for production mode and also it relies on the constructor function being available.
+ *
+ * Gets a reference to the host component def (where a current component is declared).
+ *
+ * @param lView An `LView` that represents a current component that is being rendered.
+ */
+
+
+function getDeclarationComponentDef(lView) {
+  !ngDevMode && throwError('Must never be called in production mode');
+  const declarationLView = lView[DECLARATION_COMPONENT_VIEW];
+  const context = declarationLView[CONTEXT]; // Unable to obtain a context.
+
+  if (!context) return null;
+  return context.constructor ? getComponentDef(context.constructor) : null;
+}
+/**
+ * WARNING: this is a **dev-mode only** function (thus should always be guarded by the `ngDevMode`)
+ * and must **not** be used in production bundles. The function makes megamorphic reads, which might
+ * be too slow for production mode.
+ *
+ * Checks if the current component is declared inside of a standalone component template.
+ *
+ * @param lView An `LView` that represents a current component that is being rendered.
+ */
+
+
+function isHostComponentStandalone(lView) {
+  !ngDevMode && throwError('Must never be called in production mode');
+  const componentDef = getDeclarationComponentDef(lView); // Treat host component as non-standalone if we can't obtain the def.
+
+  return !!(componentDef === null || componentDef === void 0 ? void 0 : componentDef.standalone);
+}
+/**
+ * WARNING: this is a **dev-mode only** function (thus should always be guarded by the `ngDevMode`)
+ * and must **not** be used in production bundles. The function makes megamorphic reads, which might
+ * be too slow for production mode.
+ *
+ * Constructs a string describing the location of the host component template. The function is used
+ * in dev mode to produce error messages.
+ *
+ * @param lView An `LView` that represents a current component that is being rendered.
+ */
+
+
+function getTemplateLocationDetails(lView) {
+  var _a;
+
+  !ngDevMode && throwError('Must never be called in production mode');
+  const hostComponentDef = getDeclarationComponentDef(lView);
+  const componentClassName = (_a = hostComponentDef === null || hostComponentDef === void 0 ? void 0 : hostComponentDef.type) === null || _a === void 0 ? void 0 : _a.name;
+  return componentClassName ? ` (used in the '${componentClassName}' component template)` : '';
+}
+/**
+ * The set of known control flow directives and their corresponding imports.
+ * We use this set to produce a more precises error message with a note
+ * that the `CommonModule` should also be included.
+ */
+
+
+const KNOWN_CONTROL_FLOW_DIRECTIVES = new Map([['ngIf', 'NgIf'], ['ngFor', 'NgFor'], ['ngSwitchCase', 'NgSwitchCase'], ['ngSwitchDefault', 'NgSwitchDefault']]);
+/**
+ * Returns true if the tag name is allowed by specified schemas.
+ * @param schemas Array of schemas
+ * @param tagName Name of the tag
+ */
+
+function matchingSchemas(schemas, tagName) {
+  if (schemas !== null) {
+    for (let i = 0; i < schemas.length; i++) {
+      const schema = schemas[i];
+
+      if (schema === NO_ERRORS_SCHEMA || schema === CUSTOM_ELEMENTS_SCHEMA && tagName && tagName.indexOf('-') > -1) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Flags for renderer-specific style modifiers.
+ * @publicApi
+ */
+
+
+var RendererStyleFlags2;
+
+(function (RendererStyleFlags2) {
+  // TODO(misko): This needs to be refactored into a separate file so that it can be imported from
+  // `node_manipulation.ts` Currently doing the import cause resolution order to change and fails
+  // the tests. The work around is to have hard coded value in `node_manipulation.ts` for now.
+
+  /**
+   * Marks a style as important.
+   */
+  RendererStyleFlags2[RendererStyleFlags2["Important"] = 1] = "Important";
+  /**
+   * Marks a style as using dash case naming (this-is-dash-case).
+   */
+
+  RendererStyleFlags2[RendererStyleFlags2["DashCase"] = 2] = "DashCase";
+})(RendererStyleFlags2 || (RendererStyleFlags2 = {}));
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Disallowed strings in the comment.
+ *
+ * see: https://html.spec.whatwg.org/multipage/syntax.html#comments
+ */
+
+
+const COMMENT_DISALLOWED = /^>|^->|<!--|-->|--!>|<!-$/g;
+/**
+ * Delimiter in the disallowed strings which needs to be wrapped with zero with character.
+ */
+
+const COMMENT_DELIMITER = /(<|>)/;
+const COMMENT_DELIMITER_ESCAPED = '\u200B$1\u200B';
+/**
+ * Escape the content of comment strings so that it can be safely inserted into a comment node.
+ *
+ * The issue is that HTML does not specify any way to escape comment end text inside the comment.
+ * Consider: `<!-- The way you close a comment is with ">", and "->" at the beginning or by "-->" or
+ * "--!>" at the end. -->`. Above the `"-->"` is meant to be text not an end to the comment. This
+ * can be created programmatically through DOM APIs. (`<!--` are also disallowed.)
+ *
+ * see: https://html.spec.whatwg.org/multipage/syntax.html#comments
+ *
+ * ```
+ * div.innerHTML = div.innerHTML
+ * ```
+ *
+ * One would expect that the above code would be safe to do, but it turns out that because comment
+ * text is not escaped, the comment may contain text which will prematurely close the comment
+ * opening up the application for XSS attack. (In SSR we programmatically create comment nodes which
+ * may contain such text and expect them to be safe.)
+ *
+ * This function escapes the comment text by looking for comment delimiters (`<` and `>`) and
+ * surrounding them with `_>_` where the `_` is a zero width space `\u200B`. The result is that if a
+ * comment contains any of the comment start/end delimiters (such as `<!--`, `-->` or `--!>`) the
+ * text it will render normally but it will not cause the HTML parser to close/open the comment.
+ *
+ * @param value text to make safe for comment node by escaping the comment open/close character
+ *     sequence.
+ */
+
+function escapeCommentText(value) {
+  return value.replace(COMMENT_DISALLOWED, text => text.replace(COMMENT_DELIMITER, COMMENT_DELIMITER_ESCAPED));
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+// Keeps track of the currently-active LViews.
+
+
+const TRACKED_LVIEWS = new Map(); // Used for generating unique IDs for LViews.
+
+let uniqueIdCounter = 0;
+/** Gets a unique ID that can be assigned to an LView. */
+
+function getUniqueLViewId() {
+  return uniqueIdCounter++;
+}
+/** Starts tracking an LView. */
+
+
+function registerLView(lView) {
+  ngDevMode && assertNumber(lView[ID], 'LView must have an ID in order to be registered');
+  TRACKED_LVIEWS.set(lView[ID], lView);
+}
+/** Gets an LView by its unique ID. */
+
+
+function getLViewById(id) {
+  ngDevMode && assertNumber(id, 'ID used for LView lookup must be a number');
+  return TRACKED_LVIEWS.get(id) || null;
+}
+/** Stops tracking an LView. */
+
+
+function unregisterLView(lView) {
+  ngDevMode && assertNumber(lView[ID], 'Cannot stop tracking an LView that does not have an ID');
+  TRACKED_LVIEWS.delete(lView[ID]);
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * The internal view context which is specific to a given DOM element, directive or
+ * component instance. Each value in here (besides the LView and element node details)
+ * can be present, null or undefined. If undefined then it implies the value has not been
+ * looked up yet, otherwise, if null, then a lookup was executed and nothing was found.
+ *
+ * Each value will get filled when the respective value is examined within the getContext
+ * function. The component, element and each directive instance will share the same instance
+ * of the context.
+ */
+
+
+class LContext {
+  constructor(
+  /**
+   * ID of the component's parent view data.
+   */
+  lViewId,
+  /**
+   * The index instance of the node.
+   */
+  nodeIndex,
+  /**
+   * The instance of the DOM node that is attached to the lNode.
+   */
+  native) {
+    this.lViewId = lViewId;
+    this.nodeIndex = nodeIndex;
+    this.native = native;
+  }
+  /** Component's parent view data. */
+
+
+  get lView() {
+    return getLViewById(this.lViewId);
+  }
+
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Returns the matching `LContext` data for a given DOM node, directive or component instance.
+ *
+ * This function will examine the provided DOM element, component, or directive instance\'s
+ * monkey-patched property to derive the `LContext` data. Once called then the monkey-patched
+ * value will be that of the newly created `LContext`.
+ *
+ * If the monkey-patched value is the `LView` instance then the context value for that
+ * target will be created and the monkey-patch reference will be updated. Therefore when this
+ * function is called it may mutate the provided element\'s, component\'s or any of the associated
+ * directive\'s monkey-patch values.
+ *
+ * If the monkey-patch value is not detected then the code will walk up the DOM until an element
+ * is found which contains a monkey-patch reference. When that occurs then the provided element
+ * will be updated with a new context (which is then returned). If the monkey-patch value is not
+ * detected for a component/directive instance then it will throw an error (all components and
+ * directives should be automatically monkey-patched by ivy).
+ *
+ * @param target Component, Directive or DOM Node.
+ */
+
+
+function getLContext(target) {
+  let mpValue = readPatchedData(target);
+
+  if (mpValue) {
+    // only when it's an array is it considered an LView instance
+    // ... otherwise it's an already constructed LContext instance
+    if (isLView(mpValue)) {
+      const lView = mpValue;
+      let nodeIndex;
+      let component = undefined;
+      let directives = undefined;
+
+      if (isComponentInstance(target)) {
+        nodeIndex = findViaComponent(lView, target);
+
+        if (nodeIndex == -1) {
+          throw new Error('The provided component was not found in the application');
+        }
+
+        component = target;
+      } else if (isDirectiveInstance(target)) {
+        nodeIndex = findViaDirective(lView, target);
+
+        if (nodeIndex == -1) {
+          throw new Error('The provided directive was not found in the application');
+        }
+
+        directives = getDirectivesAtNodeIndex(nodeIndex, lView, false);
+      } else {
+        nodeIndex = findViaNativeElement(lView, target);
+
+        if (nodeIndex == -1) {
+          return null;
+        }
+      } // the goal is not to fill the entire context full of data because the lookups
+      // are expensive. Instead, only the target data (the element, component, container, ICU
+      // expression or directive details) are filled into the context. If called multiple times
+      // with different target values then the missing target data will be filled in.
+
+
+      const native = unwrapRNode(lView[nodeIndex]);
+      const existingCtx = readPatchedData(native);
+      const context = existingCtx && !Array.isArray(existingCtx) ? existingCtx : createLContext(lView, nodeIndex, native); // only when the component has been discovered then update the monkey-patch
+
+      if (component && context.component === undefined) {
+        context.component = component;
+        attachPatchData(context.component, context);
+      } // only when the directives have been discovered then update the monkey-patch
+
+
+      if (directives && context.directives === undefined) {
+        context.directives = directives;
+
+        for (let i = 0; i < directives.length; i++) {
+          attachPatchData(directives[i], context);
+        }
+      }
+
+      attachPatchData(context.native, context);
+      mpValue = context;
+    }
+  } else {
+    const rElement = target;
+    ngDevMode && assertDomNode(rElement); // if the context is not found then we need to traverse upwards up the DOM
+    // to find the nearest element that has already been monkey patched with data
+
+    let parent = rElement;
+
+    while (parent = parent.parentNode) {
+      const parentContext = readPatchedData(parent);
+
+      if (parentContext) {
+        const lView = Array.isArray(parentContext) ? parentContext : parentContext.lView; // the edge of the app was also reached here through another means
+        // (maybe because the DOM was changed manually).
+
+        if (!lView) {
+          return null;
+        }
+
+        const index = findViaNativeElement(lView, rElement);
+
+        if (index >= 0) {
+          const native = unwrapRNode(lView[index]);
+          const context = createLContext(lView, index, native);
+          attachPatchData(native, context);
+          mpValue = context;
+          break;
+        }
+      }
+    }
+  }
+
+  return mpValue || null;
+}
+/**
+ * Creates an empty instance of a `LContext` context
+ */
+
+
+function createLContext(lView, nodeIndex, native) {
+  return new LContext(lView[ID], nodeIndex, native);
+}
+/**
+ * Takes a component instance and returns the view for that component.
+ *
+ * @param componentInstance
+ * @returns The component's view
+ */
+
+
+function getComponentViewByInstance(componentInstance) {
+  let patchedData = readPatchedData(componentInstance);
+  let lView;
+
+  if (isLView(patchedData)) {
+    const contextLView = patchedData;
+    const nodeIndex = findViaComponent(contextLView, componentInstance);
+    lView = getComponentLViewByIndex(nodeIndex, contextLView);
+    const context = createLContext(contextLView, nodeIndex, lView[HOST]);
+    context.component = componentInstance;
+    attachPatchData(componentInstance, context);
+    attachPatchData(context.native, context);
+  } else {
+    const context = patchedData;
+    const contextLView = context.lView;
+    ngDevMode && assertLView(contextLView);
+    lView = getComponentLViewByIndex(context.nodeIndex, contextLView);
+  }
+
+  return lView;
+}
+/**
+ * This property will be monkey-patched on elements, components and directives.
+ */
+
+
+const MONKEY_PATCH_KEY_NAME = '__ngContext__';
+/**
+ * Assigns the given data to the given target (which could be a component,
+ * directive or DOM node instance) using monkey-patching.
+ */
+
+function attachPatchData(target, data) {
+  ngDevMode && assertDefined(target, 'Target expected'); // Only attach the ID of the view in order to avoid memory leaks (see #41047). We only do this
+  // for `LView`, because we have control over when an `LView` is created and destroyed, whereas
+  // we can't know when to remove an `LContext`.
+
+  if (isLView(data)) {
+    target[MONKEY_PATCH_KEY_NAME] = data[ID];
+    registerLView(data);
+  } else {
+    target[MONKEY_PATCH_KEY_NAME] = data;
+  }
+}
+/**
+ * Returns the monkey-patch value data present on the target (which could be
+ * a component, directive or a DOM node).
+ */
+
+
+function readPatchedData(target) {
+  ngDevMode && assertDefined(target, 'Target expected');
+  const data = target[MONKEY_PATCH_KEY_NAME];
+  return typeof data === 'number' ? getLViewById(data) : data || null;
+}
+
+function readPatchedLView(target) {
+  const value = readPatchedData(target);
+
+  if (value) {
+    return isLView(value) ? value : value.lView;
+  }
+
+  return null;
+}
+
+function isComponentInstance(instance) {
+  return instance && instance.constructor && instance.constructor.ɵcmp;
+}
+
+function isDirectiveInstance(instance) {
+  return instance && instance.constructor && instance.constructor.ɵdir;
+}
+/**
+ * Locates the element within the given LView and returns the matching index
+ */
+
+
+function findViaNativeElement(lView, target) {
+  const tView = lView[TVIEW];
+
+  for (let i = HEADER_OFFSET; i < tView.bindingStartIndex; i++) {
+    if (unwrapRNode(lView[i]) === target) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+/**
+ * Locates the next tNode (child, sibling or parent).
+ */
+
+
+function traverseNextElement(tNode) {
+  if (tNode.child) {
+    return tNode.child;
+  } else if (tNode.next) {
+    return tNode.next;
+  } else {
+    // Let's take the following template: <div><span>text</span></div><component/>
+    // After checking the text node, we need to find the next parent that has a "next" TNode,
+    // in this case the parent `div`, so that we can find the component.
+    while (tNode.parent && !tNode.parent.next) {
+      tNode = tNode.parent;
+    }
+
+    return tNode.parent && tNode.parent.next;
+  }
+}
+/**
+ * Locates the component within the given LView and returns the matching index
+ */
+
+
+function findViaComponent(lView, componentInstance) {
+  const componentIndices = lView[TVIEW].components;
+
+  if (componentIndices) {
+    for (let i = 0; i < componentIndices.length; i++) {
+      const elementComponentIndex = componentIndices[i];
+      const componentView = getComponentLViewByIndex(elementComponentIndex, lView);
+
+      if (componentView[CONTEXT] === componentInstance) {
+        return elementComponentIndex;
+      }
+    }
+  } else {
+    const rootComponentView = getComponentLViewByIndex(HEADER_OFFSET, lView);
+    const rootComponent = rootComponentView[CONTEXT];
+
+    if (rootComponent === componentInstance) {
+      // we are dealing with the root element here therefore we know that the
+      // element is the very first element after the HEADER data in the lView
+      return HEADER_OFFSET;
+    }
+  }
+
+  return -1;
+}
+/**
+ * Locates the directive within the given LView and returns the matching index
+ */
+
+
+function findViaDirective(lView, directiveInstance) {
+  // if a directive is monkey patched then it will (by default)
+  // have a reference to the LView of the current view. The
+  // element bound to the directive being search lives somewhere
+  // in the view data. We loop through the nodes and check their
+  // list of directives for the instance.
+  let tNode = lView[TVIEW].firstChild;
+
+  while (tNode) {
+    const directiveIndexStart = tNode.directiveStart;
+    const directiveIndexEnd = tNode.directiveEnd;
+
+    for (let i = directiveIndexStart; i < directiveIndexEnd; i++) {
+      if (lView[i] === directiveInstance) {
+        return tNode.index;
+      }
+    }
+
+    tNode = traverseNextElement(tNode);
+  }
+
+  return -1;
+}
+/**
+ * Returns a list of directives extracted from the given view based on the
+ * provided list of directive index values.
+ *
+ * @param nodeIndex The node index
+ * @param lView The target view data
+ * @param includeComponents Whether or not to include components in returned directives
+ */
+
+
+function getDirectivesAtNodeIndex(nodeIndex, lView, includeComponents) {
+  const tNode = lView[TVIEW].data[nodeIndex];
+  let directiveStartIndex = tNode.directiveStart;
+  if (directiveStartIndex == 0) return EMPTY_ARRAY;
+  const directiveEndIndex = tNode.directiveEnd;
+  if (!includeComponents && tNode.flags & 2
+  /* TNodeFlags.isComponentHost */
+  ) directiveStartIndex++;
+  return lView.slice(directiveStartIndex, directiveEndIndex);
+}
+
+function getComponentAtNodeIndex(nodeIndex, lView) {
+  const tNode = lView[TVIEW].data[nodeIndex];
+  let directiveStartIndex = tNode.directiveStart;
+  return tNode.flags & 2
+  /* TNodeFlags.isComponentHost */
+  ? lView[directiveStartIndex] : null;
+}
+/**
+ * Returns a map of local references (local reference name => element or directive instance) that
+ * exist on a given element.
+ */
+
+
+function discoverLocalRefs(lView, nodeIndex) {
+  const tNode = lView[TVIEW].data[nodeIndex];
+
+  if (tNode && tNode.localNames) {
+    const result = {};
+    let localIndex = tNode.index + 1;
+
+    for (let i = 0; i < tNode.localNames.length; i += 2) {
+      result[tNode.localNames[i]] = lView[localIndex];
+      localIndex++;
+    }
+
+    return result;
+  }
+
+  return null;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+
+let _icuContainerIterate;
+/**
+ * Iterator which provides ability to visit all of the `TIcuContainerNode` root `RNode`s.
+ */
+
+
+function icuContainerIterate(tIcuContainerNode, lView) {
+  return _icuContainerIterate(tIcuContainerNode, lView);
+}
+/**
+ * Ensures that `IcuContainerVisitor`'s implementation is present.
+ *
+ * This function is invoked when i18n instruction comes across an ICU. The purpose is to allow the
+ * bundler to tree shake ICU logic and only load it if ICU instruction is executed.
+ */
+
+
+function ensureIcuContainerVisitorLoaded(loader) {
+  if (_icuContainerIterate === undefined) {
+    // Do not inline this function. We want to keep `ensureIcuContainerVisitorLoaded` light, so it
+    // can be inlined into call-site.
+    _icuContainerIterate = loader();
+  }
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+// Note: This hack is necessary so we don't erroneously get a circular dependency
+// failure based on types.
+
+
+const unusedValueExportToPlacateAjd$4 = 1;
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+// Note: This hack is necessary so we don't erroneously get a circular dependency
+// failure based on types.
+
+const unusedValueExportToPlacateAjd$3 = 1;
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Gets the parent LView of the passed LView, if the PARENT is an LContainer, will get the parent of
+ * that LContainer, which is an LView
+ * @param lView the lView whose parent to get
+ */
+
+function getLViewParent(lView) {
+  ngDevMode && assertLView(lView);
+  const parent = lView[PARENT];
+  return isLContainer(parent) ? parent[PARENT] : parent;
+}
+/**
+ * Retrieve the root view from any component or `LView` by walking the parent `LView` until
+ * reaching the root `LView`.
+ *
+ * @param componentOrLView any component or `LView`
+ */
+
+
+function getRootView(componentOrLView) {
+  ngDevMode && assertDefined(componentOrLView, 'component');
+  let lView = isLView(componentOrLView) ? componentOrLView : readPatchedLView(componentOrLView);
+
+  while (lView && !(lView[FLAGS] & 256
+  /* LViewFlags.IsRoot */
+  )) {
+    lView = getLViewParent(lView);
+  }
+
+  ngDevMode && assertLView(lView);
+  return lView;
+}
+/**
+ * Returns the context information associated with the application where the target is situated. It
+ * does this by walking the parent views until it gets to the root view, then getting the context
+ * off of that.
+ *
+ * @param viewOrComponent the `LView` or component to get the root context for.
+ */
+
+
+function getRootContext(viewOrComponent) {
+  const rootView = getRootView(viewOrComponent);
+  ngDevMode && assertDefined(rootView[CONTEXT], 'Root view has no context. Perhaps it is disconnected?');
+  return rootView[CONTEXT];
+}
+/**
+ * Gets the first `LContainer` in the LView or `null` if none exists.
+ */
+
+
+function getFirstLContainer(lView) {
+  return getNearestLContainer(lView[CHILD_HEAD]);
+}
+/**
+ * Gets the next `LContainer` that is a sibling of the given container.
+ */
+
+
+function getNextLContainer(container) {
+  return getNearestLContainer(container[NEXT]);
+}
+
+function getNearestLContainer(viewOrContainer) {
+  while (viewOrContainer !== null && !isLContainer(viewOrContainer)) {
+    viewOrContainer = viewOrContainer[NEXT];
+  }
+
+  return viewOrContainer;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+
+const unusedValueToPlacateAjd$2 = unusedValueExportToPlacateAjd$8 + unusedValueExportToPlacateAjd$5 + unusedValueExportToPlacateAjd$4 + unusedValueExportToPlacateAjd$3 + unusedValueExportToPlacateAjd$7;
+/**
+ * NOTE: for performance reasons, the possible actions are inlined within the function instead of
+ * being passed as an argument.
+ */
+
+function applyToElementOrContainer(action, renderer, parent, lNodeToHandle, beforeNode) {
+  // If this slot was allocated for a text node dynamically created by i18n, the text node itself
+  // won't be created until i18nApply() in the update block, so this node should be skipped.
+  // For more info, see "ICU expressions should work inside an ngTemplateOutlet inside an ngFor"
+  // in `i18n_spec.ts`.
+  if (lNodeToHandle != null) {
+    let lContainer;
+    let isComponent = false; // We are expecting an RNode, but in the case of a component or LContainer the `RNode` is
+    // wrapped in an array which needs to be unwrapped. We need to know if it is a component and if
+    // it has LContainer so that we can process all of those cases appropriately.
+
+    if (isLContainer(lNodeToHandle)) {
+      lContainer = lNodeToHandle;
+    } else if (isLView(lNodeToHandle)) {
+      isComponent = true;
+      ngDevMode && assertDefined(lNodeToHandle[HOST], 'HOST must be defined for a component LView');
+      lNodeToHandle = lNodeToHandle[HOST];
+    }
+
+    const rNode = unwrapRNode(lNodeToHandle);
+
+    if (action === 0
+    /* WalkTNodeTreeAction.Create */
+    && parent !== null) {
+      if (beforeNode == null) {
+        nativeAppendChild(renderer, parent, rNode);
+      } else {
+        nativeInsertBefore(renderer, parent, rNode, beforeNode || null, true);
+      }
+    } else if (action === 1
+    /* WalkTNodeTreeAction.Insert */
+    && parent !== null) {
+      nativeInsertBefore(renderer, parent, rNode, beforeNode || null, true);
+    } else if (action === 2
+    /* WalkTNodeTreeAction.Detach */
+    ) {
+      nativeRemoveNode(renderer, rNode, isComponent);
+    } else if (action === 3
+    /* WalkTNodeTreeAction.Destroy */
+    ) {
+      ngDevMode && ngDevMode.rendererDestroyNode++;
+      renderer.destroyNode(rNode);
+    }
+
+    if (lContainer != null) {
+      applyContainer(renderer, action, lContainer, parent, beforeNode);
+    }
+  }
+}
+
+function createTextNode(renderer, value) {
+  ngDevMode && ngDevMode.rendererCreateTextNode++;
+  ngDevMode && ngDevMode.rendererSetText++;
+  return renderer.createText(value);
+}
+
+function updateTextNode(renderer, rNode, value) {
+  ngDevMode && ngDevMode.rendererSetText++;
+  renderer.setValue(rNode, value);
+}
+
+function createCommentNode(renderer, value) {
+  ngDevMode && ngDevMode.rendererCreateComment++;
+  return renderer.createComment(escapeCommentText(value));
+}
+/**
+ * Creates a native element from a tag name, using a renderer.
+ * @param renderer A renderer to use
+ * @param name the tag name
+ * @param namespace Optional namespace for element.
+ * @returns the element created
+ */
+
+
+function createElementNode(renderer, name, namespace) {
+  ngDevMode && ngDevMode.rendererCreateElement++;
+  return renderer.createElement(name, namespace);
+}
+/**
+ * Removes all DOM elements associated with a view.
+ *
+ * Because some root nodes of the view may be containers, we sometimes need
+ * to propagate deeply into the nested containers to remove all elements in the
+ * views beneath it.
+ *
+ * @param tView The `TView' of the `LView` from which elements should be added or removed
+ * @param lView The view from which elements should be added or removed
+ */
+
+
+function removeViewFromContainer(tView, lView) {
+  const renderer = lView[RENDERER];
+  applyView(tView, lView, renderer, 2
+  /* WalkTNodeTreeAction.Detach */
+  , null, null);
+  lView[HOST] = null;
+  lView[T_HOST] = null;
+}
+/**
+ * Adds all DOM elements associated with a view.
+ *
+ * Because some root nodes of the view may be containers, we sometimes need
+ * to propagate deeply into the nested containers to add all elements in the
+ * views beneath it.
+ *
+ * @param tView The `TView' of the `LView` from which elements should be added or removed
+ * @param parentTNode The `TNode` where the `LView` should be attached to.
+ * @param renderer Current renderer to use for DOM manipulations.
+ * @param lView The view from which elements should be added or removed
+ * @param parentNativeNode The parent `RElement` where it should be inserted into.
+ * @param beforeNode The node before which elements should be added, if insert mode
+ */
+
+
+function addViewToContainer(tView, parentTNode, renderer, lView, parentNativeNode, beforeNode) {
+  lView[HOST] = parentNativeNode;
+  lView[T_HOST] = parentTNode;
+  applyView(tView, lView, renderer, 1
+  /* WalkTNodeTreeAction.Insert */
+  , parentNativeNode, beforeNode);
+}
+/**
+ * Detach a `LView` from the DOM by detaching its nodes.
+ *
+ * @param tView The `TView' of the `LView` to be detached
+ * @param lView the `LView` to be detached.
+ */
+
+
+function renderDetachView(tView, lView) {
+  applyView(tView, lView, lView[RENDERER], 2
+  /* WalkTNodeTreeAction.Detach */
+  , null, null);
+}
+/**
+ * Traverses down and up the tree of views and containers to remove listeners and
+ * call onDestroy callbacks.
+ *
+ * Notes:
+ *  - Because it's used for onDestroy calls, it needs to be bottom-up.
+ *  - Must process containers instead of their views to avoid splicing
+ *  when views are destroyed and re-added.
+ *  - Using a while loop because it's faster than recursion
+ *  - Destroy only called on movement to sibling or movement to parent (laterally or up)
+ *
+ *  @param rootView The view to destroy
+ */
+
+
+function destroyViewTree(rootView) {
+  // If the view has no children, we can clean it up and return early.
+  let lViewOrLContainer = rootView[CHILD_HEAD];
+
+  if (!lViewOrLContainer) {
+    return cleanUpView(rootView[TVIEW], rootView);
+  }
+
+  while (lViewOrLContainer) {
+    let next = null;
+
+    if (isLView(lViewOrLContainer)) {
+      // If LView, traverse down to child.
+      next = lViewOrLContainer[CHILD_HEAD];
+    } else {
+      ngDevMode && assertLContainer(lViewOrLContainer); // If container, traverse down to its first LView.
+
+      const firstView = lViewOrLContainer[CONTAINER_HEADER_OFFSET];
+      if (firstView) next = firstView;
+    }
+
+    if (!next) {
+      // Only clean up view when moving to the side or up, as destroy hooks
+      // should be called in order from the bottom up.
+      while (lViewOrLContainer && !lViewOrLContainer[NEXT] && lViewOrLContainer !== rootView) {
+        if (isLView(lViewOrLContainer)) {
+          cleanUpView(lViewOrLContainer[TVIEW], lViewOrLContainer);
+        }
+
+        lViewOrLContainer = lViewOrLContainer[PARENT];
+      }
+
+      if (lViewOrLContainer === null) lViewOrLContainer = rootView;
+
+      if (isLView(lViewOrLContainer)) {
+        cleanUpView(lViewOrLContainer[TVIEW], lViewOrLContainer);
+      }
+
+      next = lViewOrLContainer && lViewOrLContainer[NEXT];
+    }
+
+    lViewOrLContainer = next;
+  }
+}
+/**
+ * Inserts a view into a container.
+ *
+ * This adds the view to the container's array of active views in the correct
+ * position. It also adds the view's elements to the DOM if the container isn't a
+ * root node of another view (in that case, the view's elements will be added when
+ * the container's parent view is added later).
+ *
+ * @param tView The `TView' of the `LView` to insert
+ * @param lView The view to insert
+ * @param lContainer The container into which the view should be inserted
+ * @param index Which index in the container to insert the child view into
+ */
+
+
+function insertView(tView, lView, lContainer, index) {
+  ngDevMode && assertLView(lView);
+  ngDevMode && assertLContainer(lContainer);
+  const indexInContainer = CONTAINER_HEADER_OFFSET + index;
+  const containerLength = lContainer.length;
+
+  if (index > 0) {
+    // This is a new view, we need to add it to the children.
+    lContainer[indexInContainer - 1][NEXT] = lView;
+  }
+
+  if (index < containerLength - CONTAINER_HEADER_OFFSET) {
+    lView[NEXT] = lContainer[indexInContainer];
+    addToArray(lContainer, CONTAINER_HEADER_OFFSET + index, lView);
+  } else {
+    lContainer.push(lView);
+    lView[NEXT] = null;
+  }
+
+  lView[PARENT] = lContainer; // track views where declaration and insertion points are different
+
+  const declarationLContainer = lView[DECLARATION_LCONTAINER];
+
+  if (declarationLContainer !== null && lContainer !== declarationLContainer) {
+    trackMovedView(declarationLContainer, lView);
+  } // notify query that a new view has been added
+
+
+  const lQueries = lView[QUERIES];
+
+  if (lQueries !== null) {
+    lQueries.insertView(tView);
+  } // Sets the attached flag
+
+
+  lView[FLAGS] |= 64
+  /* LViewFlags.Attached */
+  ;
+}
+/**
+ * Track views created from the declaration container (TemplateRef) and inserted into a
+ * different LContainer.
+ */
+
+
+function trackMovedView(declarationContainer, lView) {
+  ngDevMode && assertDefined(lView, 'LView required');
+  ngDevMode && assertLContainer(declarationContainer);
+  const movedViews = declarationContainer[MOVED_VIEWS];
+  const insertedLContainer = lView[PARENT];
+  ngDevMode && assertLContainer(insertedLContainer);
+  const insertedComponentLView = insertedLContainer[PARENT][DECLARATION_COMPONENT_VIEW];
+  ngDevMode && assertDefined(insertedComponentLView, 'Missing insertedComponentLView');
+  const declaredComponentLView = lView[DECLARATION_COMPONENT_VIEW];
+  ngDevMode && assertDefined(declaredComponentLView, 'Missing declaredComponentLView');
+
+  if (declaredComponentLView !== insertedComponentLView) {
+    // At this point the declaration-component is not same as insertion-component; this means that
+    // this is a transplanted view. Mark the declared lView as having transplanted views so that
+    // those views can participate in CD.
+    declarationContainer[HAS_TRANSPLANTED_VIEWS] = true;
+  }
+
+  if (movedViews === null) {
+    declarationContainer[MOVED_VIEWS] = [lView];
+  } else {
+    movedViews.push(lView);
+  }
+}
+
+function detachMovedView(declarationContainer, lView) {
+  ngDevMode && assertLContainer(declarationContainer);
+  ngDevMode && assertDefined(declarationContainer[MOVED_VIEWS], 'A projected view should belong to a non-empty projected views collection');
+  const movedViews = declarationContainer[MOVED_VIEWS];
+  const declarationViewIndex = movedViews.indexOf(lView);
+  const insertionLContainer = lView[PARENT];
+  ngDevMode && assertLContainer(insertionLContainer); // If the view was marked for refresh but then detached before it was checked (where the flag
+  // would be cleared and the counter decremented), we need to decrement the view counter here
+  // instead.
+
+  if (lView[FLAGS] & 512
+  /* LViewFlags.RefreshTransplantedView */
+  ) {
+    lView[FLAGS] &= ~512
+    /* LViewFlags.RefreshTransplantedView */
+    ;
+    updateTransplantedViewCount(insertionLContainer, -1);
+  }
+
+  movedViews.splice(declarationViewIndex, 1);
+}
+/**
+ * Detaches a view from a container.
+ *
+ * This method removes the view from the container's array of active views. It also
+ * removes the view's elements from the DOM.
+ *
+ * @param lContainer The container from which to detach a view
+ * @param removeIndex The index of the view to detach
+ * @returns Detached LView instance.
+ */
+
+
+function detachView(lContainer, removeIndex) {
+  if (lContainer.length <= CONTAINER_HEADER_OFFSET) return;
+  const indexInContainer = CONTAINER_HEADER_OFFSET + removeIndex;
+  const viewToDetach = lContainer[indexInContainer];
+
+  if (viewToDetach) {
+    const declarationLContainer = viewToDetach[DECLARATION_LCONTAINER];
+
+    if (declarationLContainer !== null && declarationLContainer !== lContainer) {
+      detachMovedView(declarationLContainer, viewToDetach);
+    }
+
+    if (removeIndex > 0) {
+      lContainer[indexInContainer - 1][NEXT] = viewToDetach[NEXT];
+    }
+
+    const removedLView = removeFromArray(lContainer, CONTAINER_HEADER_OFFSET + removeIndex);
+    removeViewFromContainer(viewToDetach[TVIEW], viewToDetach); // notify query that a view has been removed
+
+    const lQueries = removedLView[QUERIES];
+
+    if (lQueries !== null) {
+      lQueries.detachView(removedLView[TVIEW]);
+    }
+
+    viewToDetach[PARENT] = null;
+    viewToDetach[NEXT] = null; // Unsets the attached flag
+
+    viewToDetach[FLAGS] &= ~64
+    /* LViewFlags.Attached */
+    ;
+  }
+
+  return viewToDetach;
+}
+/**
+ * A standalone function which destroys an LView,
+ * conducting clean up (e.g. removing listeners, calling onDestroys).
+ *
+ * @param tView The `TView' of the `LView` to be destroyed
+ * @param lView The view to be destroyed.
+ */
+
+
+function destroyLView(tView, lView) {
+  if (!(lView[FLAGS] & 128
+  /* LViewFlags.Destroyed */
+  )) {
+    const renderer = lView[RENDERER];
+
+    if (renderer.destroyNode) {
+      applyView(tView, lView, renderer, 3
+      /* WalkTNodeTreeAction.Destroy */
+      , null, null);
+    }
+
+    destroyViewTree(lView);
+  }
+}
+/**
+ * Calls onDestroys hooks for all directives and pipes in a given view and then removes all
+ * listeners. Listeners are removed as the last step so events delivered in the onDestroys hooks
+ * can be propagated to @Output listeners.
+ *
+ * @param tView `TView` for the `LView` to clean up.
+ * @param lView The LView to clean up
+ */
+
+
+function cleanUpView(tView, lView) {
+  if (!(lView[FLAGS] & 128
+  /* LViewFlags.Destroyed */
+  )) {
+    // Usually the Attached flag is removed when the view is detached from its parent, however
+    // if it's a root view, the flag won't be unset hence why we're also removing on destroy.
+    lView[FLAGS] &= ~64
+    /* LViewFlags.Attached */
+    ; // Mark the LView as destroyed *before* executing the onDestroy hooks. An onDestroy hook
+    // runs arbitrary user code, which could include its own `viewRef.destroy()` (or similar). If
+    // We don't flag the view as destroyed before the hooks, this could lead to an infinite loop.
+    // This also aligns with the ViewEngine behavior. It also means that the onDestroy hook is
+    // really more of an "afterDestroy" hook if you think about it.
+
+    lView[FLAGS] |= 128
+    /* LViewFlags.Destroyed */
+    ;
+    executeOnDestroys(tView, lView);
+    processCleanups(tView, lView); // For component views only, the local renderer is destroyed at clean up time.
+
+    if (lView[TVIEW].type === 1
+    /* TViewType.Component */
+    ) {
+      ngDevMode && ngDevMode.rendererDestroy++;
+      lView[RENDERER].destroy();
+    }
+
+    const declarationContainer = lView[DECLARATION_LCONTAINER]; // we are dealing with an embedded view that is still inserted into a container
+
+    if (declarationContainer !== null && isLContainer(lView[PARENT])) {
+      // and this is a projected view
+      if (declarationContainer !== lView[PARENT]) {
+        detachMovedView(declarationContainer, lView);
+      } // For embedded views still attached to a container: remove query result from this view.
+
+
+      const lQueries = lView[QUERIES];
+
+      if (lQueries !== null) {
+        lQueries.detachView(tView);
+      }
+    } // Unregister the view once everything else has been cleaned up.
+
+
+    unregisterLView(lView);
+  }
+}
+/** Removes listeners and unsubscribes from output subscriptions */
+
+
+function processCleanups(tView, lView) {
+  const tCleanup = tView.cleanup;
+  const lCleanup = lView[CLEANUP]; // `LCleanup` contains both share information with `TCleanup` as well as instance specific
+  // information appended at the end. We need to know where the end of the `TCleanup` information
+  // is, and we track this with `lastLCleanupIndex`.
+
+  let lastLCleanupIndex = -1;
+
+  if (tCleanup !== null) {
+    for (let i = 0; i < tCleanup.length - 1; i += 2) {
+      if (typeof tCleanup[i] === 'string') {
+        // This is a native DOM listener
+        const idxOrTargetGetter = tCleanup[i + 1];
+        const target = typeof idxOrTargetGetter === 'function' ? idxOrTargetGetter(lView) : unwrapRNode(lView[idxOrTargetGetter]);
+        const listener = lCleanup[lastLCleanupIndex = tCleanup[i + 2]];
+        const useCaptureOrSubIdx = tCleanup[i + 3];
+
+        if (typeof useCaptureOrSubIdx === 'boolean') {
+          // native DOM listener registered with Renderer3
+          target.removeEventListener(tCleanup[i], listener, useCaptureOrSubIdx);
+        } else {
+          if (useCaptureOrSubIdx >= 0) {
+            // unregister
+            lCleanup[lastLCleanupIndex = useCaptureOrSubIdx]();
+          } else {
+            // Subscription
+            lCleanup[lastLCleanupIndex = -useCaptureOrSubIdx].unsubscribe();
+          }
+        }
+
+        i += 2;
+      } else {
+        // This is a cleanup function that is grouped with the index of its context
+        const context = lCleanup[lastLCleanupIndex = tCleanup[i + 1]];
+        tCleanup[i].call(context);
+      }
+    }
+  }
+
+  if (lCleanup !== null) {
+    for (let i = lastLCleanupIndex + 1; i < lCleanup.length; i++) {
+      const instanceCleanupFn = lCleanup[i];
+      ngDevMode && assertFunction(instanceCleanupFn, 'Expecting instance cleanup function.');
+      instanceCleanupFn();
+    }
+
+    lView[CLEANUP] = null;
+  }
+}
+/** Calls onDestroy hooks for this view */
+
+
+function executeOnDestroys(tView, lView) {
+  let destroyHooks;
+
+  if (tView != null && (destroyHooks = tView.destroyHooks) != null) {
+    for (let i = 0; i < destroyHooks.length; i += 2) {
+      const context = lView[destroyHooks[i]]; // Only call the destroy hook if the context has been requested.
+
+      if (!(context instanceof NodeInjectorFactory)) {
+        const toCall = destroyHooks[i + 1];
+
+        if (Array.isArray(toCall)) {
+          for (let j = 0; j < toCall.length; j += 2) {
+            const callContext = context[toCall[j]];
+            const hook = toCall[j + 1];
+            profiler(4
+            /* ProfilerEvent.LifecycleHookStart */
+            , callContext, hook);
+
+            try {
+              hook.call(callContext);
+            } finally {
+              profiler(5
+              /* ProfilerEvent.LifecycleHookEnd */
+              , callContext, hook);
+            }
+          }
+        } else {
+          profiler(4
+          /* ProfilerEvent.LifecycleHookStart */
+          , context, toCall);
+
+          try {
+            toCall.call(context);
+          } finally {
+            profiler(5
+            /* ProfilerEvent.LifecycleHookEnd */
+            , context, toCall);
+          }
+        }
+      }
+    }
+  }
+}
+/**
+ * Returns a native element if a node can be inserted into the given parent.
+ *
+ * There are two reasons why we may not be able to insert a element immediately.
+ * - Projection: When creating a child content element of a component, we have to skip the
+ *   insertion because the content of a component will be projected.
+ *   `<component><content>delayed due to projection</content></component>`
+ * - Parent container is disconnected: This can happen when we are inserting a view into
+ *   parent container, which itself is disconnected. For example the parent container is part
+ *   of a View which has not be inserted or is made for projection but has not been inserted
+ *   into destination.
+ *
+ * @param tView: Current `TView`.
+ * @param tNode: `TNode` for which we wish to retrieve render parent.
+ * @param lView: Current `LView`.
+ */
+
+
+function getParentRElement(tView, tNode, lView) {
+  return getClosestRElement(tView, tNode.parent, lView);
+}
+/**
+ * Get closest `RElement` or `null` if it can't be found.
+ *
+ * If `TNode` is `TNodeType.Element` => return `RElement` at `LView[tNode.index]` location.
+ * If `TNode` is `TNodeType.ElementContainer|IcuContain` => return the parent (recursively).
+ * If `TNode` is `null` then return host `RElement`:
+ *   - return `null` if projection
+ *   - return `null` if parent container is disconnected (we have no parent.)
+ *
+ * @param tView: Current `TView`.
+ * @param tNode: `TNode` for which we wish to retrieve `RElement` (or `null` if host element is
+ *     needed).
+ * @param lView: Current `LView`.
+ * @returns `null` if the `RElement` can't be determined at this time (no parent / projection)
+ */
+
+
+function getClosestRElement(tView, tNode, lView) {
+  let parentTNode = tNode; // Skip over element and ICU containers as those are represented by a comment node and
+  // can't be used as a render parent.
+
+  while (parentTNode !== null && parentTNode.type & (8
+  /* TNodeType.ElementContainer */
+  | 32
+  /* TNodeType.Icu */
+  )) {
+    tNode = parentTNode;
+    parentTNode = tNode.parent;
+  } // If the parent tNode is null, then we are inserting across views: either into an embedded view
+  // or a component view.
+
+
+  if (parentTNode === null) {
+    // We are inserting a root element of the component view into the component host element and
+    // it should always be eager.
+    return lView[HOST];
+  } else {
+    ngDevMode && assertTNodeType(parentTNode, 3
+    /* TNodeType.AnyRNode */
+    | 4
+    /* TNodeType.Container */
+    );
+
+    if (parentTNode.flags & 2
+    /* TNodeFlags.isComponentHost */
+    ) {
+      ngDevMode && assertTNodeForLView(parentTNode, lView);
+      const encapsulation = tView.data[parentTNode.directiveStart].encapsulation; // We've got a parent which is an element in the current view. We just need to verify if the
+      // parent element is not a component. Component's content nodes are not inserted immediately
+      // because they will be projected, and so doing insert at this point would be wasteful.
+      // Since the projection would then move it to its final destination. Note that we can't
+      // make this assumption when using the Shadow DOM, because the native projection placeholders
+      // (<content> or <slot>) have to be in place as elements are being inserted.
+
+      if (encapsulation === ViewEncapsulation$1.None || encapsulation === ViewEncapsulation$1.Emulated) {
+        return null;
+      }
+    }
+
+    return getNativeByTNode(parentTNode, lView);
+  }
+}
+/**
+ * Inserts a native node before another native node for a given parent.
+ * This is a utility function that can be used when native nodes were determined.
+ */
+
+
+function nativeInsertBefore(renderer, parent, child, beforeNode, isMove) {
+  ngDevMode && ngDevMode.rendererInsertBefore++;
+  renderer.insertBefore(parent, child, beforeNode, isMove);
+}
+
+function nativeAppendChild(renderer, parent, child) {
+  ngDevMode && ngDevMode.rendererAppendChild++;
+  ngDevMode && assertDefined(parent, 'parent node must be defined');
+  renderer.appendChild(parent, child);
+}
+
+function nativeAppendOrInsertBefore(renderer, parent, child, beforeNode, isMove) {
+  if (beforeNode !== null) {
+    nativeInsertBefore(renderer, parent, child, beforeNode, isMove);
+  } else {
+    nativeAppendChild(renderer, parent, child);
+  }
+}
+/** Removes a node from the DOM given its native parent. */
+
+
+function nativeRemoveChild(renderer, parent, child, isHostElement) {
+  renderer.removeChild(parent, child, isHostElement);
+}
+/** Checks if an element is a `<template>` node. */
+
+
+function isTemplateNode(node) {
+  return node.tagName === 'TEMPLATE' && node.content !== undefined;
+}
+/**
+ * Returns a native parent of a given native node.
+ */
+
+
+function nativeParentNode(renderer, node) {
+  return renderer.parentNode(node);
+}
+/**
+ * Returns a native sibling of a given native node.
+ */
+
+
+function nativeNextSibling(renderer, node) {
+  return renderer.nextSibling(node);
+}
+/**
+ * Find a node in front of which `currentTNode` should be inserted.
+ *
+ * This method determines the `RNode` in front of which we should insert the `currentRNode`. This
+ * takes `TNode.insertBeforeIndex` into account if i18n code has been invoked.
+ *
+ * @param parentTNode parent `TNode`
+ * @param currentTNode current `TNode` (The node which we would like to insert into the DOM)
+ * @param lView current `LView`
+ */
+
+
+function getInsertInFrontOfRNode(parentTNode, currentTNode, lView) {
+  return _getInsertInFrontOfRNodeWithI18n(parentTNode, currentTNode, lView);
+}
+/**
+ * Find a node in front of which `currentTNode` should be inserted. (Does not take i18n into
+ * account)
+ *
+ * This method determines the `RNode` in front of which we should insert the `currentRNode`. This
+ * does not take `TNode.insertBeforeIndex` into account.
+ *
+ * @param parentTNode parent `TNode`
+ * @param currentTNode current `TNode` (The node which we would like to insert into the DOM)
+ * @param lView current `LView`
+ */
+
+
+function getInsertInFrontOfRNodeWithNoI18n(parentTNode, currentTNode, lView) {
+  if (parentTNode.type & (8
+  /* TNodeType.ElementContainer */
+  | 32
+  /* TNodeType.Icu */
+  )) {
+    return getNativeByTNode(parentTNode, lView);
+  }
+
+  return null;
+}
+/**
+ * Tree shakable boundary for `getInsertInFrontOfRNodeWithI18n` function.
+ *
+ * This function will only be set if i18n code runs.
+ */
+
+
+let _getInsertInFrontOfRNodeWithI18n = getInsertInFrontOfRNodeWithNoI18n;
+/**
+ * Tree shakable boundary for `processI18nInsertBefore` function.
+ *
+ * This function will only be set if i18n code runs.
+ */
+
+let _processI18nInsertBefore;
+
+function setI18nHandling(getInsertInFrontOfRNodeWithI18n, processI18nInsertBefore) {
+  _getInsertInFrontOfRNodeWithI18n = getInsertInFrontOfRNodeWithI18n;
+  _processI18nInsertBefore = processI18nInsertBefore;
+}
+/**
+ * Appends the `child` native node (or a collection of nodes) to the `parent`.
+ *
+ * @param tView The `TView' to be appended
+ * @param lView The current LView
+ * @param childRNode The native child (or children) that should be appended
+ * @param childTNode The TNode of the child element
+ */
+
+
+function appendChild(tView, lView, childRNode, childTNode) {
+  const parentRNode = getParentRElement(tView, childTNode, lView);
+  const renderer = lView[RENDERER];
+  const parentTNode = childTNode.parent || lView[T_HOST];
+  const anchorNode = getInsertInFrontOfRNode(parentTNode, childTNode, lView);
+
+  if (parentRNode != null) {
+    if (Array.isArray(childRNode)) {
+      for (let i = 0; i < childRNode.length; i++) {
+        nativeAppendOrInsertBefore(renderer, parentRNode, childRNode[i], anchorNode, false);
+      }
+    } else {
+      nativeAppendOrInsertBefore(renderer, parentRNode, childRNode, anchorNode, false);
+    }
+  }
+
+  _processI18nInsertBefore !== undefined && _processI18nInsertBefore(renderer, childTNode, lView, childRNode, parentRNode);
+}
+/**
+ * Returns the first native node for a given LView, starting from the provided TNode.
+ *
+ * Native nodes are returned in the order in which those appear in the native tree (DOM).
+ */
+
+
+function getFirstNativeNode(lView, tNode) {
+  if (tNode !== null) {
+    ngDevMode && assertTNodeType(tNode, 3
+    /* TNodeType.AnyRNode */
+    | 12
+    /* TNodeType.AnyContainer */
+    | 32
+    /* TNodeType.Icu */
+    | 16
+    /* TNodeType.Projection */
+    );
+    const tNodeType = tNode.type;
+
+    if (tNodeType & 3
+    /* TNodeType.AnyRNode */
+    ) {
+      return getNativeByTNode(tNode, lView);
+    } else if (tNodeType & 4
+    /* TNodeType.Container */
+    ) {
+      return getBeforeNodeForView(-1, lView[tNode.index]);
+    } else if (tNodeType & 8
+    /* TNodeType.ElementContainer */
+    ) {
+      const elIcuContainerChild = tNode.child;
+
+      if (elIcuContainerChild !== null) {
+        return getFirstNativeNode(lView, elIcuContainerChild);
+      } else {
+        const rNodeOrLContainer = lView[tNode.index];
+
+        if (isLContainer(rNodeOrLContainer)) {
+          return getBeforeNodeForView(-1, rNodeOrLContainer);
+        } else {
+          return unwrapRNode(rNodeOrLContainer);
+        }
+      }
+    } else if (tNodeType & 32
+    /* TNodeType.Icu */
+    ) {
+      let nextRNode = icuContainerIterate(tNode, lView);
+      let rNode = nextRNode(); // If the ICU container has no nodes, than we use the ICU anchor as the node.
+
+      return rNode || unwrapRNode(lView[tNode.index]);
+    } else {
+      const projectionNodes = getProjectionNodes(lView, tNode);
+
+      if (projectionNodes !== null) {
+        if (Array.isArray(projectionNodes)) {
+          return projectionNodes[0];
+        }
+
+        const parentView = getLViewParent(lView[DECLARATION_COMPONENT_VIEW]);
+        ngDevMode && assertParentView(parentView);
+        return getFirstNativeNode(parentView, projectionNodes);
+      } else {
+        return getFirstNativeNode(lView, tNode.next);
+      }
+    }
+  }
+
+  return null;
+}
+
+function getProjectionNodes(lView, tNode) {
+  if (tNode !== null) {
+    const componentView = lView[DECLARATION_COMPONENT_VIEW];
+    const componentHost = componentView[T_HOST];
+    const slotIdx = tNode.projection;
+    ngDevMode && assertProjectionSlots(lView);
+    return componentHost.projection[slotIdx];
+  }
+
+  return null;
+}
+
+function getBeforeNodeForView(viewIndexInContainer, lContainer) {
+  const nextViewIndex = CONTAINER_HEADER_OFFSET + viewIndexInContainer + 1;
+
+  if (nextViewIndex < lContainer.length) {
+    const lView = lContainer[nextViewIndex];
+    const firstTNodeOfView = lView[TVIEW].firstChild;
+
+    if (firstTNodeOfView !== null) {
+      return getFirstNativeNode(lView, firstTNodeOfView);
+    }
+  }
+
+  return lContainer[NATIVE];
+}
+/**
+ * Removes a native node itself using a given renderer. To remove the node we are looking up its
+ * parent from the native tree as not all platforms / browsers support the equivalent of
+ * node.remove().
+ *
+ * @param renderer A renderer to be used
+ * @param rNode The native node that should be removed
+ * @param isHostElement A flag indicating if a node to be removed is a host of a component.
+ */
+
+
+function nativeRemoveNode(renderer, rNode, isHostElement) {
+  ngDevMode && ngDevMode.rendererRemoveNode++;
+  const nativeParent = nativeParentNode(renderer, rNode);
+
+  if (nativeParent) {
+    nativeRemoveChild(renderer, nativeParent, rNode, isHostElement);
+  }
+}
+/**
+ * Performs the operation of `action` on the node. Typically this involves inserting or removing
+ * nodes on the LView or projection boundary.
+ */
+
+
+function applyNodes(renderer, action, tNode, lView, parentRElement, beforeNode, isProjection) {
+  while (tNode != null) {
+    ngDevMode && assertTNodeForLView(tNode, lView);
+    ngDevMode && assertTNodeType(tNode, 3
+    /* TNodeType.AnyRNode */
+    | 12
+    /* TNodeType.AnyContainer */
+    | 16
+    /* TNodeType.Projection */
+    | 32
+    /* TNodeType.Icu */
+    );
+    const rawSlotValue = lView[tNode.index];
+    const tNodeType = tNode.type;
+
+    if (isProjection) {
+      if (action === 0
+      /* WalkTNodeTreeAction.Create */
+      ) {
+        rawSlotValue && attachPatchData(unwrapRNode(rawSlotValue), lView);
+        tNode.flags |= 4
+        /* TNodeFlags.isProjected */
+        ;
+      }
+    }
+
+    if ((tNode.flags & 64
+    /* TNodeFlags.isDetached */
+    ) !== 64
+    /* TNodeFlags.isDetached */
+    ) {
+      if (tNodeType & 8
+      /* TNodeType.ElementContainer */
+      ) {
+        applyNodes(renderer, action, tNode.child, lView, parentRElement, beforeNode, false);
+        applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
+      } else if (tNodeType & 32
+      /* TNodeType.Icu */
+      ) {
+        const nextRNode = icuContainerIterate(tNode, lView);
+        let rNode;
+
+        while (rNode = nextRNode()) {
+          applyToElementOrContainer(action, renderer, parentRElement, rNode, beforeNode);
+        }
+
+        applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
+      } else if (tNodeType & 16
+      /* TNodeType.Projection */
+      ) {
+        applyProjectionRecursive(renderer, action, lView, tNode, parentRElement, beforeNode);
+      } else {
+        ngDevMode && assertTNodeType(tNode, 3
+        /* TNodeType.AnyRNode */
+        | 4
+        /* TNodeType.Container */
+        );
+        applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
+      }
+    }
+
+    tNode = isProjection ? tNode.projectionNext : tNode.next;
+  }
+}
+
+function applyView(tView, lView, renderer, action, parentRElement, beforeNode) {
+  applyNodes(renderer, action, tView.firstChild, lView, parentRElement, beforeNode, false);
+}
+/**
+ * `applyProjection` performs operation on the projection.
+ *
+ * Inserting a projection requires us to locate the projected nodes from the parent component. The
+ * complication is that those nodes themselves could be re-projected from their parent component.
+ *
+ * @param tView The `TView` of `LView` which needs to be inserted, detached, destroyed
+ * @param lView The `LView` which needs to be inserted, detached, destroyed.
+ * @param tProjectionNode node to project
+ */
+
+
+function applyProjection(tView, lView, tProjectionNode) {
+  const renderer = lView[RENDERER];
+  const parentRNode = getParentRElement(tView, tProjectionNode, lView);
+  const parentTNode = tProjectionNode.parent || lView[T_HOST];
+  let beforeNode = getInsertInFrontOfRNode(parentTNode, tProjectionNode, lView);
+  applyProjectionRecursive(renderer, 0
+  /* WalkTNodeTreeAction.Create */
+  , lView, tProjectionNode, parentRNode, beforeNode);
+}
+/**
+ * `applyProjectionRecursive` performs operation on the projection specified by `action` (insert,
+ * detach, destroy)
+ *
+ * Inserting a projection requires us to locate the projected nodes from the parent component. The
+ * complication is that those nodes themselves could be re-projected from their parent component.
+ *
+ * @param renderer Render to use
+ * @param action action to perform (insert, detach, destroy)
+ * @param lView The LView which needs to be inserted, detached, destroyed.
+ * @param tProjectionNode node to project
+ * @param parentRElement parent DOM element for insertion/removal.
+ * @param beforeNode Before which node the insertions should happen.
+ */
+
+
+function applyProjectionRecursive(renderer, action, lView, tProjectionNode, parentRElement, beforeNode) {
+  const componentLView = lView[DECLARATION_COMPONENT_VIEW];
+  const componentNode = componentLView[T_HOST];
+  ngDevMode && assertEqual(typeof tProjectionNode.projection, 'number', 'expecting projection index');
+  const nodeToProjectOrRNodes = componentNode.projection[tProjectionNode.projection];
+
+  if (Array.isArray(nodeToProjectOrRNodes)) {
+    // This should not exist, it is a bit of a hack. When we bootstrap a top level node and we
+    // need to support passing projectable nodes, so we cheat and put them in the TNode
+    // of the Host TView. (Yes we put instance info at the T Level). We can get away with it
+    // because we know that that TView is not shared and therefore it will not be a problem.
+    // This should be refactored and cleaned up.
+    for (let i = 0; i < nodeToProjectOrRNodes.length; i++) {
+      const rNode = nodeToProjectOrRNodes[i];
+      applyToElementOrContainer(action, renderer, parentRElement, rNode, beforeNode);
+    }
+  } else {
+    let nodeToProject = nodeToProjectOrRNodes;
+    const projectedComponentLView = componentLView[PARENT];
+    applyNodes(renderer, action, nodeToProject, projectedComponentLView, parentRElement, beforeNode, true);
+  }
+}
+/**
+ * `applyContainer` performs an operation on the container and its views as specified by
+ * `action` (insert, detach, destroy)
+ *
+ * Inserting a Container is complicated by the fact that the container may have Views which
+ * themselves have containers or projections.
+ *
+ * @param renderer Renderer to use
+ * @param action action to perform (insert, detach, destroy)
+ * @param lContainer The LContainer which needs to be inserted, detached, destroyed.
+ * @param parentRElement parent DOM element for insertion/removal.
+ * @param beforeNode Before which node the insertions should happen.
+ */
+
+
+function applyContainer(renderer, action, lContainer, parentRElement, beforeNode) {
+  ngDevMode && assertLContainer(lContainer);
+  const anchor = lContainer[NATIVE]; // LContainer has its own before node.
+
+  const native = unwrapRNode(lContainer); // An LContainer can be created dynamically on any node by injecting ViewContainerRef.
+  // Asking for a ViewContainerRef on an element will result in a creation of a separate anchor
+  // node (comment in the DOM) that will be different from the LContainer's host node. In this
+  // particular case we need to execute action on 2 nodes:
+  // - container's host node (this is done in the executeActionOnElementOrContainer)
+  // - container's host node (this is done here)
+
+  if (anchor !== native) {
+    // This is very strange to me (Misko). I would expect that the native is same as anchor. I
+    // don't see a reason why they should be different, but they are.
+    //
+    // If they are we need to process the second anchor as well.
+    applyToElementOrContainer(action, renderer, parentRElement, anchor, beforeNode);
+  }
+
+  for (let i = CONTAINER_HEADER_OFFSET; i < lContainer.length; i++) {
+    const lView = lContainer[i];
+    applyView(lView[TVIEW], lView, renderer, action, parentRElement, anchor);
+  }
+}
+/**
+ * Writes class/style to element.
+ *
+ * @param renderer Renderer to use.
+ * @param isClassBased `true` if it should be written to `class` (`false` to write to `style`)
+ * @param rNode The Node to write to.
+ * @param prop Property to write to. This would be the class/style name.
+ * @param value Value to write. If `null`/`undefined`/`false` this is considered a remove (set/add
+ *        otherwise).
+ */
+
+
+function applyStyling(renderer, isClassBased, rNode, prop, value) {
+  if (isClassBased) {
+    // We actually want JS true/false here because any truthy value should add the class
+    if (!value) {
+      ngDevMode && ngDevMode.rendererRemoveClass++;
+      renderer.removeClass(rNode, prop);
+    } else {
+      ngDevMode && ngDevMode.rendererAddClass++;
+      renderer.addClass(rNode, prop);
+    }
+  } else {
+    let flags = prop.indexOf('-') === -1 ? undefined : RendererStyleFlags2.DashCase;
+
+    if (value == null
+    /** || value === undefined */
+    ) {
+      ngDevMode && ngDevMode.rendererRemoveStyle++;
+      renderer.removeStyle(rNode, prop, flags);
+    } else {
+      // A value is important if it ends with `!important`. The style
+      // parser strips any semicolons at the end of the value.
+      const isImportant = typeof value === 'string' ? value.endsWith('!important') : false;
+
+      if (isImportant) {
+        // !important has to be stripped from the value for it to be valid.
+        value = value.slice(0, -10);
+        flags |= RendererStyleFlags2.Important;
+      }
+
+      ngDevMode && ngDevMode.rendererSetStyle++;
+      renderer.setStyle(rNode, prop, value, flags);
+    }
+  }
+}
+/**
+ * Write `cssText` to `RElement`.
+ *
+ * This function does direct write without any reconciliation. Used for writing initial values, so
+ * that static styling values do not pull in the style parser.
+ *
+ * @param renderer Renderer to use
+ * @param element The element which needs to be updated.
+ * @param newValue The new class list to write.
+ */
+
+
+function writeDirectStyle(renderer, element, newValue) {
+  ngDevMode && assertString(newValue, '\'newValue\' should be a string');
+  renderer.setAttribute(element, 'style', newValue);
+  ngDevMode && ngDevMode.rendererSetStyle++;
+}
+/**
+ * Write `className` to `RElement`.
+ *
+ * This function does direct write without any reconciliation. Used for writing initial values, so
+ * that static styling values do not pull in the style parser.
+ *
+ * @param renderer Renderer to use
+ * @param element The element which needs to be updated.
+ * @param newValue The new class list to write.
+ */
+
+
+function writeDirectClass(renderer, element, newValue) {
+  ngDevMode && assertString(newValue, '\'newValue\' should be a string');
+
+  if (newValue === '') {
+    // There are tests in `google3` which expect `element.getAttribute('class')` to be `null`.
+    renderer.removeAttribute(element, 'class');
+  } else {
+    renderer.setAttribute(element, 'class', newValue);
+  }
+
+  ngDevMode && ngDevMode.rendererSetClassName++;
 }
 /**
  * @license
@@ -22763,6 +23170,109 @@ function newTrustedFunctionForDev(...args) {
   return fn.bind(_global); // When Trusted Types support in Function constructors is widely available,
   // the implementation of this function can be simplified to:
   // return new Function(...args.map(a => trustedScriptFromString(a)));
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Validation function invoked at runtime for each binding that might potentially
+ * represent a security-sensitive attribute of an <iframe>.
+ * See `IFRAME_SECURITY_SENSITIVE_ATTRS` in the
+ * `packages/compiler/src/schema/dom_security_schema.ts` script for the full list
+ * of such attributes.
+ *
+ * @codeGenApi
+ */
+
+
+function ɵɵvalidateIframeAttribute(attrValue, tagName, attrName) {
+  const lView = getLView();
+  const tNode = getSelectedTNode();
+  const element = getNativeByTNode(tNode, lView); // Restrict any dynamic bindings of security-sensitive attributes/properties
+  // on an <iframe> for security reasons.
+
+  if (tNode.type === 2
+  /* TNodeType.Element */
+  && tagName.toLowerCase() === 'iframe') {
+    const iframe = element; // Unset previously applied `src` and `srcdoc` if we come across a situation when
+    // a security-sensitive attribute is set later via an attribute/property binding.
+
+    iframe.src = '';
+    iframe.srcdoc = trustedHTMLFromString(''); // Also remove the <iframe> from the document.
+
+    nativeRemoveNode(lView[RENDERER], iframe);
+    const errorMessage = ngDevMode && `Angular has detected that the \`${attrName}\` was applied ` + `as a binding to an <iframe>${getTemplateLocationDetails(lView)}. ` + `For security reasons, the \`${attrName}\` can be set on an <iframe> ` + `as a static attribute only. \n` + `To fix this, switch the \`${attrName}\` binding to a static attribute ` + `in a template or in host bindings section.`;
+    throw new RuntimeError(-910
+    /* RuntimeErrorCode.UNSAFE_IFRAME_ATTRS */
+    , errorMessage);
+  }
+
+  return attrValue;
+}
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
+/**
+ * Most of the use of `document` in Angular is from within the DI system so it is possible to simply
+ * inject the `DOCUMENT` token and are done.
+ *
+ * Ivy is special because it does not rely upon the DI and must get hold of the document some other
+ * way.
+ *
+ * The solution is to define `getDocument()` and `setDocument()` top-level functions for ivy.
+ * Wherever ivy needs the global document, it calls `getDocument()` instead.
+ *
+ * When running ivy outside of a browser environment, it is necessary to call `setDocument()` to
+ * tell ivy what the global `document` is.
+ *
+ * Angular does this for us in each of the standard platforms (`Browser`, `Server`, and `WebWorker`)
+ * by calling `setDocument()` when providing the `DOCUMENT` token.
+ */
+
+
+let DOCUMENT = undefined;
+/**
+ * Tell ivy what the `document` is for this platform.
+ *
+ * It is only necessary to call this if the current platform is not a browser.
+ *
+ * @param document The object representing the global `document` in this environment.
+ */
+
+function setDocument(document) {
+  DOCUMENT = document;
+}
+/**
+ * Access the object that represents the `document` for this platform.
+ *
+ * Ivy calls this whenever it needs to access the `document` object.
+ * For example to create the renderer or to do sanitization.
+ */
+
+
+function getDocument() {
+  if (DOCUMENT !== undefined) {
+    return DOCUMENT;
+  } else if (typeof document !== 'undefined') {
+    return document;
+  } // No "document" can be found. This should only happen if we are running ivy outside Angular and
+  // the current platform is not a browser. Since this is not a supported scenario at the moment
+  // this should not happen in Angular apps.
+  // Once we support running ivy outside of Angular we will need to publish `setDocument()` as a
+  // public API. Meanwhile we just return `undefined` and let the application fail.
+
+
+  return undefined;
 }
 /**
  * @license
@@ -23208,11 +23718,6 @@ function _sanitizeUrl(url) {
 
   return 'unsafe:' + url;
 }
-
-function sanitizeSrcset(srcset) {
-  srcset = String(srcset);
-  return srcset.split(',').map(srcset => _sanitizeUrl(srcset.trim())).join(', ');
-}
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -23259,10 +23764,8 @@ const BLOCK_ELEMENTS = merge(OPTIONAL_END_TAG_BLOCK_ELEMENTS, tagSet('address,ar
 const INLINE_ELEMENTS = merge(OPTIONAL_END_TAG_INLINE_ELEMENTS, tagSet('a,abbr,acronym,audio,b,' + 'bdi,bdo,big,br,cite,code,del,dfn,em,font,i,img,ins,kbd,label,map,mark,picture,q,ruby,rp,rt,s,' + 'samp,small,source,span,strike,strong,sub,sup,time,track,tt,u,var,video'));
 const VALID_ELEMENTS = merge(VOID_ELEMENTS, BLOCK_ELEMENTS, INLINE_ELEMENTS, OPTIONAL_END_TAG_ELEMENTS); // Attributes that have href and hence need to be sanitized
 
-const URI_ATTRS = tagSet('background,cite,href,itemtype,longdesc,poster,src,xlink:href'); // Attributes that have special href set hence need to be sanitized
-
-const SRCSET_ATTRS = tagSet('srcset');
-const HTML_ATTRS = tagSet('abbr,accesskey,align,alt,autoplay,axis,bgcolor,border,cellpadding,cellspacing,class,clear,color,cols,colspan,' + 'compact,controls,coords,datetime,default,dir,download,face,headers,height,hidden,hreflang,hspace,' + 'ismap,itemscope,itemprop,kind,label,lang,language,loop,media,muted,nohref,nowrap,open,preload,rel,rev,role,rows,rowspan,rules,' + 'scope,scrolling,shape,size,sizes,span,srclang,start,summary,tabindex,target,title,translate,type,usemap,' + 'valign,value,vspace,width'); // Accessibility attributes as per WAI-ARIA 1.1 (W3C Working Draft 14 December 2018)
+const URI_ATTRS = tagSet('background,cite,href,itemtype,longdesc,poster,src,xlink:href');
+const HTML_ATTRS = tagSet('abbr,accesskey,align,alt,autoplay,axis,bgcolor,border,cellpadding,cellspacing,class,clear,color,cols,colspan,' + 'compact,controls,coords,datetime,default,dir,download,face,headers,height,hidden,hreflang,hspace,' + 'ismap,itemscope,itemprop,kind,label,lang,language,loop,media,muted,nohref,nowrap,open,preload,rel,rev,role,rows,rowspan,rules,' + 'scope,scrolling,shape,size,sizes,span,srclang,srcset,start,summary,tabindex,target,title,translate,type,usemap,' + 'valign,value,vspace,width'); // Accessibility attributes as per WAI-ARIA 1.1 (W3C Working Draft 14 December 2018)
 
 const ARIA_ATTRS = tagSet('aria-activedescendant,aria-atomic,aria-autocomplete,aria-busy,aria-checked,aria-colcount,aria-colindex,' + 'aria-colspan,aria-controls,aria-current,aria-describedby,aria-details,aria-disabled,aria-dropeffect,' + 'aria-errormessage,aria-expanded,aria-flowto,aria-grabbed,aria-haspopup,aria-hidden,aria-invalid,' + 'aria-keyshortcuts,aria-label,aria-labelledby,aria-level,aria-live,aria-modal,aria-multiline,' + 'aria-multiselectable,aria-orientation,aria-owns,aria-placeholder,aria-posinset,aria-pressed,aria-readonly,' + 'aria-relevant,aria-required,aria-roledescription,aria-rowcount,aria-rowindex,aria-rowspan,aria-selected,' + 'aria-setsize,aria-sort,aria-valuemax,aria-valuemin,aria-valuenow,aria-valuetext'); // NB: This currently consciously doesn't support SVG. SVG sanitization has had several security
 // issues in the past, so it seems safer to leave it out if possible. If support for binding SVG via
@@ -23271,7 +23774,7 @@ const ARIA_ATTRS = tagSet('aria-activedescendant,aria-atomic,aria-autocomplete,a
 // can be sanitized, but they increase security surface area without a legitimate use case, so they
 // are left out here.
 
-const VALID_ATTRS = merge(URI_ATTRS, SRCSET_ATTRS, HTML_ATTRS, ARIA_ATTRS); // Elements whose content should not be traversed/preserved, if the elements themselves are invalid.
+const VALID_ATTRS = merge(URI_ATTRS, HTML_ATTRS, ARIA_ATTRS); // Elements whose content should not be traversed/preserved, if the elements themselves are invalid.
 //
 // Typically, `<invalid>Some content</invalid>` would traverse (and in this case preserve)
 // `Some content`, but strip `invalid-element` opening/closing tags. For some elements, though, we
@@ -23367,7 +23870,6 @@ class SanitizingHtmlSerializer {
       let value = elAttr.value; // TODO(martinprobst): Special case image URIs for data:image/...
 
       if (URI_ATTRS[lower]) value = _sanitizeUrl(value);
-      if (SRCSET_ATTRS[lower]) value = sanitizeSrcset(value);
       this.buf.push(' ', attrName, '="', encodeEntities(value), '"');
     }
 
@@ -24879,7 +25381,7 @@ class Version {
  */
 
 
-const VERSION = new Version('14.2.1');
+const VERSION = new Version('14.3.0');
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -24913,323 +25415,6 @@ const NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR = {};
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-
-/**
- * Defines a schema that allows an NgModule to contain the following:
- * - Non-Angular elements named with dash case (`-`).
- * - Element properties named with dash case (`-`).
- * Dash case is the naming convention for custom elements.
- *
- * @publicApi
- */
-
-const CUSTOM_ELEMENTS_SCHEMA = {
-  name: 'custom-elements'
-};
-/**
- * Defines a schema that allows any property on any element.
- *
- * This schema allows you to ignore the errors related to any unknown elements or properties in a
- * template. The usage of this schema is generally discouraged because it prevents useful validation
- * and may hide real errors in your template. Consider using the `CUSTOM_ELEMENTS_SCHEMA` instead.
- *
- * @publicApi
- */
-
-const NO_ERRORS_SCHEMA = {
-  name: 'no-errors-schema'
-};
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-let shouldThrowErrorOnUnknownElement = false;
-/**
- * Sets a strict mode for JIT-compiled components to throw an error on unknown elements,
- * instead of just logging the error.
- * (for AOT-compiled ones this check happens at build time).
- */
-
-function ɵsetUnknownElementStrictMode(shouldThrow) {
-  shouldThrowErrorOnUnknownElement = shouldThrow;
-}
-/**
- * Gets the current value of the strict mode.
- */
-
-
-function ɵgetUnknownElementStrictMode() {
-  return shouldThrowErrorOnUnknownElement;
-}
-
-let shouldThrowErrorOnUnknownProperty = false;
-/**
- * Sets a strict mode for JIT-compiled components to throw an error on unknown properties,
- * instead of just logging the error.
- * (for AOT-compiled ones this check happens at build time).
- */
-
-function ɵsetUnknownPropertyStrictMode(shouldThrow) {
-  shouldThrowErrorOnUnknownProperty = shouldThrow;
-}
-/**
- * Gets the current value of the strict mode.
- */
-
-
-function ɵgetUnknownPropertyStrictMode() {
-  return shouldThrowErrorOnUnknownProperty;
-}
-/**
- * Validates that the element is known at runtime and produces
- * an error if it's not the case.
- * This check is relevant for JIT-compiled components (for AOT-compiled
- * ones this check happens at build time).
- *
- * The element is considered known if either:
- * - it's a known HTML element
- * - it's a known custom element
- * - the element matches any directive
- * - the element is allowed by one of the schemas
- *
- * @param element Element to validate
- * @param lView An `LView` that represents a current component that is being rendered
- * @param tagName Name of the tag to check
- * @param schemas Array of schemas
- * @param hasDirectives Boolean indicating that the element matches any directive
- */
-
-
-function validateElementIsKnown(element, lView, tagName, schemas, hasDirectives) {
-  // If `schemas` is set to `null`, that's an indication that this Component was compiled in AOT
-  // mode where this check happens at compile time. In JIT mode, `schemas` is always present and
-  // defined as an array (as an empty array in case `schemas` field is not defined) and we should
-  // execute the check below.
-  if (schemas === null) return; // If the element matches any directive, it's considered as valid.
-
-  if (!hasDirectives && tagName !== null) {
-    // The element is unknown if it's an instance of HTMLUnknownElement, or it isn't registered
-    // as a custom element. Note that unknown elements with a dash in their name won't be instances
-    // of HTMLUnknownElement in browsers that support web components.
-    const isUnknown = // Note that we can't check for `typeof HTMLUnknownElement === 'function'`,
-    // because while most browsers return 'function', IE returns 'object'.
-    typeof HTMLUnknownElement !== 'undefined' && HTMLUnknownElement && element instanceof HTMLUnknownElement || typeof customElements !== 'undefined' && tagName.indexOf('-') > -1 && !customElements.get(tagName);
-
-    if (isUnknown && !matchingSchemas(schemas, tagName)) {
-      const isHostStandalone = isHostComponentStandalone(lView);
-      const templateLocation = getTemplateLocationDetails(lView);
-      const schemas = `'${isHostStandalone ? '@Component' : '@NgModule'}.schemas'`;
-      let message = `'${tagName}' is not a known element${templateLocation}:\n`;
-      message += `1. If '${tagName}' is an Angular component, then verify that it is ${isHostStandalone ? 'included in the \'@Component.imports\' of this component' : 'a part of an @NgModule where this component is declared'}.\n`;
-
-      if (tagName && tagName.indexOf('-') > -1) {
-        message += `2. If '${tagName}' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the ${schemas} of this component to suppress this message.`;
-      } else {
-        message += `2. To allow any element add 'NO_ERRORS_SCHEMA' to the ${schemas} of this component.`;
-      }
-
-      if (shouldThrowErrorOnUnknownElement) {
-        throw new RuntimeError(304
-        /* RuntimeErrorCode.UNKNOWN_ELEMENT */
-        , message);
-      } else {
-        console.error(formatRuntimeError(304
-        /* RuntimeErrorCode.UNKNOWN_ELEMENT */
-        , message));
-      }
-    }
-  }
-}
-/**
- * Validates that the property of the element is known at runtime and returns
- * false if it's not the case.
- * This check is relevant for JIT-compiled components (for AOT-compiled
- * ones this check happens at build time).
- *
- * The property is considered known if either:
- * - it's a known property of the element
- * - the element is allowed by one of the schemas
- * - the property is used for animations
- *
- * @param element Element to validate
- * @param propName Name of the property to check
- * @param tagName Name of the tag hosting the property
- * @param schemas Array of schemas
- */
-
-
-function isPropertyValid(element, propName, tagName, schemas) {
-  // If `schemas` is set to `null`, that's an indication that this Component was compiled in AOT
-  // mode where this check happens at compile time. In JIT mode, `schemas` is always present and
-  // defined as an array (as an empty array in case `schemas` field is not defined) and we should
-  // execute the check below.
-  if (schemas === null) return true; // The property is considered valid if the element matches the schema, it exists on the element,
-  // or it is synthetic, and we are in a browser context (web worker nodes should be skipped).
-
-  if (matchingSchemas(schemas, tagName) || propName in element || isAnimationProp(propName)) {
-    return true;
-  } // Note: `typeof Node` returns 'function' in most browsers, but on IE it is 'object' so we
-  // need to account for both here, while being careful with `typeof null` also returning 'object'.
-
-
-  return typeof Node === 'undefined' || Node === null || !(element instanceof Node);
-}
-/**
- * Logs or throws an error that a property is not supported on an element.
- *
- * @param propName Name of the invalid property
- * @param tagName Name of the tag hosting the property
- * @param nodeType Type of the node hosting the property
- * @param lView An `LView` that represents a current component
- */
-
-
-function handleUnknownPropertyError(propName, tagName, nodeType, lView) {
-  // Special-case a situation when a structural directive is applied to
-  // an `<ng-template>` element, for example: `<ng-template *ngIf="true">`.
-  // In this case the compiler generates the `ɵɵtemplate` instruction with
-  // the `null` as the tagName. The directive matching logic at runtime relies
-  // on this effect (see `isInlineTemplate`), thus using the 'ng-template' as
-  // a default value of the `tNode.value` is not feasible at this moment.
-  if (!tagName && nodeType === 4
-  /* TNodeType.Container */
-  ) {
-    tagName = 'ng-template';
-  }
-
-  const isHostStandalone = isHostComponentStandalone(lView);
-  const templateLocation = getTemplateLocationDetails(lView);
-  let message = `Can't bind to '${propName}' since it isn't a known property of '${tagName}'${templateLocation}.`;
-  const schemas = `'${isHostStandalone ? '@Component' : '@NgModule'}.schemas'`;
-  const importLocation = isHostStandalone ? 'included in the \'@Component.imports\' of this component' : 'a part of an @NgModule where this component is declared';
-
-  if (KNOWN_CONTROL_FLOW_DIRECTIVES.has(propName)) {
-    // Most likely this is a control flow directive (such as `*ngIf`) used in
-    // a template, but the directive or the `CommonModule` is not imported.
-    const correspondingImport = KNOWN_CONTROL_FLOW_DIRECTIVES.get(propName);
-    message += `\nIf the '${propName}' is an Angular control flow directive, ` + `please make sure that either the '${correspondingImport}' directive or the 'CommonModule' is ${importLocation}.`;
-  } else {
-    // May be an Angular component, which is not imported/declared?
-    message += `\n1. If '${tagName}' is an Angular component and it has the ` + `'${propName}' input, then verify that it is ${importLocation}.`; // May be a Web Component?
-
-    if (tagName && tagName.indexOf('-') > -1) {
-      message += `\n2. If '${tagName}' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' ` + `to the ${schemas} of this component to suppress this message.`;
-      message += `\n3. To allow any property add 'NO_ERRORS_SCHEMA' to ` + `the ${schemas} of this component.`;
-    } else {
-      // If it's expected, the error can be suppressed by the `NO_ERRORS_SCHEMA` schema.
-      message += `\n2. To allow any property add 'NO_ERRORS_SCHEMA' to ` + `the ${schemas} of this component.`;
-    }
-  }
-
-  reportUnknownPropertyError(message);
-}
-
-function reportUnknownPropertyError(message) {
-  if (shouldThrowErrorOnUnknownProperty) {
-    throw new RuntimeError(303
-    /* RuntimeErrorCode.UNKNOWN_BINDING */
-    , message);
-  } else {
-    console.error(formatRuntimeError(303
-    /* RuntimeErrorCode.UNKNOWN_BINDING */
-    , message));
-  }
-}
-/**
- * WARNING: this is a **dev-mode only** function (thus should always be guarded by the `ngDevMode`)
- * and must **not** be used in production bundles. The function makes megamorphic reads, which might
- * be too slow for production mode and also it relies on the constructor function being available.
- *
- * Gets a reference to the host component def (where a current component is declared).
- *
- * @param lView An `LView` that represents a current component that is being rendered.
- */
-
-
-function getDeclarationComponentDef(lView) {
-  !ngDevMode && throwError('Must never be called in production mode');
-  const declarationLView = lView[DECLARATION_COMPONENT_VIEW];
-  const context = declarationLView[CONTEXT]; // Unable to obtain a context.
-
-  if (!context) return null;
-  return context.constructor ? getComponentDef(context.constructor) : null;
-}
-/**
- * WARNING: this is a **dev-mode only** function (thus should always be guarded by the `ngDevMode`)
- * and must **not** be used in production bundles. The function makes megamorphic reads, which might
- * be too slow for production mode.
- *
- * Checks if the current component is declared inside of a standalone component template.
- *
- * @param lView An `LView` that represents a current component that is being rendered.
- */
-
-
-function isHostComponentStandalone(lView) {
-  !ngDevMode && throwError('Must never be called in production mode');
-  const componentDef = getDeclarationComponentDef(lView); // Treat host component as non-standalone if we can't obtain the def.
-
-  return !!(componentDef === null || componentDef === void 0 ? void 0 : componentDef.standalone);
-}
-/**
- * WARNING: this is a **dev-mode only** function (thus should always be guarded by the `ngDevMode`)
- * and must **not** be used in production bundles. The function makes megamorphic reads, which might
- * be too slow for production mode.
- *
- * Constructs a string describing the location of the host component template. The function is used
- * in dev mode to produce error messages.
- *
- * @param lView An `LView` that represents a current component that is being rendered.
- */
-
-
-function getTemplateLocationDetails(lView) {
-  var _a;
-
-  !ngDevMode && throwError('Must never be called in production mode');
-  const hostComponentDef = getDeclarationComponentDef(lView);
-  const componentClassName = (_a = hostComponentDef === null || hostComponentDef === void 0 ? void 0 : hostComponentDef.type) === null || _a === void 0 ? void 0 : _a.name;
-  return componentClassName ? ` (used in the '${componentClassName}' component template)` : '';
-}
-/**
- * The set of known control flow directives and their corresponding imports.
- * We use this set to produce a more precises error message with a note
- * that the `CommonModule` should also be included.
- */
-
-
-const KNOWN_CONTROL_FLOW_DIRECTIVES = new Map([['ngIf', 'NgIf'], ['ngFor', 'NgForOf'], ['ngSwitchCase', 'NgSwitchCase'], ['ngSwitchDefault', 'NgSwitchDefault']]);
-/**
- * Returns true if the tag name is allowed by specified schemas.
- * @param schemas Array of schemas
- * @param tagName Name of the tag
- */
-
-function matchingSchemas(schemas, tagName) {
-  if (schemas !== null) {
-    for (let i = 0; i < schemas.length; i++) {
-      const schema = schemas[i];
-
-      if (schema === NO_ERRORS_SCHEMA || schema === CUSTOM_ELEMENTS_SCHEMA && tagName && tagName.indexOf('-') > -1) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
 
 const ERROR_ORIGINAL_ERROR = 'ngOriginalError';
 
@@ -25317,59 +25502,6 @@ class ErrorHandler {
  * found in the LICENSE file at https://angular.io/license
  */
 
-/**
- * Disallowed strings in the comment.
- *
- * see: https://html.spec.whatwg.org/multipage/syntax.html#comments
- */
-
-
-const COMMENT_DISALLOWED = /^>|^->|<!--|-->|--!>|<!-$/g;
-/**
- * Delimiter in the disallowed strings which needs to be wrapped with zero with character.
- */
-
-const COMMENT_DELIMITER = /(<|>)/;
-const COMMENT_DELIMITER_ESCAPED = '\u200B$1\u200B';
-/**
- * Escape the content of comment strings so that it can be safely inserted into a comment node.
- *
- * The issue is that HTML does not specify any way to escape comment end text inside the comment.
- * Consider: `<!-- The way you close a comment is with ">", and "->" at the beginning or by "-->" or
- * "--!>" at the end. -->`. Above the `"-->"` is meant to be text not an end to the comment. This
- * can be created programmatically through DOM APIs. (`<!--` are also disallowed.)
- *
- * see: https://html.spec.whatwg.org/multipage/syntax.html#comments
- *
- * ```
- * div.innerHTML = div.innerHTML
- * ```
- *
- * One would expect that the above code would be safe to do, but it turns out that because comment
- * text is not escaped, the comment may contain text which will prematurely close the comment
- * opening up the application for XSS attack. (In SSR we programmatically create comment nodes which
- * may contain such text and expect them to be safe.)
- *
- * This function escapes the comment text by looking for comment delimiters (`<` and `>`) and
- * surrounding them with `_>_` where the `_` is a zero width space `\u200B`. The result is that if a
- * comment contains any of the comment start/end delimiters (such as `<!--`, `-->` or `--!>`) the
- * text it will render normally but it will not cause the HTML parser to close/open the comment.
- *
- * @param value text to make safe for comment node by escaping the comment open/close character
- *     sequence.
- */
-
-function escapeCommentText(value) {
-  return value.replace(COMMENT_DISALLOWED, text => text.replace(COMMENT_DELIMITER, COMMENT_DELIMITER_ESCAPED));
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
 
 function normalizeDebugBindingName(name) {
   // Attribute names with `$` (eg `x-y$`) are valid per spec, but unsupported by some browsers
@@ -25390,450 +25522,6 @@ function normalizeDebugBindingValue(value) {
   } catch (e) {
     return '[ERROR] Exception while trying to serialize the value';
   }
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-// Keeps track of the currently-active LViews.
-
-
-const TRACKED_LVIEWS = new Map(); // Used for generating unique IDs for LViews.
-
-let uniqueIdCounter = 0;
-/** Gets a unique ID that can be assigned to an LView. */
-
-function getUniqueLViewId() {
-  return uniqueIdCounter++;
-}
-/** Starts tracking an LView. */
-
-
-function registerLView(lView) {
-  ngDevMode && assertNumber(lView[ID], 'LView must have an ID in order to be registered');
-  TRACKED_LVIEWS.set(lView[ID], lView);
-}
-/** Gets an LView by its unique ID. */
-
-
-function getLViewById(id) {
-  ngDevMode && assertNumber(id, 'ID used for LView lookup must be a number');
-  return TRACKED_LVIEWS.get(id) || null;
-}
-/** Stops tracking an LView. */
-
-
-function unregisterLView(lView) {
-  ngDevMode && assertNumber(lView[ID], 'Cannot stop tracking an LView that does not have an ID');
-  TRACKED_LVIEWS.delete(lView[ID]);
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * The internal view context which is specific to a given DOM element, directive or
- * component instance. Each value in here (besides the LView and element node details)
- * can be present, null or undefined. If undefined then it implies the value has not been
- * looked up yet, otherwise, if null, then a lookup was executed and nothing was found.
- *
- * Each value will get filled when the respective value is examined within the getContext
- * function. The component, element and each directive instance will share the same instance
- * of the context.
- */
-
-
-class LContext {
-  constructor(
-  /**
-   * ID of the component's parent view data.
-   */
-  lViewId,
-  /**
-   * The index instance of the node.
-   */
-  nodeIndex,
-  /**
-   * The instance of the DOM node that is attached to the lNode.
-   */
-  native) {
-    this.lViewId = lViewId;
-    this.nodeIndex = nodeIndex;
-    this.native = native;
-  }
-  /** Component's parent view data. */
-
-
-  get lView() {
-    return getLViewById(this.lViewId);
-  }
-
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * Returns the matching `LContext` data for a given DOM node, directive or component instance.
- *
- * This function will examine the provided DOM element, component, or directive instance\'s
- * monkey-patched property to derive the `LContext` data. Once called then the monkey-patched
- * value will be that of the newly created `LContext`.
- *
- * If the monkey-patched value is the `LView` instance then the context value for that
- * target will be created and the monkey-patch reference will be updated. Therefore when this
- * function is called it may mutate the provided element\'s, component\'s or any of the associated
- * directive\'s monkey-patch values.
- *
- * If the monkey-patch value is not detected then the code will walk up the DOM until an element
- * is found which contains a monkey-patch reference. When that occurs then the provided element
- * will be updated with a new context (which is then returned). If the monkey-patch value is not
- * detected for a component/directive instance then it will throw an error (all components and
- * directives should be automatically monkey-patched by ivy).
- *
- * @param target Component, Directive or DOM Node.
- */
-
-
-function getLContext(target) {
-  let mpValue = readPatchedData(target);
-
-  if (mpValue) {
-    // only when it's an array is it considered an LView instance
-    // ... otherwise it's an already constructed LContext instance
-    if (isLView(mpValue)) {
-      const lView = mpValue;
-      let nodeIndex;
-      let component = undefined;
-      let directives = undefined;
-
-      if (isComponentInstance(target)) {
-        nodeIndex = findViaComponent(lView, target);
-
-        if (nodeIndex == -1) {
-          throw new Error('The provided component was not found in the application');
-        }
-
-        component = target;
-      } else if (isDirectiveInstance(target)) {
-        nodeIndex = findViaDirective(lView, target);
-
-        if (nodeIndex == -1) {
-          throw new Error('The provided directive was not found in the application');
-        }
-
-        directives = getDirectivesAtNodeIndex(nodeIndex, lView, false);
-      } else {
-        nodeIndex = findViaNativeElement(lView, target);
-
-        if (nodeIndex == -1) {
-          return null;
-        }
-      } // the goal is not to fill the entire context full of data because the lookups
-      // are expensive. Instead, only the target data (the element, component, container, ICU
-      // expression or directive details) are filled into the context. If called multiple times
-      // with different target values then the missing target data will be filled in.
-
-
-      const native = unwrapRNode(lView[nodeIndex]);
-      const existingCtx = readPatchedData(native);
-      const context = existingCtx && !Array.isArray(existingCtx) ? existingCtx : createLContext(lView, nodeIndex, native); // only when the component has been discovered then update the monkey-patch
-
-      if (component && context.component === undefined) {
-        context.component = component;
-        attachPatchData(context.component, context);
-      } // only when the directives have been discovered then update the monkey-patch
-
-
-      if (directives && context.directives === undefined) {
-        context.directives = directives;
-
-        for (let i = 0; i < directives.length; i++) {
-          attachPatchData(directives[i], context);
-        }
-      }
-
-      attachPatchData(context.native, context);
-      mpValue = context;
-    }
-  } else {
-    const rElement = target;
-    ngDevMode && assertDomNode(rElement); // if the context is not found then we need to traverse upwards up the DOM
-    // to find the nearest element that has already been monkey patched with data
-
-    let parent = rElement;
-
-    while (parent = parent.parentNode) {
-      const parentContext = readPatchedData(parent);
-
-      if (parentContext) {
-        const lView = Array.isArray(parentContext) ? parentContext : parentContext.lView; // the edge of the app was also reached here through another means
-        // (maybe because the DOM was changed manually).
-
-        if (!lView) {
-          return null;
-        }
-
-        const index = findViaNativeElement(lView, rElement);
-
-        if (index >= 0) {
-          const native = unwrapRNode(lView[index]);
-          const context = createLContext(lView, index, native);
-          attachPatchData(native, context);
-          mpValue = context;
-          break;
-        }
-      }
-    }
-  }
-
-  return mpValue || null;
-}
-/**
- * Creates an empty instance of a `LContext` context
- */
-
-
-function createLContext(lView, nodeIndex, native) {
-  return new LContext(lView[ID], nodeIndex, native);
-}
-/**
- * Takes a component instance and returns the view for that component.
- *
- * @param componentInstance
- * @returns The component's view
- */
-
-
-function getComponentViewByInstance(componentInstance) {
-  let patchedData = readPatchedData(componentInstance);
-  let lView;
-
-  if (isLView(patchedData)) {
-    const contextLView = patchedData;
-    const nodeIndex = findViaComponent(contextLView, componentInstance);
-    lView = getComponentLViewByIndex(nodeIndex, contextLView);
-    const context = createLContext(contextLView, nodeIndex, lView[HOST]);
-    context.component = componentInstance;
-    attachPatchData(componentInstance, context);
-    attachPatchData(context.native, context);
-  } else {
-    const context = patchedData;
-    const contextLView = context.lView;
-    ngDevMode && assertLView(contextLView);
-    lView = getComponentLViewByIndex(context.nodeIndex, contextLView);
-  }
-
-  return lView;
-}
-/**
- * This property will be monkey-patched on elements, components and directives.
- */
-
-
-const MONKEY_PATCH_KEY_NAME = '__ngContext__';
-/**
- * Assigns the given data to the given target (which could be a component,
- * directive or DOM node instance) using monkey-patching.
- */
-
-function attachPatchData(target, data) {
-  ngDevMode && assertDefined(target, 'Target expected'); // Only attach the ID of the view in order to avoid memory leaks (see #41047). We only do this
-  // for `LView`, because we have control over when an `LView` is created and destroyed, whereas
-  // we can't know when to remove an `LContext`.
-
-  if (isLView(data)) {
-    target[MONKEY_PATCH_KEY_NAME] = data[ID];
-    registerLView(data);
-  } else {
-    target[MONKEY_PATCH_KEY_NAME] = data;
-  }
-}
-/**
- * Returns the monkey-patch value data present on the target (which could be
- * a component, directive or a DOM node).
- */
-
-
-function readPatchedData(target) {
-  ngDevMode && assertDefined(target, 'Target expected');
-  const data = target[MONKEY_PATCH_KEY_NAME];
-  return typeof data === 'number' ? getLViewById(data) : data || null;
-}
-
-function readPatchedLView(target) {
-  const value = readPatchedData(target);
-
-  if (value) {
-    return isLView(value) ? value : value.lView;
-  }
-
-  return null;
-}
-
-function isComponentInstance(instance) {
-  return instance && instance.constructor && instance.constructor.ɵcmp;
-}
-
-function isDirectiveInstance(instance) {
-  return instance && instance.constructor && instance.constructor.ɵdir;
-}
-/**
- * Locates the element within the given LView and returns the matching index
- */
-
-
-function findViaNativeElement(lView, target) {
-  const tView = lView[TVIEW];
-
-  for (let i = HEADER_OFFSET; i < tView.bindingStartIndex; i++) {
-    if (unwrapRNode(lView[i]) === target) {
-      return i;
-    }
-  }
-
-  return -1;
-}
-/**
- * Locates the next tNode (child, sibling or parent).
- */
-
-
-function traverseNextElement(tNode) {
-  if (tNode.child) {
-    return tNode.child;
-  } else if (tNode.next) {
-    return tNode.next;
-  } else {
-    // Let's take the following template: <div><span>text</span></div><component/>
-    // After checking the text node, we need to find the next parent that has a "next" TNode,
-    // in this case the parent `div`, so that we can find the component.
-    while (tNode.parent && !tNode.parent.next) {
-      tNode = tNode.parent;
-    }
-
-    return tNode.parent && tNode.parent.next;
-  }
-}
-/**
- * Locates the component within the given LView and returns the matching index
- */
-
-
-function findViaComponent(lView, componentInstance) {
-  const componentIndices = lView[TVIEW].components;
-
-  if (componentIndices) {
-    for (let i = 0; i < componentIndices.length; i++) {
-      const elementComponentIndex = componentIndices[i];
-      const componentView = getComponentLViewByIndex(elementComponentIndex, lView);
-
-      if (componentView[CONTEXT] === componentInstance) {
-        return elementComponentIndex;
-      }
-    }
-  } else {
-    const rootComponentView = getComponentLViewByIndex(HEADER_OFFSET, lView);
-    const rootComponent = rootComponentView[CONTEXT];
-
-    if (rootComponent === componentInstance) {
-      // we are dealing with the root element here therefore we know that the
-      // element is the very first element after the HEADER data in the lView
-      return HEADER_OFFSET;
-    }
-  }
-
-  return -1;
-}
-/**
- * Locates the directive within the given LView and returns the matching index
- */
-
-
-function findViaDirective(lView, directiveInstance) {
-  // if a directive is monkey patched then it will (by default)
-  // have a reference to the LView of the current view. The
-  // element bound to the directive being search lives somewhere
-  // in the view data. We loop through the nodes and check their
-  // list of directives for the instance.
-  let tNode = lView[TVIEW].firstChild;
-
-  while (tNode) {
-    const directiveIndexStart = tNode.directiveStart;
-    const directiveIndexEnd = tNode.directiveEnd;
-
-    for (let i = directiveIndexStart; i < directiveIndexEnd; i++) {
-      if (lView[i] === directiveInstance) {
-        return tNode.index;
-      }
-    }
-
-    tNode = traverseNextElement(tNode);
-  }
-
-  return -1;
-}
-/**
- * Returns a list of directives extracted from the given view based on the
- * provided list of directive index values.
- *
- * @param nodeIndex The node index
- * @param lView The target view data
- * @param includeComponents Whether or not to include components in returned directives
- */
-
-
-function getDirectivesAtNodeIndex(nodeIndex, lView, includeComponents) {
-  const tNode = lView[TVIEW].data[nodeIndex];
-  let directiveStartIndex = tNode.directiveStart;
-  if (directiveStartIndex == 0) return EMPTY_ARRAY;
-  const directiveEndIndex = tNode.directiveEnd;
-  if (!includeComponents && tNode.flags & 2
-  /* TNodeFlags.isComponentHost */
-  ) directiveStartIndex++;
-  return lView.slice(directiveStartIndex, directiveEndIndex);
-}
-
-function getComponentAtNodeIndex(nodeIndex, lView) {
-  const tNode = lView[TVIEW].data[nodeIndex];
-  let directiveStartIndex = tNode.directiveStart;
-  return tNode.flags & 2
-  /* TNodeFlags.isComponentHost */
-  ? lView[directiveStartIndex] : null;
-}
-/**
- * Returns a map of local references (local reference name => element or directive instance) that
- * exist on a given element.
- */
-
-
-function discoverLocalRefs(lView, nodeIndex) {
-  const tNode = lView[TVIEW].data[nodeIndex];
-
-  if (tNode && tNode.localNames) {
-    const result = {};
-    let localIndex = tNode.index + 1;
-
-    for (let i = 0; i < tNode.localNames.length; i += 2) {
-      result[tNode.localNames[i]] = lView[localIndex];
-      localIndex++;
-    }
-
-    return result;
-  }
-
-  return null;
 }
 /**
  * @license
@@ -26026,1308 +25714,6 @@ function getExpressionChangedErrorDetails(lView, bindingIndex, oldValue, newValu
     oldValue,
     newValue
   };
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * Flags for renderer-specific style modifiers.
- * @publicApi
- */
-
-
-var RendererStyleFlags2;
-
-(function (RendererStyleFlags2) {
-  // TODO(misko): This needs to be refactored into a separate file so that it can be imported from
-  // `node_manipulation.ts` Currently doing the import cause resolution order to change and fails
-  // the tests. The work around is to have hard coded value in `node_manipulation.ts` for now.
-
-  /**
-   * Marks a style as important.
-   */
-  RendererStyleFlags2[RendererStyleFlags2["Important"] = 1] = "Important";
-  /**
-   * Marks a style as using dash case naming (this-is-dash-case).
-   */
-
-  RendererStyleFlags2[RendererStyleFlags2["DashCase"] = 2] = "DashCase";
-})(RendererStyleFlags2 || (RendererStyleFlags2 = {}));
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-
-let _icuContainerIterate;
-/**
- * Iterator which provides ability to visit all of the `TIcuContainerNode` root `RNode`s.
- */
-
-
-function icuContainerIterate(tIcuContainerNode, lView) {
-  return _icuContainerIterate(tIcuContainerNode, lView);
-}
-/**
- * Ensures that `IcuContainerVisitor`'s implementation is present.
- *
- * This function is invoked when i18n instruction comes across an ICU. The purpose is to allow the
- * bundler to tree shake ICU logic and only load it if ICU instruction is executed.
- */
-
-
-function ensureIcuContainerVisitorLoaded(loader) {
-  if (_icuContainerIterate === undefined) {
-    // Do not inline this function. We want to keep `ensureIcuContainerVisitorLoaded` light, so it
-    // can be inlined into call-site.
-    _icuContainerIterate = loader();
-  }
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-// Note: This hack is necessary so we don't erroneously get a circular dependency
-// failure based on types.
-
-
-const unusedValueExportToPlacateAjd$4 = 1;
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-// Note: This hack is necessary so we don't erroneously get a circular dependency
-// failure based on types.
-
-const unusedValueExportToPlacateAjd$3 = 1;
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-/**
- * Gets the parent LView of the passed LView, if the PARENT is an LContainer, will get the parent of
- * that LContainer, which is an LView
- * @param lView the lView whose parent to get
- */
-
-function getLViewParent(lView) {
-  ngDevMode && assertLView(lView);
-  const parent = lView[PARENT];
-  return isLContainer(parent) ? parent[PARENT] : parent;
-}
-/**
- * Retrieve the root view from any component or `LView` by walking the parent `LView` until
- * reaching the root `LView`.
- *
- * @param componentOrLView any component or `LView`
- */
-
-
-function getRootView(componentOrLView) {
-  ngDevMode && assertDefined(componentOrLView, 'component');
-  let lView = isLView(componentOrLView) ? componentOrLView : readPatchedLView(componentOrLView);
-
-  while (lView && !(lView[FLAGS] & 256
-  /* LViewFlags.IsRoot */
-  )) {
-    lView = getLViewParent(lView);
-  }
-
-  ngDevMode && assertLView(lView);
-  return lView;
-}
-/**
- * Returns the `RootContext` instance that is associated with
- * the application where the target is situated. It does this by walking the parent views until it
- * gets to the root view, then getting the context off of that.
- *
- * @param viewOrComponent the `LView` or component to get the root context for.
- */
-
-
-function getRootContext(viewOrComponent) {
-  const rootView = getRootView(viewOrComponent);
-  ngDevMode && assertDefined(rootView[CONTEXT], 'RootView has no context. Perhaps it is disconnected?');
-  return rootView[CONTEXT];
-}
-/**
- * Gets the first `LContainer` in the LView or `null` if none exists.
- */
-
-
-function getFirstLContainer(lView) {
-  return getNearestLContainer(lView[CHILD_HEAD]);
-}
-/**
- * Gets the next `LContainer` that is a sibling of the given container.
- */
-
-
-function getNextLContainer(container) {
-  return getNearestLContainer(container[NEXT]);
-}
-
-function getNearestLContainer(viewOrContainer) {
-  while (viewOrContainer !== null && !isLContainer(viewOrContainer)) {
-    viewOrContainer = viewOrContainer[NEXT];
-  }
-
-  return viewOrContainer;
-}
-/**
- * @license
- * Copyright Google LLC All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
- */
-
-
-const unusedValueToPlacateAjd$2 = unusedValueExportToPlacateAjd$8 + unusedValueExportToPlacateAjd$5 + unusedValueExportToPlacateAjd$4 + unusedValueExportToPlacateAjd$3 + unusedValueExportToPlacateAjd$7;
-/**
- * NOTE: for performance reasons, the possible actions are inlined within the function instead of
- * being passed as an argument.
- */
-
-function applyToElementOrContainer(action, renderer, parent, lNodeToHandle, beforeNode) {
-  // If this slot was allocated for a text node dynamically created by i18n, the text node itself
-  // won't be created until i18nApply() in the update block, so this node should be skipped.
-  // For more info, see "ICU expressions should work inside an ngTemplateOutlet inside an ngFor"
-  // in `i18n_spec.ts`.
-  if (lNodeToHandle != null) {
-    let lContainer;
-    let isComponent = false; // We are expecting an RNode, but in the case of a component or LContainer the `RNode` is
-    // wrapped in an array which needs to be unwrapped. We need to know if it is a component and if
-    // it has LContainer so that we can process all of those cases appropriately.
-
-    if (isLContainer(lNodeToHandle)) {
-      lContainer = lNodeToHandle;
-    } else if (isLView(lNodeToHandle)) {
-      isComponent = true;
-      ngDevMode && assertDefined(lNodeToHandle[HOST], 'HOST must be defined for a component LView');
-      lNodeToHandle = lNodeToHandle[HOST];
-    }
-
-    const rNode = unwrapRNode(lNodeToHandle);
-
-    if (action === 0
-    /* WalkTNodeTreeAction.Create */
-    && parent !== null) {
-      if (beforeNode == null) {
-        nativeAppendChild(renderer, parent, rNode);
-      } else {
-        nativeInsertBefore(renderer, parent, rNode, beforeNode || null, true);
-      }
-    } else if (action === 1
-    /* WalkTNodeTreeAction.Insert */
-    && parent !== null) {
-      nativeInsertBefore(renderer, parent, rNode, beforeNode || null, true);
-    } else if (action === 2
-    /* WalkTNodeTreeAction.Detach */
-    ) {
-      nativeRemoveNode(renderer, rNode, isComponent);
-    } else if (action === 3
-    /* WalkTNodeTreeAction.Destroy */
-    ) {
-      ngDevMode && ngDevMode.rendererDestroyNode++;
-      renderer.destroyNode(rNode);
-    }
-
-    if (lContainer != null) {
-      applyContainer(renderer, action, lContainer, parent, beforeNode);
-    }
-  }
-}
-
-function createTextNode(renderer, value) {
-  ngDevMode && ngDevMode.rendererCreateTextNode++;
-  ngDevMode && ngDevMode.rendererSetText++;
-  return renderer.createText(value);
-}
-
-function updateTextNode(renderer, rNode, value) {
-  ngDevMode && ngDevMode.rendererSetText++;
-  renderer.setValue(rNode, value);
-}
-
-function createCommentNode(renderer, value) {
-  ngDevMode && ngDevMode.rendererCreateComment++;
-  return renderer.createComment(escapeCommentText(value));
-}
-/**
- * Creates a native element from a tag name, using a renderer.
- * @param renderer A renderer to use
- * @param name the tag name
- * @param namespace Optional namespace for element.
- * @returns the element created
- */
-
-
-function createElementNode(renderer, name, namespace) {
-  ngDevMode && ngDevMode.rendererCreateElement++;
-  return renderer.createElement(name, namespace);
-}
-/**
- * Removes all DOM elements associated with a view.
- *
- * Because some root nodes of the view may be containers, we sometimes need
- * to propagate deeply into the nested containers to remove all elements in the
- * views beneath it.
- *
- * @param tView The `TView' of the `LView` from which elements should be added or removed
- * @param lView The view from which elements should be added or removed
- */
-
-
-function removeViewFromContainer(tView, lView) {
-  const renderer = lView[RENDERER];
-  applyView(tView, lView, renderer, 2
-  /* WalkTNodeTreeAction.Detach */
-  , null, null);
-  lView[HOST] = null;
-  lView[T_HOST] = null;
-}
-/**
- * Adds all DOM elements associated with a view.
- *
- * Because some root nodes of the view may be containers, we sometimes need
- * to propagate deeply into the nested containers to add all elements in the
- * views beneath it.
- *
- * @param tView The `TView' of the `LView` from which elements should be added or removed
- * @param parentTNode The `TNode` where the `LView` should be attached to.
- * @param renderer Current renderer to use for DOM manipulations.
- * @param lView The view from which elements should be added or removed
- * @param parentNativeNode The parent `RElement` where it should be inserted into.
- * @param beforeNode The node before which elements should be added, if insert mode
- */
-
-
-function addViewToContainer(tView, parentTNode, renderer, lView, parentNativeNode, beforeNode) {
-  lView[HOST] = parentNativeNode;
-  lView[T_HOST] = parentTNode;
-  applyView(tView, lView, renderer, 1
-  /* WalkTNodeTreeAction.Insert */
-  , parentNativeNode, beforeNode);
-}
-/**
- * Detach a `LView` from the DOM by detaching its nodes.
- *
- * @param tView The `TView' of the `LView` to be detached
- * @param lView the `LView` to be detached.
- */
-
-
-function renderDetachView(tView, lView) {
-  applyView(tView, lView, lView[RENDERER], 2
-  /* WalkTNodeTreeAction.Detach */
-  , null, null);
-}
-/**
- * Traverses down and up the tree of views and containers to remove listeners and
- * call onDestroy callbacks.
- *
- * Notes:
- *  - Because it's used for onDestroy calls, it needs to be bottom-up.
- *  - Must process containers instead of their views to avoid splicing
- *  when views are destroyed and re-added.
- *  - Using a while loop because it's faster than recursion
- *  - Destroy only called on movement to sibling or movement to parent (laterally or up)
- *
- *  @param rootView The view to destroy
- */
-
-
-function destroyViewTree(rootView) {
-  // If the view has no children, we can clean it up and return early.
-  let lViewOrLContainer = rootView[CHILD_HEAD];
-
-  if (!lViewOrLContainer) {
-    return cleanUpView(rootView[TVIEW], rootView);
-  }
-
-  while (lViewOrLContainer) {
-    let next = null;
-
-    if (isLView(lViewOrLContainer)) {
-      // If LView, traverse down to child.
-      next = lViewOrLContainer[CHILD_HEAD];
-    } else {
-      ngDevMode && assertLContainer(lViewOrLContainer); // If container, traverse down to its first LView.
-
-      const firstView = lViewOrLContainer[CONTAINER_HEADER_OFFSET];
-      if (firstView) next = firstView;
-    }
-
-    if (!next) {
-      // Only clean up view when moving to the side or up, as destroy hooks
-      // should be called in order from the bottom up.
-      while (lViewOrLContainer && !lViewOrLContainer[NEXT] && lViewOrLContainer !== rootView) {
-        if (isLView(lViewOrLContainer)) {
-          cleanUpView(lViewOrLContainer[TVIEW], lViewOrLContainer);
-        }
-
-        lViewOrLContainer = lViewOrLContainer[PARENT];
-      }
-
-      if (lViewOrLContainer === null) lViewOrLContainer = rootView;
-
-      if (isLView(lViewOrLContainer)) {
-        cleanUpView(lViewOrLContainer[TVIEW], lViewOrLContainer);
-      }
-
-      next = lViewOrLContainer && lViewOrLContainer[NEXT];
-    }
-
-    lViewOrLContainer = next;
-  }
-}
-/**
- * Inserts a view into a container.
- *
- * This adds the view to the container's array of active views in the correct
- * position. It also adds the view's elements to the DOM if the container isn't a
- * root node of another view (in that case, the view's elements will be added when
- * the container's parent view is added later).
- *
- * @param tView The `TView' of the `LView` to insert
- * @param lView The view to insert
- * @param lContainer The container into which the view should be inserted
- * @param index Which index in the container to insert the child view into
- */
-
-
-function insertView(tView, lView, lContainer, index) {
-  ngDevMode && assertLView(lView);
-  ngDevMode && assertLContainer(lContainer);
-  const indexInContainer = CONTAINER_HEADER_OFFSET + index;
-  const containerLength = lContainer.length;
-
-  if (index > 0) {
-    // This is a new view, we need to add it to the children.
-    lContainer[indexInContainer - 1][NEXT] = lView;
-  }
-
-  if (index < containerLength - CONTAINER_HEADER_OFFSET) {
-    lView[NEXT] = lContainer[indexInContainer];
-    addToArray(lContainer, CONTAINER_HEADER_OFFSET + index, lView);
-  } else {
-    lContainer.push(lView);
-    lView[NEXT] = null;
-  }
-
-  lView[PARENT] = lContainer; // track views where declaration and insertion points are different
-
-  const declarationLContainer = lView[DECLARATION_LCONTAINER];
-
-  if (declarationLContainer !== null && lContainer !== declarationLContainer) {
-    trackMovedView(declarationLContainer, lView);
-  } // notify query that a new view has been added
-
-
-  const lQueries = lView[QUERIES];
-
-  if (lQueries !== null) {
-    lQueries.insertView(tView);
-  } // Sets the attached flag
-
-
-  lView[FLAGS] |= 64
-  /* LViewFlags.Attached */
-  ;
-}
-/**
- * Track views created from the declaration container (TemplateRef) and inserted into a
- * different LContainer.
- */
-
-
-function trackMovedView(declarationContainer, lView) {
-  ngDevMode && assertDefined(lView, 'LView required');
-  ngDevMode && assertLContainer(declarationContainer);
-  const movedViews = declarationContainer[MOVED_VIEWS];
-  const insertedLContainer = lView[PARENT];
-  ngDevMode && assertLContainer(insertedLContainer);
-  const insertedComponentLView = insertedLContainer[PARENT][DECLARATION_COMPONENT_VIEW];
-  ngDevMode && assertDefined(insertedComponentLView, 'Missing insertedComponentLView');
-  const declaredComponentLView = lView[DECLARATION_COMPONENT_VIEW];
-  ngDevMode && assertDefined(declaredComponentLView, 'Missing declaredComponentLView');
-
-  if (declaredComponentLView !== insertedComponentLView) {
-    // At this point the declaration-component is not same as insertion-component; this means that
-    // this is a transplanted view. Mark the declared lView as having transplanted views so that
-    // those views can participate in CD.
-    declarationContainer[HAS_TRANSPLANTED_VIEWS] = true;
-  }
-
-  if (movedViews === null) {
-    declarationContainer[MOVED_VIEWS] = [lView];
-  } else {
-    movedViews.push(lView);
-  }
-}
-
-function detachMovedView(declarationContainer, lView) {
-  ngDevMode && assertLContainer(declarationContainer);
-  ngDevMode && assertDefined(declarationContainer[MOVED_VIEWS], 'A projected view should belong to a non-empty projected views collection');
-  const movedViews = declarationContainer[MOVED_VIEWS];
-  const declarationViewIndex = movedViews.indexOf(lView);
-  const insertionLContainer = lView[PARENT];
-  ngDevMode && assertLContainer(insertionLContainer); // If the view was marked for refresh but then detached before it was checked (where the flag
-  // would be cleared and the counter decremented), we need to decrement the view counter here
-  // instead.
-
-  if (lView[FLAGS] & 512
-  /* LViewFlags.RefreshTransplantedView */
-  ) {
-    lView[FLAGS] &= ~512
-    /* LViewFlags.RefreshTransplantedView */
-    ;
-    updateTransplantedViewCount(insertionLContainer, -1);
-  }
-
-  movedViews.splice(declarationViewIndex, 1);
-}
-/**
- * Detaches a view from a container.
- *
- * This method removes the view from the container's array of active views. It also
- * removes the view's elements from the DOM.
- *
- * @param lContainer The container from which to detach a view
- * @param removeIndex The index of the view to detach
- * @returns Detached LView instance.
- */
-
-
-function detachView(lContainer, removeIndex) {
-  if (lContainer.length <= CONTAINER_HEADER_OFFSET) return;
-  const indexInContainer = CONTAINER_HEADER_OFFSET + removeIndex;
-  const viewToDetach = lContainer[indexInContainer];
-
-  if (viewToDetach) {
-    const declarationLContainer = viewToDetach[DECLARATION_LCONTAINER];
-
-    if (declarationLContainer !== null && declarationLContainer !== lContainer) {
-      detachMovedView(declarationLContainer, viewToDetach);
-    }
-
-    if (removeIndex > 0) {
-      lContainer[indexInContainer - 1][NEXT] = viewToDetach[NEXT];
-    }
-
-    const removedLView = removeFromArray(lContainer, CONTAINER_HEADER_OFFSET + removeIndex);
-    removeViewFromContainer(viewToDetach[TVIEW], viewToDetach); // notify query that a view has been removed
-
-    const lQueries = removedLView[QUERIES];
-
-    if (lQueries !== null) {
-      lQueries.detachView(removedLView[TVIEW]);
-    }
-
-    viewToDetach[PARENT] = null;
-    viewToDetach[NEXT] = null; // Unsets the attached flag
-
-    viewToDetach[FLAGS] &= ~64
-    /* LViewFlags.Attached */
-    ;
-  }
-
-  return viewToDetach;
-}
-/**
- * A standalone function which destroys an LView,
- * conducting clean up (e.g. removing listeners, calling onDestroys).
- *
- * @param tView The `TView' of the `LView` to be destroyed
- * @param lView The view to be destroyed.
- */
-
-
-function destroyLView(tView, lView) {
-  if (!(lView[FLAGS] & 128
-  /* LViewFlags.Destroyed */
-  )) {
-    const renderer = lView[RENDERER];
-
-    if (renderer.destroyNode) {
-      applyView(tView, lView, renderer, 3
-      /* WalkTNodeTreeAction.Destroy */
-      , null, null);
-    }
-
-    destroyViewTree(lView);
-  }
-}
-/**
- * Calls onDestroys hooks for all directives and pipes in a given view and then removes all
- * listeners. Listeners are removed as the last step so events delivered in the onDestroys hooks
- * can be propagated to @Output listeners.
- *
- * @param tView `TView` for the `LView` to clean up.
- * @param lView The LView to clean up
- */
-
-
-function cleanUpView(tView, lView) {
-  if (!(lView[FLAGS] & 128
-  /* LViewFlags.Destroyed */
-  )) {
-    // Usually the Attached flag is removed when the view is detached from its parent, however
-    // if it's a root view, the flag won't be unset hence why we're also removing on destroy.
-    lView[FLAGS] &= ~64
-    /* LViewFlags.Attached */
-    ; // Mark the LView as destroyed *before* executing the onDestroy hooks. An onDestroy hook
-    // runs arbitrary user code, which could include its own `viewRef.destroy()` (or similar). If
-    // We don't flag the view as destroyed before the hooks, this could lead to an infinite loop.
-    // This also aligns with the ViewEngine behavior. It also means that the onDestroy hook is
-    // really more of an "afterDestroy" hook if you think about it.
-
-    lView[FLAGS] |= 128
-    /* LViewFlags.Destroyed */
-    ;
-    executeOnDestroys(tView, lView);
-    processCleanups(tView, lView); // For component views only, the local renderer is destroyed at clean up time.
-
-    if (lView[TVIEW].type === 1
-    /* TViewType.Component */
-    ) {
-      ngDevMode && ngDevMode.rendererDestroy++;
-      lView[RENDERER].destroy();
-    }
-
-    const declarationContainer = lView[DECLARATION_LCONTAINER]; // we are dealing with an embedded view that is still inserted into a container
-
-    if (declarationContainer !== null && isLContainer(lView[PARENT])) {
-      // and this is a projected view
-      if (declarationContainer !== lView[PARENT]) {
-        detachMovedView(declarationContainer, lView);
-      } // For embedded views still attached to a container: remove query result from this view.
-
-
-      const lQueries = lView[QUERIES];
-
-      if (lQueries !== null) {
-        lQueries.detachView(tView);
-      }
-    } // Unregister the view once everything else has been cleaned up.
-
-
-    unregisterLView(lView);
-  }
-}
-/** Removes listeners and unsubscribes from output subscriptions */
-
-
-function processCleanups(tView, lView) {
-  const tCleanup = tView.cleanup;
-  const lCleanup = lView[CLEANUP]; // `LCleanup` contains both share information with `TCleanup` as well as instance specific
-  // information appended at the end. We need to know where the end of the `TCleanup` information
-  // is, and we track this with `lastLCleanupIndex`.
-
-  let lastLCleanupIndex = -1;
-
-  if (tCleanup !== null) {
-    for (let i = 0; i < tCleanup.length - 1; i += 2) {
-      if (typeof tCleanup[i] === 'string') {
-        // This is a native DOM listener
-        const idxOrTargetGetter = tCleanup[i + 1];
-        const target = typeof idxOrTargetGetter === 'function' ? idxOrTargetGetter(lView) : unwrapRNode(lView[idxOrTargetGetter]);
-        const listener = lCleanup[lastLCleanupIndex = tCleanup[i + 2]];
-        const useCaptureOrSubIdx = tCleanup[i + 3];
-
-        if (typeof useCaptureOrSubIdx === 'boolean') {
-          // native DOM listener registered with Renderer3
-          target.removeEventListener(tCleanup[i], listener, useCaptureOrSubIdx);
-        } else {
-          if (useCaptureOrSubIdx >= 0) {
-            // unregister
-            lCleanup[lastLCleanupIndex = useCaptureOrSubIdx]();
-          } else {
-            // Subscription
-            lCleanup[lastLCleanupIndex = -useCaptureOrSubIdx].unsubscribe();
-          }
-        }
-
-        i += 2;
-      } else {
-        // This is a cleanup function that is grouped with the index of its context
-        const context = lCleanup[lastLCleanupIndex = tCleanup[i + 1]];
-        tCleanup[i].call(context);
-      }
-    }
-  }
-
-  if (lCleanup !== null) {
-    for (let i = lastLCleanupIndex + 1; i < lCleanup.length; i++) {
-      const instanceCleanupFn = lCleanup[i];
-      ngDevMode && assertFunction(instanceCleanupFn, 'Expecting instance cleanup function.');
-      instanceCleanupFn();
-    }
-
-    lView[CLEANUP] = null;
-  }
-}
-/** Calls onDestroy hooks for this view */
-
-
-function executeOnDestroys(tView, lView) {
-  let destroyHooks;
-
-  if (tView != null && (destroyHooks = tView.destroyHooks) != null) {
-    for (let i = 0; i < destroyHooks.length; i += 2) {
-      const context = lView[destroyHooks[i]]; // Only call the destroy hook if the context has been requested.
-
-      if (!(context instanceof NodeInjectorFactory)) {
-        const toCall = destroyHooks[i + 1];
-
-        if (Array.isArray(toCall)) {
-          for (let j = 0; j < toCall.length; j += 2) {
-            const callContext = context[toCall[j]];
-            const hook = toCall[j + 1];
-            profiler(4
-            /* ProfilerEvent.LifecycleHookStart */
-            , callContext, hook);
-
-            try {
-              hook.call(callContext);
-            } finally {
-              profiler(5
-              /* ProfilerEvent.LifecycleHookEnd */
-              , callContext, hook);
-            }
-          }
-        } else {
-          profiler(4
-          /* ProfilerEvent.LifecycleHookStart */
-          , context, toCall);
-
-          try {
-            toCall.call(context);
-          } finally {
-            profiler(5
-            /* ProfilerEvent.LifecycleHookEnd */
-            , context, toCall);
-          }
-        }
-      }
-    }
-  }
-}
-/**
- * Returns a native element if a node can be inserted into the given parent.
- *
- * There are two reasons why we may not be able to insert a element immediately.
- * - Projection: When creating a child content element of a component, we have to skip the
- *   insertion because the content of a component will be projected.
- *   `<component><content>delayed due to projection</content></component>`
- * - Parent container is disconnected: This can happen when we are inserting a view into
- *   parent container, which itself is disconnected. For example the parent container is part
- *   of a View which has not be inserted or is made for projection but has not been inserted
- *   into destination.
- *
- * @param tView: Current `TView`.
- * @param tNode: `TNode` for which we wish to retrieve render parent.
- * @param lView: Current `LView`.
- */
-
-
-function getParentRElement(tView, tNode, lView) {
-  return getClosestRElement(tView, tNode.parent, lView);
-}
-/**
- * Get closest `RElement` or `null` if it can't be found.
- *
- * If `TNode` is `TNodeType.Element` => return `RElement` at `LView[tNode.index]` location.
- * If `TNode` is `TNodeType.ElementContainer|IcuContain` => return the parent (recursively).
- * If `TNode` is `null` then return host `RElement`:
- *   - return `null` if projection
- *   - return `null` if parent container is disconnected (we have no parent.)
- *
- * @param tView: Current `TView`.
- * @param tNode: `TNode` for which we wish to retrieve `RElement` (or `null` if host element is
- *     needed).
- * @param lView: Current `LView`.
- * @returns `null` if the `RElement` can't be determined at this time (no parent / projection)
- */
-
-
-function getClosestRElement(tView, tNode, lView) {
-  let parentTNode = tNode; // Skip over element and ICU containers as those are represented by a comment node and
-  // can't be used as a render parent.
-
-  while (parentTNode !== null && parentTNode.type & (8
-  /* TNodeType.ElementContainer */
-  | 32
-  /* TNodeType.Icu */
-  )) {
-    tNode = parentTNode;
-    parentTNode = tNode.parent;
-  } // If the parent tNode is null, then we are inserting across views: either into an embedded view
-  // or a component view.
-
-
-  if (parentTNode === null) {
-    // We are inserting a root element of the component view into the component host element and
-    // it should always be eager.
-    return lView[HOST];
-  } else {
-    ngDevMode && assertTNodeType(parentTNode, 3
-    /* TNodeType.AnyRNode */
-    | 4
-    /* TNodeType.Container */
-    );
-
-    if (parentTNode.flags & 2
-    /* TNodeFlags.isComponentHost */
-    ) {
-      ngDevMode && assertTNodeForLView(parentTNode, lView);
-      const encapsulation = tView.data[parentTNode.directiveStart].encapsulation; // We've got a parent which is an element in the current view. We just need to verify if the
-      // parent element is not a component. Component's content nodes are not inserted immediately
-      // because they will be projected, and so doing insert at this point would be wasteful.
-      // Since the projection would then move it to its final destination. Note that we can't
-      // make this assumption when using the Shadow DOM, because the native projection placeholders
-      // (<content> or <slot>) have to be in place as elements are being inserted.
-
-      if (encapsulation === ViewEncapsulation$1.None || encapsulation === ViewEncapsulation$1.Emulated) {
-        return null;
-      }
-    }
-
-    return getNativeByTNode(parentTNode, lView);
-  }
-}
-/**
- * Inserts a native node before another native node for a given parent.
- * This is a utility function that can be used when native nodes were determined.
- */
-
-
-function nativeInsertBefore(renderer, parent, child, beforeNode, isMove) {
-  ngDevMode && ngDevMode.rendererInsertBefore++;
-  renderer.insertBefore(parent, child, beforeNode, isMove);
-}
-
-function nativeAppendChild(renderer, parent, child) {
-  ngDevMode && ngDevMode.rendererAppendChild++;
-  ngDevMode && assertDefined(parent, 'parent node must be defined');
-  renderer.appendChild(parent, child);
-}
-
-function nativeAppendOrInsertBefore(renderer, parent, child, beforeNode, isMove) {
-  if (beforeNode !== null) {
-    nativeInsertBefore(renderer, parent, child, beforeNode, isMove);
-  } else {
-    nativeAppendChild(renderer, parent, child);
-  }
-}
-/** Removes a node from the DOM given its native parent. */
-
-
-function nativeRemoveChild(renderer, parent, child, isHostElement) {
-  renderer.removeChild(parent, child, isHostElement);
-}
-/** Checks if an element is a `<template>` node. */
-
-
-function isTemplateNode(node) {
-  return node.tagName === 'TEMPLATE' && node.content !== undefined;
-}
-/**
- * Returns a native parent of a given native node.
- */
-
-
-function nativeParentNode(renderer, node) {
-  return renderer.parentNode(node);
-}
-/**
- * Returns a native sibling of a given native node.
- */
-
-
-function nativeNextSibling(renderer, node) {
-  return renderer.nextSibling(node);
-}
-/**
- * Find a node in front of which `currentTNode` should be inserted.
- *
- * This method determines the `RNode` in front of which we should insert the `currentRNode`. This
- * takes `TNode.insertBeforeIndex` into account if i18n code has been invoked.
- *
- * @param parentTNode parent `TNode`
- * @param currentTNode current `TNode` (The node which we would like to insert into the DOM)
- * @param lView current `LView`
- */
-
-
-function getInsertInFrontOfRNode(parentTNode, currentTNode, lView) {
-  return _getInsertInFrontOfRNodeWithI18n(parentTNode, currentTNode, lView);
-}
-/**
- * Find a node in front of which `currentTNode` should be inserted. (Does not take i18n into
- * account)
- *
- * This method determines the `RNode` in front of which we should insert the `currentRNode`. This
- * does not take `TNode.insertBeforeIndex` into account.
- *
- * @param parentTNode parent `TNode`
- * @param currentTNode current `TNode` (The node which we would like to insert into the DOM)
- * @param lView current `LView`
- */
-
-
-function getInsertInFrontOfRNodeWithNoI18n(parentTNode, currentTNode, lView) {
-  if (parentTNode.type & (8
-  /* TNodeType.ElementContainer */
-  | 32
-  /* TNodeType.Icu */
-  )) {
-    return getNativeByTNode(parentTNode, lView);
-  }
-
-  return null;
-}
-/**
- * Tree shakable boundary for `getInsertInFrontOfRNodeWithI18n` function.
- *
- * This function will only be set if i18n code runs.
- */
-
-
-let _getInsertInFrontOfRNodeWithI18n = getInsertInFrontOfRNodeWithNoI18n;
-/**
- * Tree shakable boundary for `processI18nInsertBefore` function.
- *
- * This function will only be set if i18n code runs.
- */
-
-let _processI18nInsertBefore;
-
-function setI18nHandling(getInsertInFrontOfRNodeWithI18n, processI18nInsertBefore) {
-  _getInsertInFrontOfRNodeWithI18n = getInsertInFrontOfRNodeWithI18n;
-  _processI18nInsertBefore = processI18nInsertBefore;
-}
-/**
- * Appends the `child` native node (or a collection of nodes) to the `parent`.
- *
- * @param tView The `TView' to be appended
- * @param lView The current LView
- * @param childRNode The native child (or children) that should be appended
- * @param childTNode The TNode of the child element
- */
-
-
-function appendChild(tView, lView, childRNode, childTNode) {
-  const parentRNode = getParentRElement(tView, childTNode, lView);
-  const renderer = lView[RENDERER];
-  const parentTNode = childTNode.parent || lView[T_HOST];
-  const anchorNode = getInsertInFrontOfRNode(parentTNode, childTNode, lView);
-
-  if (parentRNode != null) {
-    if (Array.isArray(childRNode)) {
-      for (let i = 0; i < childRNode.length; i++) {
-        nativeAppendOrInsertBefore(renderer, parentRNode, childRNode[i], anchorNode, false);
-      }
-    } else {
-      nativeAppendOrInsertBefore(renderer, parentRNode, childRNode, anchorNode, false);
-    }
-  }
-
-  _processI18nInsertBefore !== undefined && _processI18nInsertBefore(renderer, childTNode, lView, childRNode, parentRNode);
-}
-/**
- * Returns the first native node for a given LView, starting from the provided TNode.
- *
- * Native nodes are returned in the order in which those appear in the native tree (DOM).
- */
-
-
-function getFirstNativeNode(lView, tNode) {
-  if (tNode !== null) {
-    ngDevMode && assertTNodeType(tNode, 3
-    /* TNodeType.AnyRNode */
-    | 12
-    /* TNodeType.AnyContainer */
-    | 32
-    /* TNodeType.Icu */
-    | 16
-    /* TNodeType.Projection */
-    );
-    const tNodeType = tNode.type;
-
-    if (tNodeType & 3
-    /* TNodeType.AnyRNode */
-    ) {
-      return getNativeByTNode(tNode, lView);
-    } else if (tNodeType & 4
-    /* TNodeType.Container */
-    ) {
-      return getBeforeNodeForView(-1, lView[tNode.index]);
-    } else if (tNodeType & 8
-    /* TNodeType.ElementContainer */
-    ) {
-      const elIcuContainerChild = tNode.child;
-
-      if (elIcuContainerChild !== null) {
-        return getFirstNativeNode(lView, elIcuContainerChild);
-      } else {
-        const rNodeOrLContainer = lView[tNode.index];
-
-        if (isLContainer(rNodeOrLContainer)) {
-          return getBeforeNodeForView(-1, rNodeOrLContainer);
-        } else {
-          return unwrapRNode(rNodeOrLContainer);
-        }
-      }
-    } else if (tNodeType & 32
-    /* TNodeType.Icu */
-    ) {
-      let nextRNode = icuContainerIterate(tNode, lView);
-      let rNode = nextRNode(); // If the ICU container has no nodes, than we use the ICU anchor as the node.
-
-      return rNode || unwrapRNode(lView[tNode.index]);
-    } else {
-      const projectionNodes = getProjectionNodes(lView, tNode);
-
-      if (projectionNodes !== null) {
-        if (Array.isArray(projectionNodes)) {
-          return projectionNodes[0];
-        }
-
-        const parentView = getLViewParent(lView[DECLARATION_COMPONENT_VIEW]);
-        ngDevMode && assertParentView(parentView);
-        return getFirstNativeNode(parentView, projectionNodes);
-      } else {
-        return getFirstNativeNode(lView, tNode.next);
-      }
-    }
-  }
-
-  return null;
-}
-
-function getProjectionNodes(lView, tNode) {
-  if (tNode !== null) {
-    const componentView = lView[DECLARATION_COMPONENT_VIEW];
-    const componentHost = componentView[T_HOST];
-    const slotIdx = tNode.projection;
-    ngDevMode && assertProjectionSlots(lView);
-    return componentHost.projection[slotIdx];
-  }
-
-  return null;
-}
-
-function getBeforeNodeForView(viewIndexInContainer, lContainer) {
-  const nextViewIndex = CONTAINER_HEADER_OFFSET + viewIndexInContainer + 1;
-
-  if (nextViewIndex < lContainer.length) {
-    const lView = lContainer[nextViewIndex];
-    const firstTNodeOfView = lView[TVIEW].firstChild;
-
-    if (firstTNodeOfView !== null) {
-      return getFirstNativeNode(lView, firstTNodeOfView);
-    }
-  }
-
-  return lContainer[NATIVE];
-}
-/**
- * Removes a native node itself using a given renderer. To remove the node we are looking up its
- * parent from the native tree as not all platforms / browsers support the equivalent of
- * node.remove().
- *
- * @param renderer A renderer to be used
- * @param rNode The native node that should be removed
- * @param isHostElement A flag indicating if a node to be removed is a host of a component.
- */
-
-
-function nativeRemoveNode(renderer, rNode, isHostElement) {
-  ngDevMode && ngDevMode.rendererRemoveNode++;
-  const nativeParent = nativeParentNode(renderer, rNode);
-
-  if (nativeParent) {
-    nativeRemoveChild(renderer, nativeParent, rNode, isHostElement);
-  }
-}
-/**
- * Performs the operation of `action` on the node. Typically this involves inserting or removing
- * nodes on the LView or projection boundary.
- */
-
-
-function applyNodes(renderer, action, tNode, lView, parentRElement, beforeNode, isProjection) {
-  while (tNode != null) {
-    ngDevMode && assertTNodeForLView(tNode, lView);
-    ngDevMode && assertTNodeType(tNode, 3
-    /* TNodeType.AnyRNode */
-    | 12
-    /* TNodeType.AnyContainer */
-    | 16
-    /* TNodeType.Projection */
-    | 32
-    /* TNodeType.Icu */
-    );
-    const rawSlotValue = lView[tNode.index];
-    const tNodeType = tNode.type;
-
-    if (isProjection) {
-      if (action === 0
-      /* WalkTNodeTreeAction.Create */
-      ) {
-        rawSlotValue && attachPatchData(unwrapRNode(rawSlotValue), lView);
-        tNode.flags |= 4
-        /* TNodeFlags.isProjected */
-        ;
-      }
-    }
-
-    if ((tNode.flags & 64
-    /* TNodeFlags.isDetached */
-    ) !== 64
-    /* TNodeFlags.isDetached */
-    ) {
-      if (tNodeType & 8
-      /* TNodeType.ElementContainer */
-      ) {
-        applyNodes(renderer, action, tNode.child, lView, parentRElement, beforeNode, false);
-        applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
-      } else if (tNodeType & 32
-      /* TNodeType.Icu */
-      ) {
-        const nextRNode = icuContainerIterate(tNode, lView);
-        let rNode;
-
-        while (rNode = nextRNode()) {
-          applyToElementOrContainer(action, renderer, parentRElement, rNode, beforeNode);
-        }
-
-        applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
-      } else if (tNodeType & 16
-      /* TNodeType.Projection */
-      ) {
-        applyProjectionRecursive(renderer, action, lView, tNode, parentRElement, beforeNode);
-      } else {
-        ngDevMode && assertTNodeType(tNode, 3
-        /* TNodeType.AnyRNode */
-        | 4
-        /* TNodeType.Container */
-        );
-        applyToElementOrContainer(action, renderer, parentRElement, rawSlotValue, beforeNode);
-      }
-    }
-
-    tNode = isProjection ? tNode.projectionNext : tNode.next;
-  }
-}
-
-function applyView(tView, lView, renderer, action, parentRElement, beforeNode) {
-  applyNodes(renderer, action, tView.firstChild, lView, parentRElement, beforeNode, false);
-}
-/**
- * `applyProjection` performs operation on the projection.
- *
- * Inserting a projection requires us to locate the projected nodes from the parent component. The
- * complication is that those nodes themselves could be re-projected from their parent component.
- *
- * @param tView The `TView` of `LView` which needs to be inserted, detached, destroyed
- * @param lView The `LView` which needs to be inserted, detached, destroyed.
- * @param tProjectionNode node to project
- */
-
-
-function applyProjection(tView, lView, tProjectionNode) {
-  const renderer = lView[RENDERER];
-  const parentRNode = getParentRElement(tView, tProjectionNode, lView);
-  const parentTNode = tProjectionNode.parent || lView[T_HOST];
-  let beforeNode = getInsertInFrontOfRNode(parentTNode, tProjectionNode, lView);
-  applyProjectionRecursive(renderer, 0
-  /* WalkTNodeTreeAction.Create */
-  , lView, tProjectionNode, parentRNode, beforeNode);
-}
-/**
- * `applyProjectionRecursive` performs operation on the projection specified by `action` (insert,
- * detach, destroy)
- *
- * Inserting a projection requires us to locate the projected nodes from the parent component. The
- * complication is that those nodes themselves could be re-projected from their parent component.
- *
- * @param renderer Render to use
- * @param action action to perform (insert, detach, destroy)
- * @param lView The LView which needs to be inserted, detached, destroyed.
- * @param tProjectionNode node to project
- * @param parentRElement parent DOM element for insertion/removal.
- * @param beforeNode Before which node the insertions should happen.
- */
-
-
-function applyProjectionRecursive(renderer, action, lView, tProjectionNode, parentRElement, beforeNode) {
-  const componentLView = lView[DECLARATION_COMPONENT_VIEW];
-  const componentNode = componentLView[T_HOST];
-  ngDevMode && assertEqual(typeof tProjectionNode.projection, 'number', 'expecting projection index');
-  const nodeToProjectOrRNodes = componentNode.projection[tProjectionNode.projection];
-
-  if (Array.isArray(nodeToProjectOrRNodes)) {
-    // This should not exist, it is a bit of a hack. When we bootstrap a top level node and we
-    // need to support passing projectable nodes, so we cheat and put them in the TNode
-    // of the Host TView. (Yes we put instance info at the T Level). We can get away with it
-    // because we know that that TView is not shared and therefore it will not be a problem.
-    // This should be refactored and cleaned up.
-    for (let i = 0; i < nodeToProjectOrRNodes.length; i++) {
-      const rNode = nodeToProjectOrRNodes[i];
-      applyToElementOrContainer(action, renderer, parentRElement, rNode, beforeNode);
-    }
-  } else {
-    let nodeToProject = nodeToProjectOrRNodes;
-    const projectedComponentLView = componentLView[PARENT];
-    applyNodes(renderer, action, nodeToProject, projectedComponentLView, parentRElement, beforeNode, true);
-  }
-}
-/**
- * `applyContainer` performs an operation on the container and its views as specified by
- * `action` (insert, detach, destroy)
- *
- * Inserting a Container is complicated by the fact that the container may have Views which
- * themselves have containers or projections.
- *
- * @param renderer Renderer to use
- * @param action action to perform (insert, detach, destroy)
- * @param lContainer The LContainer which needs to be inserted, detached, destroyed.
- * @param parentRElement parent DOM element for insertion/removal.
- * @param beforeNode Before which node the insertions should happen.
- */
-
-
-function applyContainer(renderer, action, lContainer, parentRElement, beforeNode) {
-  ngDevMode && assertLContainer(lContainer);
-  const anchor = lContainer[NATIVE]; // LContainer has its own before node.
-
-  const native = unwrapRNode(lContainer); // An LContainer can be created dynamically on any node by injecting ViewContainerRef.
-  // Asking for a ViewContainerRef on an element will result in a creation of a separate anchor
-  // node (comment in the DOM) that will be different from the LContainer's host node. In this
-  // particular case we need to execute action on 2 nodes:
-  // - container's host node (this is done in the executeActionOnElementOrContainer)
-  // - container's host node (this is done here)
-
-  if (anchor !== native) {
-    // This is very strange to me (Misko). I would expect that the native is same as anchor. I
-    // don't see a reason why they should be different, but they are.
-    //
-    // If they are we need to process the second anchor as well.
-    applyToElementOrContainer(action, renderer, parentRElement, anchor, beforeNode);
-  }
-
-  for (let i = CONTAINER_HEADER_OFFSET; i < lContainer.length; i++) {
-    const lView = lContainer[i];
-    applyView(lView[TVIEW], lView, renderer, action, parentRElement, anchor);
-  }
-}
-/**
- * Writes class/style to element.
- *
- * @param renderer Renderer to use.
- * @param isClassBased `true` if it should be written to `class` (`false` to write to `style`)
- * @param rNode The Node to write to.
- * @param prop Property to write to. This would be the class/style name.
- * @param value Value to write. If `null`/`undefined`/`false` this is considered a remove (set/add
- *        otherwise).
- */
-
-
-function applyStyling(renderer, isClassBased, rNode, prop, value) {
-  if (isClassBased) {
-    // We actually want JS true/false here because any truthy value should add the class
-    if (!value) {
-      ngDevMode && ngDevMode.rendererRemoveClass++;
-      renderer.removeClass(rNode, prop);
-    } else {
-      ngDevMode && ngDevMode.rendererAddClass++;
-      renderer.addClass(rNode, prop);
-    }
-  } else {
-    let flags = prop.indexOf('-') === -1 ? undefined : RendererStyleFlags2.DashCase;
-
-    if (value == null
-    /** || value === undefined */
-    ) {
-      ngDevMode && ngDevMode.rendererRemoveStyle++;
-      renderer.removeStyle(rNode, prop, flags);
-    } else {
-      // A value is important if it ends with `!important`. The style
-      // parser strips any semicolons at the end of the value.
-      const isImportant = typeof value === 'string' ? value.endsWith('!important') : false;
-
-      if (isImportant) {
-        // !important has to be stripped from the value for it to be valid.
-        value = value.slice(0, -10);
-        flags |= RendererStyleFlags2.Important;
-      }
-
-      ngDevMode && ngDevMode.rendererSetStyle++;
-      renderer.setStyle(rNode, prop, value, flags);
-    }
-  }
-}
-/**
- * Write `cssText` to `RElement`.
- *
- * This function does direct write without any reconciliation. Used for writing initial values, so
- * that static styling values do not pull in the style parser.
- *
- * @param renderer Renderer to use
- * @param element The element which needs to be updated.
- * @param newValue The new class list to write.
- */
-
-
-function writeDirectStyle(renderer, element, newValue) {
-  ngDevMode && assertString(newValue, '\'newValue\' should be a string');
-  renderer.setAttribute(element, 'style', newValue);
-  ngDevMode && ngDevMode.rendererSetStyle++;
-}
-/**
- * Write `className` to `RElement`.
- *
- * This function does direct write without any reconciliation. Used for writing initial values, so
- * that static styling values do not pull in the style parser.
- *
- * @param renderer Renderer to use
- * @param element The element which needs to be updated.
- * @param newValue The new class list to write.
- */
-
-
-function writeDirectClass(renderer, element, newValue) {
-  ngDevMode && assertString(newValue, '\'newValue\' should be a string');
-
-  if (newValue === '') {
-    // There are tests in `google3` which expect `element.getAttribute('class')` to be `null`.
-    renderer.removeAttribute(element, 'class');
-  } else {
-    renderer.setAttribute(element, 'class', newValue);
-  }
-
-  ngDevMode && ngDevMode.rendererSetClassName++;
 }
 /**
  * @license
@@ -30686,31 +29072,6 @@ function refreshView(tView, lView, templateFn, context) {
   }
 }
 
-function renderComponentOrTemplate(tView, lView, templateFn, context) {
-  const rendererFactory = lView[RENDERER_FACTORY]; // Check no changes mode is a dev only mode used to verify that bindings have not changed
-  // since they were assigned. We do not want to invoke renderer factory functions in that mode
-  // to avoid any possible side-effects.
-
-  const checkNoChangesMode = !!ngDevMode && isInCheckNoChangesMode();
-  const creationModeIsActive = isCreationMode(lView);
-
-  try {
-    if (!checkNoChangesMode && !creationModeIsActive && rendererFactory.begin) {
-      rendererFactory.begin();
-    }
-
-    if (creationModeIsActive) {
-      renderView(tView, lView, context);
-    }
-
-    refreshView(tView, lView, templateFn, context);
-  } finally {
-    if (!checkNoChangesMode && !creationModeIsActive && rendererFactory.end) {
-      rendererFactory.end();
-    }
-  }
-}
-
 function executeTemplate(tView, lView, templateFn, rf, context) {
   const prevSelectedIndex = getSelectedIndex();
   const isUpdatePhase = rf & 2
@@ -30808,7 +29169,7 @@ function saveResolvedLocalsInData(viewData, tNode, localRefExtractor = getNative
  */
 
 
-function getOrCreateTComponentView(def) {
+function getOrCreateComponentTView(def) {
   const tView = def.tView; // Create a TView if there isn't one, or recreate it if the first create pass didn't
   // complete successfully since we can't know for sure whether it's in a usable shape.
 
@@ -31637,7 +29998,7 @@ function configureViewWithDirective(tView, tNode, lView, directiveIndex, def) {
 
 function addComponentLogic(lView, hostTNode, def) {
   const native = getNativeByTNode(hostTNode, lView);
-  const tView = getOrCreateTComponentView(def); // Only component views should be added to the view tree directly. Embedded views are
+  const tView = getOrCreateComponentTView(def); // Only component views should be added to the view tree directly. Embedded views are
   // accessed through their containers because they may be removed / re-added later.
 
   const rendererFactory = lView[RENDERER_FACTORY];
@@ -32018,67 +30379,32 @@ function markViewDirty(lView) {
   return null;
 }
 
-function tickRootContext(rootContext) {
-  for (let i = 0; i < rootContext.components.length; i++) {
-    const rootComponent = rootContext.components[i];
-    const lView = readPatchedLView(rootComponent); // We might not have an `LView` if the component was destroyed.
+function detectChangesInternal(tView, lView, context, notifyErrorHandler = true) {
+  const rendererFactory = lView[RENDERER_FACTORY]; // Check no changes mode is a dev only mode used to verify that bindings have not changed
+  // since they were assigned. We do not want to invoke renderer factory functions in that mode
+  // to avoid any possible side-effects.
 
-    if (lView !== null) {
-      const tView = lView[TVIEW];
-      renderComponentOrTemplate(tView, lView, tView.template, rootComponent);
-    }
-  }
-}
-
-function detectChangesInternal(tView, lView, context) {
-  const rendererFactory = lView[RENDERER_FACTORY];
-  if (rendererFactory.begin) rendererFactory.begin();
+  const checkNoChangesMode = !!ngDevMode && isInCheckNoChangesMode();
+  if (!checkNoChangesMode && rendererFactory.begin) rendererFactory.begin();
 
   try {
     refreshView(tView, lView, tView.template, context);
   } catch (error) {
-    handleError(lView, error);
+    if (notifyErrorHandler) {
+      handleError(lView, error);
+    }
+
     throw error;
   } finally {
-    if (rendererFactory.end) rendererFactory.end();
+    if (!checkNoChangesMode && rendererFactory.end) rendererFactory.end();
   }
 }
-/**
- * Synchronously perform change detection on a root view and its components.
- *
- * @param lView The view which the change detection should be performed on.
- */
 
-
-function detectChangesInRootView(lView) {
-  tickRootContext(lView[CONTEXT]);
-}
-
-function checkNoChangesInternal(tView, view, context) {
+function checkNoChangesInternal(tView, lView, context, notifyErrorHandler = true) {
   setIsInCheckNoChangesMode(true);
 
   try {
-    detectChangesInternal(tView, view, context);
-  } finally {
-    setIsInCheckNoChangesMode(false);
-  }
-}
-/**
- * Checks the change detector on a root view and its components, and throws if any changes are
- * detected.
- *
- * This is used in development mode to verify that running change detection doesn't
- * introduce other changes.
- *
- * @param lView The view which the change detection should be checked on.
- */
-
-
-function checkNoChangesInRootView(lView) {
-  setIsInCheckNoChangesMode(true);
-
-  try {
-    detectChangesInRootView(lView);
+    detectChangesInternal(tView, lView, context, notifyErrorHandler);
   } finally {
     setIsInCheckNoChangesMode(false);
   }
@@ -32651,12 +30977,18 @@ class RootViewRef extends ViewRef$1 {
   }
 
   detectChanges() {
-    detectChangesInRootView(this._view);
+    const lView = this._view;
+    const tView = lView[TVIEW];
+    const context = lView[CONTEXT];
+    detectChangesInternal(tView, lView, context, false);
   }
 
   checkNoChanges() {
     if (ngDevMode) {
-      checkNoChangesInRootView(this._view);
+      const lView = this._view;
+      const tView = lView[TVIEW];
+      const context = lView[CONTEXT];
+      checkNoChangesInternal(tView, lView, context, false);
     }
   }
 
@@ -32740,7 +31072,7 @@ class ChainedInjector {
 
 }
 /**
- * Render3 implementation of {@link viewEngine_ComponentFactory}.
+ * ComponentFactory interface implementation.
  */
 
 
@@ -32789,7 +31121,7 @@ class ComponentFactory extends ComponentFactory$1 {
     // dynamically. Default to 'div' if this component did not specify any tag name in its selector.
 
     const elementName = this.componentDef.selectors[0][0] || 'div';
-    const hostRNode = rootSelectorOrNode ? locateHostElement(hostRenderer, rootSelectorOrNode, this.componentDef.encapsulation) : createElementNode(rendererFactory.createRenderer(null, this.componentDef), elementName, getNamespace(elementName));
+    const hostRNode = rootSelectorOrNode ? locateHostElement(hostRenderer, rootSelectorOrNode, this.componentDef.encapsulation) : createElementNode(hostRenderer, elementName, getNamespace(elementName));
     const rootFlags = this.componentDef.onPush ? 32
     /* LViewFlags.Dirty */
     | 256
@@ -32798,13 +31130,12 @@ class ComponentFactory extends ComponentFactory$1 {
     /* LViewFlags.CheckAlways */
     | 256
     /* LViewFlags.IsRoot */
-    ;
-    const rootContext = createRootContext(); // Create the root view. Uses empty TView and ContentTemplate.
+    ; // Create the root view. Uses empty TView and ContentTemplate.
 
     const rootTView = createTView(0
     /* TViewType.Root */
     , null, null, 1, 0, null, null, null, null, null);
-    const rootLView = createLView(null, rootTView, rootContext, rootFlags, null, null, rendererFactory, hostRenderer, sanitizer, rootViewInjector, null); // rootView is the parent when bootstrapping
+    const rootLView = createLView(null, rootTView, null, rootFlags, null, null, rendererFactory, hostRenderer, sanitizer, rootViewInjector, null); // rootView is the parent when bootstrapping
     // TODO(misko): it looks like we are entering view here but we don't really need to as
     // `renderView` does that. However as the code is written it is needed because
     // `createRootComponentView` and `createRootComponent` both read global state. Fixing those
@@ -32858,7 +31189,7 @@ class ComponentFactory extends ComponentFactory$1 {
       // Angular 5 reference: https://stackblitz.com/edit/lifecycle-hooks-vcref
 
 
-      component = createRootComponent(componentView, this.componentDef, rootLView, rootContext, [LifecycleHooksFeature]);
+      component = createRootComponent(componentView, this.componentDef, rootLView, [LifecycleHooksFeature]);
       renderView(rootTView, rootLView, null);
     } finally {
       leaveView();
@@ -32983,7 +31314,7 @@ function createRootComponentView(rNode, def, rootView, rendererFactory, hostRend
   }
 
   const viewRenderer = rendererFactory.createRenderer(rNode, def);
-  const componentView = createLView(rootView, getOrCreateTComponentView(def), null, def.onPush ? 32
+  const componentView = createLView(rootView, getOrCreateComponentTView(def), null, def.onPush ? 32
   /* LViewFlags.Dirty */
   : 16
   /* LViewFlags.CheckAlways */
@@ -33005,12 +31336,13 @@ function createRootComponentView(rNode, def, rootView, rendererFactory, hostRend
  */
 
 
-function createRootComponent(componentView, componentDef, rootLView, rootContext, hostFeatures) {
+function createRootComponent(componentView, componentDef, rootLView, hostFeatures) {
   const tView = rootLView[TVIEW]; // Create directive instance with factory() and store at next index in viewData
 
-  const component = instantiateRootComponent(tView, rootLView, componentDef);
-  rootContext.components.push(component);
-  componentView[CONTEXT] = component;
+  const component = instantiateRootComponent(tView, rootLView, componentDef); // Root view only contains an instance of this component,
+  // so we use a reference to that component instance as a context.
+
+  componentView[CONTEXT] = rootLView[CONTEXT] = component;
 
   if (hostFeatures !== null) {
     for (const feature of hostFeatures) {
@@ -33039,12 +31371,6 @@ function createRootComponent(componentView, componentDef, rootLView, rootContext
   }
 
   return component;
-}
-
-function createRootContext() {
-  return {
-    components: []
-  };
 }
 /**
  * Used to enable lifecycle hooks on the root component.
@@ -40781,8 +39107,6 @@ function walkIcuTree(tView, tIcu, lView, sharedUpdateOpCodes, create, remove, up
               if (VALID_ATTRS.hasOwnProperty(lowerAttrName)) {
                 if (URI_ATTRS[lowerAttrName]) {
                   generateBindingUpdateOpCodes(update, attr.value, newIndex, attr.name, 0, _sanitizeUrl);
-                } else if (SRCSET_ATTRS[lowerAttrName]) {
-                  generateBindingUpdateOpCodes(update, attr.value, newIndex, attr.name, 0, sanitizeSrcset);
                 } else {
                   generateBindingUpdateOpCodes(update, attr.value, newIndex, attr.name, 0, null);
                 }
@@ -41887,7 +40211,7 @@ function getOwningComponent(elementOrDir) {
 
 function getRootComponents(elementOrDir) {
   const lView = readPatchedLView(elementOrDir);
-  return lView !== null ? [...getRootContext(lView).components] : [];
+  return lView !== null ? [getRootContext(lView)] : [];
 }
 /**
  * Retrieves an `Injector` associated with an element, component or directive instance.
@@ -44353,6 +42677,7 @@ const angularCoreEnv = (() => ({
   'ɵɵsanitizeUrlOrResourceUrl': ɵɵsanitizeUrlOrResourceUrl,
   'ɵɵtrustConstantHtml': ɵɵtrustConstantHtml,
   'ɵɵtrustConstantResourceUrl': ɵɵtrustConstantResourceUrl,
+  'ɵɵvalidateIframeAttribute': ɵɵvalidateIframeAttribute,
   'forwardRef': forwardRef,
   'resolveForwardRef': resolveForwardRef
 }))();
@@ -44606,7 +42931,7 @@ function generateStandaloneInDeclarationsError(type, location) {
 }
 
 function verifySemanticsOfNgModuleDef(moduleType, allowDuplicateDeclarationsInRoot, importingModule) {
-  if (verifiedNgModule.get(moduleType)) return; // skip verifications of standalone components, directives and pipes
+  if (verifiedNgModule.get(moduleType)) return; // skip verifications of standalone components, directives, and pipes
 
   if (isStandalone(moduleType)) return;
   verifiedNgModule.set(moduleType, true);
@@ -48533,7 +46858,7 @@ function enableProdMode() {
   // `global['ngDevMode'] = false;` is also dropped.
 
 
-  if (typeof ngDevMode === undefined || !!ngDevMode) {
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
     _global['ngDevMode'] = false;
   }
 
@@ -51283,7 +49608,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ 4128);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/operators */ 4004);
 /**
- * @license Angular v14.2.1
+ * @license Angular v14.3.0
  * (c) 2010-2022 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -54111,6 +52436,11 @@ class AbstractControl {
    *
    * Calling `setErrors` also updates the validity of the parent control.
    *
+   * @param opts Configuration options that determine how the control propagates
+   * changes and emits events after the control errors are set.
+   * * `emitEvent`: When true or not supplied (the default), the `statusChanges`
+   * observable emits an event after the errors are set.
+   *
    * @usageNotes
    *
    * ### Manually set the errors for a control
@@ -55525,10 +53855,14 @@ class NgForm extends ControlContainer {
 
 
   onSubmit($event) {
+    var _a;
+
     this.submitted = true;
     syncPendingControls(this.form, this._directives);
-    this.ngSubmit.emit($event);
-    return false;
+    this.ngSubmit.emit($event); // Forms with `method="dialog"` have some special behavior
+    // that won't reload the page and that shouldn't be prevented.
+
+    return ((_a = $event === null || $event === void 0 ? void 0 : $event.target) === null || _a === void 0 ? void 0 : _a.method) === 'dialog';
   }
   /**
    * @description
@@ -57272,8 +55606,6 @@ const formDirectiveProvider = {
 class FormGroupDirective extends ControlContainer {
   constructor(validators, asyncValidators) {
     super();
-    this.validators = validators;
-    this.asyncValidators = asyncValidators;
     /**
      * @description
      * Reports whether the form submission has been triggered.
@@ -57500,10 +55832,15 @@ class FormGroupDirective extends ControlContainer {
 
 
   onSubmit($event) {
+    var _a;
+
     this.submitted = true;
     syncPendingControls(this.form, this.directives);
-    this.ngSubmit.emit($event);
-    return false;
+    this.ngSubmit.emit($event); // Forms with `method="dialog"` have some special behavior that won't reload the page and that
+    // shouldn't be prevented. Note that we need to null check the `event` and the `target`, because
+    // some internal apps call this method directly with the wrong arguments.
+
+    return ((_a = $event === null || $event === void 0 ? void 0 : $event.target) === null || _a === void 0 ? void 0 : _a.method) === 'dialog';
   }
   /**
    * @description
@@ -60479,7 +58816,7 @@ class FormBuilder {
   }
   /**
    * @description
-   * Construct a new `FormRecord` instance. Accepts a single generic argument, which is an object
+   * Constructs a new `FormRecord` instance. Accepts a single generic argument, which is an object
    * containing all the keys and corresponding inner control types.
    *
    * @param controls A collection of child controls. The key for each child is the name
@@ -60502,7 +58839,7 @@ class FormBuilder {
   }
   /**
    * @description
-   * Construct a new `FormControl` with the given state, validators and options. Set
+   * Constructs a new `FormControl` with the given state, validators and options. Sets
    * `{nonNullable: true}` in the options to get a non-nullable control. Otherwise, the
    * control will be nullable. Accepts a single generic argument, which is the type  of the
    * control's value.
@@ -60714,7 +59051,7 @@ UntypedFormBuilder.ɵprov = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODUL
  */
 
 
-const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.Version('14.2.1');
+const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_0__.Version('14.3.0');
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -60799,7 +59136,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/common */ 9808);
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/core */ 5000);
 /**
- * @license Angular v14.2.1
+ * @license Angular v14.3.0
  * (c) 2010-2022 Google LLC. https://angular.io/
  * License: MIT
  */
@@ -63660,7 +61997,7 @@ DomSanitizerImpl.ɵprov = /* @__PURE__ */_angular_core__WEBPACK_IMPORTED_MODULE_
  */
 
 
-const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__.Version('14.2.1');
+const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__.Version('14.3.0');
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -63691,6 +62028,1843 @@ const VERSION = new _angular_core__WEBPACK_IMPORTED_MODULE_1__.Version('14.2.1')
  */
 
  //# sourceMappingURL=platform-browser.mjs.map
+
+/***/ }),
+
+/***/ 6119:
+/*!********************************************!*\
+  !*** ./node_modules/fuse.js/dist/fuse.mjs ***!
+  \********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Fuse)
+/* harmony export */ });
+/**
+ * Fuse.js v7.1.0 - Lightweight fuzzy-search (http://fusejs.io)
+ *
+ * Copyright (c) 2025 Kiro Risk (http://kiro.me)
+ * All Rights Reserved. Apache Software License 2.0
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
+function isArray(value) {
+  return !Array.isArray ? getTag(value) === '[object Array]' : Array.isArray(value);
+} // Adapted from: https://github.com/lodash/lodash/blob/master/.internal/baseToString.js
+
+
+const INFINITY = 1 / 0;
+
+function baseToString(value) {
+  // Exit early for strings to avoid a performance hit in some environments.
+  if (typeof value == 'string') {
+    return value;
+  }
+
+  let result = value + '';
+  return result == '0' && 1 / value == -INFINITY ? '-0' : result;
+}
+
+function toString(value) {
+  return value == null ? '' : baseToString(value);
+}
+
+function isString(value) {
+  return typeof value === 'string';
+}
+
+function isNumber(value) {
+  return typeof value === 'number';
+} // Adapted from: https://github.com/lodash/lodash/blob/master/isBoolean.js
+
+
+function isBoolean(value) {
+  return value === true || value === false || isObjectLike(value) && getTag(value) == '[object Boolean]';
+}
+
+function isObject(value) {
+  return typeof value === 'object';
+} // Checks if `value` is object-like.
+
+
+function isObjectLike(value) {
+  return isObject(value) && value !== null;
+}
+
+function isDefined(value) {
+  return value !== undefined && value !== null;
+}
+
+function isBlank(value) {
+  return !value.trim().length;
+} // Gets the `toStringTag` of `value`.
+// Adapted from: https://github.com/lodash/lodash/blob/master/.internal/getTag.js
+
+
+function getTag(value) {
+  return value == null ? value === undefined ? '[object Undefined]' : '[object Null]' : Object.prototype.toString.call(value);
+}
+
+const EXTENDED_SEARCH_UNAVAILABLE = 'Extended search is not available';
+const INCORRECT_INDEX_TYPE = "Incorrect 'index' type";
+
+const LOGICAL_SEARCH_INVALID_QUERY_FOR_KEY = key => `Invalid value for key ${key}`;
+
+const PATTERN_LENGTH_TOO_LARGE = max => `Pattern length exceeds max of ${max}.`;
+
+const MISSING_KEY_PROPERTY = name => `Missing ${name} property in key`;
+
+const INVALID_KEY_WEIGHT_VALUE = key => `Property 'weight' in key '${key}' must be a positive integer`;
+
+const hasOwn = Object.prototype.hasOwnProperty;
+
+class KeyStore {
+  constructor(keys) {
+    this._keys = [];
+    this._keyMap = {};
+    let totalWeight = 0;
+    keys.forEach(key => {
+      let obj = createKey(key);
+
+      this._keys.push(obj);
+
+      this._keyMap[obj.id] = obj;
+      totalWeight += obj.weight;
+    }); // Normalize weights so that their sum is equal to 1
+
+    this._keys.forEach(key => {
+      key.weight /= totalWeight;
+    });
+  }
+
+  get(keyId) {
+    return this._keyMap[keyId];
+  }
+
+  keys() {
+    return this._keys;
+  }
+
+  toJSON() {
+    return JSON.stringify(this._keys);
+  }
+
+}
+
+function createKey(key) {
+  let path = null;
+  let id = null;
+  let src = null;
+  let weight = 1;
+  let getFn = null;
+
+  if (isString(key) || isArray(key)) {
+    src = key;
+    path = createKeyPath(key);
+    id = createKeyId(key);
+  } else {
+    if (!hasOwn.call(key, 'name')) {
+      throw new Error(MISSING_KEY_PROPERTY('name'));
+    }
+
+    const name = key.name;
+    src = name;
+
+    if (hasOwn.call(key, 'weight')) {
+      weight = key.weight;
+
+      if (weight <= 0) {
+        throw new Error(INVALID_KEY_WEIGHT_VALUE(name));
+      }
+    }
+
+    path = createKeyPath(name);
+    id = createKeyId(name);
+    getFn = key.getFn;
+  }
+
+  return {
+    path,
+    id,
+    weight,
+    src,
+    getFn
+  };
+}
+
+function createKeyPath(key) {
+  return isArray(key) ? key : key.split('.');
+}
+
+function createKeyId(key) {
+  return isArray(key) ? key.join('.') : key;
+}
+
+function get(obj, path) {
+  let list = [];
+  let arr = false;
+
+  const deepGet = (obj, path, index) => {
+    if (!isDefined(obj)) {
+      return;
+    }
+
+    if (!path[index]) {
+      // If there's no path left, we've arrived at the object we care about.
+      list.push(obj);
+    } else {
+      let key = path[index];
+      const value = obj[key];
+
+      if (!isDefined(value)) {
+        return;
+      } // If we're at the last value in the path, and if it's a string/number/bool,
+      // add it to the list
+
+
+      if (index === path.length - 1 && (isString(value) || isNumber(value) || isBoolean(value))) {
+        list.push(toString(value));
+      } else if (isArray(value)) {
+        arr = true; // Search each item in the array.
+
+        for (let i = 0, len = value.length; i < len; i += 1) {
+          deepGet(value[i], path, index + 1);
+        }
+      } else if (path.length) {
+        // An object. Recurse further.
+        deepGet(value, path, index + 1);
+      }
+    }
+  }; // Backwards compatibility (since path used to be a string)
+
+
+  deepGet(obj, isString(path) ? path.split('.') : path, 0);
+  return arr ? list : list[0];
+}
+
+const MatchOptions = {
+  // Whether the matches should be included in the result set. When `true`, each record in the result
+  // set will include the indices of the matched characters.
+  // These can consequently be used for highlighting purposes.
+  includeMatches: false,
+  // When `true`, the matching function will continue to the end of a search pattern even if
+  // a perfect match has already been located in the string.
+  findAllMatches: false,
+  // Minimum number of characters that must be matched before a result is considered a match
+  minMatchCharLength: 1
+};
+const BasicOptions = {
+  // When `true`, the algorithm continues searching to the end of the input even if a perfect
+  // match is found before the end of the same input.
+  isCaseSensitive: false,
+  // When `true`, the algorithm will ignore diacritics (accents) in comparisons
+  ignoreDiacritics: false,
+  // When true, the matching function will continue to the end of a search pattern even if
+  includeScore: false,
+  // List of properties that will be searched. This also supports nested properties.
+  keys: [],
+  // Whether to sort the result list, by score
+  shouldSort: true,
+  // Default sort function: sort by ascending score, ascending index
+  sortFn: (a, b) => a.score === b.score ? a.idx < b.idx ? -1 : 1 : a.score < b.score ? -1 : 1
+};
+const FuzzyOptions = {
+  // Approximately where in the text is the pattern expected to be found?
+  location: 0,
+  // At what point does the match algorithm give up. A threshold of '0.0' requires a perfect match
+  // (of both letters and location), a threshold of '1.0' would match anything.
+  threshold: 0.6,
+  // Determines how close the match must be to the fuzzy location (specified above).
+  // An exact letter match which is 'distance' characters away from the fuzzy location
+  // would score as a complete mismatch. A distance of '0' requires the match be at
+  // the exact location specified, a threshold of '1000' would require a perfect match
+  // to be within 800 characters of the fuzzy location to be found using a 0.8 threshold.
+  distance: 100
+};
+const AdvancedOptions = {
+  // When `true`, it enables the use of unix-like search commands
+  useExtendedSearch: false,
+  // The get function to use when fetching an object's properties.
+  // The default will search nested paths *ie foo.bar.baz*
+  getFn: get,
+  // When `true`, search will ignore `location` and `distance`, so it won't matter
+  // where in the string the pattern appears.
+  // More info: https://fusejs.io/concepts/scoring-theory.html#fuzziness-score
+  ignoreLocation: false,
+  // When `true`, the calculation for the relevance score (used for sorting) will
+  // ignore the field-length norm.
+  // More info: https://fusejs.io/concepts/scoring-theory.html#field-length-norm
+  ignoreFieldNorm: false,
+  // The weight to determine how much field length norm effects scoring.
+  fieldNormWeight: 1
+};
+var Config = { ...BasicOptions,
+  ...MatchOptions,
+  ...FuzzyOptions,
+  ...AdvancedOptions
+};
+const SPACE = /[^ ]+/g; // Field-length norm: the shorter the field, the higher the weight.
+// Set to 3 decimals to reduce index size.
+
+function norm(weight = 1, mantissa = 3) {
+  const cache = new Map();
+  const m = Math.pow(10, mantissa);
+  return {
+    get(value) {
+      const numTokens = value.match(SPACE).length;
+
+      if (cache.has(numTokens)) {
+        return cache.get(numTokens);
+      } // Default function is 1/sqrt(x), weight makes that variable
+
+
+      const norm = 1 / Math.pow(numTokens, 0.5 * weight); // In place of `toFixed(mantissa)`, for faster computation
+
+      const n = parseFloat(Math.round(norm * m) / m);
+      cache.set(numTokens, n);
+      return n;
+    },
+
+    clear() {
+      cache.clear();
+    }
+
+  };
+}
+
+class FuseIndex {
+  constructor({
+    getFn = Config.getFn,
+    fieldNormWeight = Config.fieldNormWeight
+  } = {}) {
+    this.norm = norm(fieldNormWeight, 3);
+    this.getFn = getFn;
+    this.isCreated = false;
+    this.setIndexRecords();
+  }
+
+  setSources(docs = []) {
+    this.docs = docs;
+  }
+
+  setIndexRecords(records = []) {
+    this.records = records;
+  }
+
+  setKeys(keys = []) {
+    this.keys = keys;
+    this._keysMap = {};
+    keys.forEach((key, idx) => {
+      this._keysMap[key.id] = idx;
+    });
+  }
+
+  create() {
+    if (this.isCreated || !this.docs.length) {
+      return;
+    }
+
+    this.isCreated = true; // List is Array<String>
+
+    if (isString(this.docs[0])) {
+      this.docs.forEach((doc, docIndex) => {
+        this._addString(doc, docIndex);
+      });
+    } else {
+      // List is Array<Object>
+      this.docs.forEach((doc, docIndex) => {
+        this._addObject(doc, docIndex);
+      });
+    }
+
+    this.norm.clear();
+  } // Adds a doc to the end of the index
+
+
+  add(doc) {
+    const idx = this.size();
+
+    if (isString(doc)) {
+      this._addString(doc, idx);
+    } else {
+      this._addObject(doc, idx);
+    }
+  } // Removes the doc at the specified index of the index
+
+
+  removeAt(idx) {
+    this.records.splice(idx, 1); // Change ref index of every subsquent doc
+
+    for (let i = idx, len = this.size(); i < len; i += 1) {
+      this.records[i].i -= 1;
+    }
+  }
+
+  getValueForItemAtKeyId(item, keyId) {
+    return item[this._keysMap[keyId]];
+  }
+
+  size() {
+    return this.records.length;
+  }
+
+  _addString(doc, docIndex) {
+    if (!isDefined(doc) || isBlank(doc)) {
+      return;
+    }
+
+    let record = {
+      v: doc,
+      i: docIndex,
+      n: this.norm.get(doc)
+    };
+    this.records.push(record);
+  }
+
+  _addObject(doc, docIndex) {
+    let record = {
+      i: docIndex,
+      $: {}
+    }; // Iterate over every key (i.e, path), and fetch the value at that key
+
+    this.keys.forEach((key, keyIndex) => {
+      let value = key.getFn ? key.getFn(doc) : this.getFn(doc, key.path);
+
+      if (!isDefined(value)) {
+        return;
+      }
+
+      if (isArray(value)) {
+        let subRecords = [];
+        const stack = [{
+          nestedArrIndex: -1,
+          value
+        }];
+
+        while (stack.length) {
+          const {
+            nestedArrIndex,
+            value
+          } = stack.pop();
+
+          if (!isDefined(value)) {
+            continue;
+          }
+
+          if (isString(value) && !isBlank(value)) {
+            let subRecord = {
+              v: value,
+              i: nestedArrIndex,
+              n: this.norm.get(value)
+            };
+            subRecords.push(subRecord);
+          } else if (isArray(value)) {
+            value.forEach((item, k) => {
+              stack.push({
+                nestedArrIndex: k,
+                value: item
+              });
+            });
+          } else ;
+        }
+
+        record.$[keyIndex] = subRecords;
+      } else if (isString(value) && !isBlank(value)) {
+        let subRecord = {
+          v: value,
+          n: this.norm.get(value)
+        };
+        record.$[keyIndex] = subRecord;
+      }
+    });
+    this.records.push(record);
+  }
+
+  toJSON() {
+    return {
+      keys: this.keys,
+      records: this.records
+    };
+  }
+
+}
+
+function createIndex(keys, docs, {
+  getFn = Config.getFn,
+  fieldNormWeight = Config.fieldNormWeight
+} = {}) {
+  const myIndex = new FuseIndex({
+    getFn,
+    fieldNormWeight
+  });
+  myIndex.setKeys(keys.map(createKey));
+  myIndex.setSources(docs);
+  myIndex.create();
+  return myIndex;
+}
+
+function parseIndex(data, {
+  getFn = Config.getFn,
+  fieldNormWeight = Config.fieldNormWeight
+} = {}) {
+  const {
+    keys,
+    records
+  } = data;
+  const myIndex = new FuseIndex({
+    getFn,
+    fieldNormWeight
+  });
+  myIndex.setKeys(keys);
+  myIndex.setIndexRecords(records);
+  return myIndex;
+}
+
+function computeScore$1(pattern, {
+  errors = 0,
+  currentLocation = 0,
+  expectedLocation = 0,
+  distance = Config.distance,
+  ignoreLocation = Config.ignoreLocation
+} = {}) {
+  const accuracy = errors / pattern.length;
+
+  if (ignoreLocation) {
+    return accuracy;
+  }
+
+  const proximity = Math.abs(expectedLocation - currentLocation);
+
+  if (!distance) {
+    // Dodge divide by zero error.
+    return proximity ? 1.0 : accuracy;
+  }
+
+  return accuracy + proximity / distance;
+}
+
+function convertMaskToIndices(matchmask = [], minMatchCharLength = Config.minMatchCharLength) {
+  let indices = [];
+  let start = -1;
+  let end = -1;
+  let i = 0;
+
+  for (let len = matchmask.length; i < len; i += 1) {
+    let match = matchmask[i];
+
+    if (match && start === -1) {
+      start = i;
+    } else if (!match && start !== -1) {
+      end = i - 1;
+
+      if (end - start + 1 >= minMatchCharLength) {
+        indices.push([start, end]);
+      }
+
+      start = -1;
+    }
+  } // (i-1 - start) + 1 => i - start
+
+
+  if (matchmask[i - 1] && i - start >= minMatchCharLength) {
+    indices.push([start, i - 1]);
+  }
+
+  return indices;
+} // Machine word size
+
+
+const MAX_BITS = 32;
+
+function search(text, pattern, patternAlphabet, {
+  location = Config.location,
+  distance = Config.distance,
+  threshold = Config.threshold,
+  findAllMatches = Config.findAllMatches,
+  minMatchCharLength = Config.minMatchCharLength,
+  includeMatches = Config.includeMatches,
+  ignoreLocation = Config.ignoreLocation
+} = {}) {
+  if (pattern.length > MAX_BITS) {
+    throw new Error(PATTERN_LENGTH_TOO_LARGE(MAX_BITS));
+  }
+
+  const patternLen = pattern.length; // Set starting location at beginning text and initialize the alphabet.
+
+  const textLen = text.length; // Handle the case when location > text.length
+
+  const expectedLocation = Math.max(0, Math.min(location, textLen)); // Highest score beyond which we give up.
+
+  let currentThreshold = threshold; // Is there a nearby exact match? (speedup)
+
+  let bestLocation = expectedLocation; // Performance: only computer matches when the minMatchCharLength > 1
+  // OR if `includeMatches` is true.
+
+  const computeMatches = minMatchCharLength > 1 || includeMatches; // A mask of the matches, used for building the indices
+
+  const matchMask = computeMatches ? Array(textLen) : [];
+  let index; // Get all exact matches, here for speed up
+
+  while ((index = text.indexOf(pattern, bestLocation)) > -1) {
+    let score = computeScore$1(pattern, {
+      currentLocation: index,
+      expectedLocation,
+      distance,
+      ignoreLocation
+    });
+    currentThreshold = Math.min(score, currentThreshold);
+    bestLocation = index + patternLen;
+
+    if (computeMatches) {
+      let i = 0;
+
+      while (i < patternLen) {
+        matchMask[index + i] = 1;
+        i += 1;
+      }
+    }
+  } // Reset the best location
+
+
+  bestLocation = -1;
+  let lastBitArr = [];
+  let finalScore = 1;
+  let binMax = patternLen + textLen;
+  const mask = 1 << patternLen - 1;
+
+  for (let i = 0; i < patternLen; i += 1) {
+    // Scan for the best match; each iteration allows for one more error.
+    // Run a binary search to determine how far from the match location we can stray
+    // at this error level.
+    let binMin = 0;
+    let binMid = binMax;
+
+    while (binMin < binMid) {
+      const score = computeScore$1(pattern, {
+        errors: i,
+        currentLocation: expectedLocation + binMid,
+        expectedLocation,
+        distance,
+        ignoreLocation
+      });
+
+      if (score <= currentThreshold) {
+        binMin = binMid;
+      } else {
+        binMax = binMid;
+      }
+
+      binMid = Math.floor((binMax - binMin) / 2 + binMin);
+    } // Use the result from this iteration as the maximum for the next.
+
+
+    binMax = binMid;
+    let start = Math.max(1, expectedLocation - binMid + 1);
+    let finish = findAllMatches ? textLen : Math.min(expectedLocation + binMid, textLen) + patternLen; // Initialize the bit array
+
+    let bitArr = Array(finish + 2);
+    bitArr[finish + 1] = (1 << i) - 1;
+
+    for (let j = finish; j >= start; j -= 1) {
+      let currentLocation = j - 1;
+      let charMatch = patternAlphabet[text.charAt(currentLocation)];
+
+      if (computeMatches) {
+        // Speed up: quick bool to int conversion (i.e, `charMatch ? 1 : 0`)
+        matchMask[currentLocation] = +!!charMatch;
+      } // First pass: exact match
+
+
+      bitArr[j] = (bitArr[j + 1] << 1 | 1) & charMatch; // Subsequent passes: fuzzy match
+
+      if (i) {
+        bitArr[j] |= (lastBitArr[j + 1] | lastBitArr[j]) << 1 | 1 | lastBitArr[j + 1];
+      }
+
+      if (bitArr[j] & mask) {
+        finalScore = computeScore$1(pattern, {
+          errors: i,
+          currentLocation,
+          expectedLocation,
+          distance,
+          ignoreLocation
+        }); // This match will almost certainly be better than any existing match.
+        // But check anyway.
+
+        if (finalScore <= currentThreshold) {
+          // Indeed it is
+          currentThreshold = finalScore;
+          bestLocation = currentLocation; // Already passed `loc`, downhill from here on in.
+
+          if (bestLocation <= expectedLocation) {
+            break;
+          } // When passing `bestLocation`, don't exceed our current distance from `expectedLocation`.
+
+
+          start = Math.max(1, 2 * expectedLocation - bestLocation);
+        }
+      }
+    } // No hope for a (better) match at greater error levels.
+
+
+    const score = computeScore$1(pattern, {
+      errors: i + 1,
+      currentLocation: expectedLocation,
+      expectedLocation,
+      distance,
+      ignoreLocation
+    });
+
+    if (score > currentThreshold) {
+      break;
+    }
+
+    lastBitArr = bitArr;
+  }
+
+  const result = {
+    isMatch: bestLocation >= 0,
+    // Count exact matches (those with a score of 0) to be "almost" exact
+    score: Math.max(0.001, finalScore)
+  };
+
+  if (computeMatches) {
+    const indices = convertMaskToIndices(matchMask, minMatchCharLength);
+
+    if (!indices.length) {
+      result.isMatch = false;
+    } else if (includeMatches) {
+      result.indices = indices;
+    }
+  }
+
+  return result;
+}
+
+function createPatternAlphabet(pattern) {
+  let mask = {};
+
+  for (let i = 0, len = pattern.length; i < len; i += 1) {
+    const char = pattern.charAt(i);
+    mask[char] = (mask[char] || 0) | 1 << len - i - 1;
+  }
+
+  return mask;
+}
+
+const stripDiacritics = String.prototype.normalize ? str => str.normalize('NFD').replace(/[\u0300-\u036F\u0483-\u0489\u0591-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u0711\u0730-\u074A\u07A6-\u07B0\u07EB-\u07F3\u07FD\u0816-\u0819\u081B-\u0823\u0825-\u0827\u0829-\u082D\u0859-\u085B\u08D3-\u08E1\u08E3-\u0903\u093A-\u093C\u093E-\u094F\u0951-\u0957\u0962\u0963\u0981-\u0983\u09BC\u09BE-\u09C4\u09C7\u09C8\u09CB-\u09CD\u09D7\u09E2\u09E3\u09FE\u0A01-\u0A03\u0A3C\u0A3E-\u0A42\u0A47\u0A48\u0A4B-\u0A4D\u0A51\u0A70\u0A71\u0A75\u0A81-\u0A83\u0ABC\u0ABE-\u0AC5\u0AC7-\u0AC9\u0ACB-\u0ACD\u0AE2\u0AE3\u0AFA-\u0AFF\u0B01-\u0B03\u0B3C\u0B3E-\u0B44\u0B47\u0B48\u0B4B-\u0B4D\u0B56\u0B57\u0B62\u0B63\u0B82\u0BBE-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCD\u0BD7\u0C00-\u0C04\u0C3E-\u0C44\u0C46-\u0C48\u0C4A-\u0C4D\u0C55\u0C56\u0C62\u0C63\u0C81-\u0C83\u0CBC\u0CBE-\u0CC4\u0CC6-\u0CC8\u0CCA-\u0CCD\u0CD5\u0CD6\u0CE2\u0CE3\u0D00-\u0D03\u0D3B\u0D3C\u0D3E-\u0D44\u0D46-\u0D48\u0D4A-\u0D4D\u0D57\u0D62\u0D63\u0D82\u0D83\u0DCA\u0DCF-\u0DD4\u0DD6\u0DD8-\u0DDF\u0DF2\u0DF3\u0E31\u0E34-\u0E3A\u0E47-\u0E4E\u0EB1\u0EB4-\u0EB9\u0EBB\u0EBC\u0EC8-\u0ECD\u0F18\u0F19\u0F35\u0F37\u0F39\u0F3E\u0F3F\u0F71-\u0F84\u0F86\u0F87\u0F8D-\u0F97\u0F99-\u0FBC\u0FC6\u102B-\u103E\u1056-\u1059\u105E-\u1060\u1062-\u1064\u1067-\u106D\u1071-\u1074\u1082-\u108D\u108F\u109A-\u109D\u135D-\u135F\u1712-\u1714\u1732-\u1734\u1752\u1753\u1772\u1773\u17B4-\u17D3\u17DD\u180B-\u180D\u1885\u1886\u18A9\u1920-\u192B\u1930-\u193B\u1A17-\u1A1B\u1A55-\u1A5E\u1A60-\u1A7C\u1A7F\u1AB0-\u1ABE\u1B00-\u1B04\u1B34-\u1B44\u1B6B-\u1B73\u1B80-\u1B82\u1BA1-\u1BAD\u1BE6-\u1BF3\u1C24-\u1C37\u1CD0-\u1CD2\u1CD4-\u1CE8\u1CED\u1CF2-\u1CF4\u1CF7-\u1CF9\u1DC0-\u1DF9\u1DFB-\u1DFF\u20D0-\u20F0\u2CEF-\u2CF1\u2D7F\u2DE0-\u2DFF\u302A-\u302F\u3099\u309A\uA66F-\uA672\uA674-\uA67D\uA69E\uA69F\uA6F0\uA6F1\uA802\uA806\uA80B\uA823-\uA827\uA880\uA881\uA8B4-\uA8C5\uA8E0-\uA8F1\uA8FF\uA926-\uA92D\uA947-\uA953\uA980-\uA983\uA9B3-\uA9C0\uA9E5\uAA29-\uAA36\uAA43\uAA4C\uAA4D\uAA7B-\uAA7D\uAAB0\uAAB2-\uAAB4\uAAB7\uAAB8\uAABE\uAABF\uAAC1\uAAEB-\uAAEF\uAAF5\uAAF6\uABE3-\uABEA\uABEC\uABED\uFB1E\uFE00-\uFE0F\uFE20-\uFE2F]/g, '') : str => str;
+
+class BitapSearch {
+  constructor(pattern, {
+    location = Config.location,
+    threshold = Config.threshold,
+    distance = Config.distance,
+    includeMatches = Config.includeMatches,
+    findAllMatches = Config.findAllMatches,
+    minMatchCharLength = Config.minMatchCharLength,
+    isCaseSensitive = Config.isCaseSensitive,
+    ignoreDiacritics = Config.ignoreDiacritics,
+    ignoreLocation = Config.ignoreLocation
+  } = {}) {
+    this.options = {
+      location,
+      threshold,
+      distance,
+      includeMatches,
+      findAllMatches,
+      minMatchCharLength,
+      isCaseSensitive,
+      ignoreDiacritics,
+      ignoreLocation
+    };
+    pattern = isCaseSensitive ? pattern : pattern.toLowerCase();
+    pattern = ignoreDiacritics ? stripDiacritics(pattern) : pattern;
+    this.pattern = pattern;
+    this.chunks = [];
+
+    if (!this.pattern.length) {
+      return;
+    }
+
+    const addChunk = (pattern, startIndex) => {
+      this.chunks.push({
+        pattern,
+        alphabet: createPatternAlphabet(pattern),
+        startIndex
+      });
+    };
+
+    const len = this.pattern.length;
+
+    if (len > MAX_BITS) {
+      let i = 0;
+      const remainder = len % MAX_BITS;
+      const end = len - remainder;
+
+      while (i < end) {
+        addChunk(this.pattern.substr(i, MAX_BITS), i);
+        i += MAX_BITS;
+      }
+
+      if (remainder) {
+        const startIndex = len - MAX_BITS;
+        addChunk(this.pattern.substr(startIndex), startIndex);
+      }
+    } else {
+      addChunk(this.pattern, 0);
+    }
+  }
+
+  searchIn(text) {
+    const {
+      isCaseSensitive,
+      ignoreDiacritics,
+      includeMatches
+    } = this.options;
+    text = isCaseSensitive ? text : text.toLowerCase();
+    text = ignoreDiacritics ? stripDiacritics(text) : text; // Exact match
+
+    if (this.pattern === text) {
+      let result = {
+        isMatch: true,
+        score: 0
+      };
+
+      if (includeMatches) {
+        result.indices = [[0, text.length - 1]];
+      }
+
+      return result;
+    } // Otherwise, use Bitap algorithm
+
+
+    const {
+      location,
+      distance,
+      threshold,
+      findAllMatches,
+      minMatchCharLength,
+      ignoreLocation
+    } = this.options;
+    let allIndices = [];
+    let totalScore = 0;
+    let hasMatches = false;
+    this.chunks.forEach(({
+      pattern,
+      alphabet,
+      startIndex
+    }) => {
+      const {
+        isMatch,
+        score,
+        indices
+      } = search(text, pattern, alphabet, {
+        location: location + startIndex,
+        distance,
+        threshold,
+        findAllMatches,
+        minMatchCharLength,
+        includeMatches,
+        ignoreLocation
+      });
+
+      if (isMatch) {
+        hasMatches = true;
+      }
+
+      totalScore += score;
+
+      if (isMatch && indices) {
+        allIndices = [...allIndices, ...indices];
+      }
+    });
+    let result = {
+      isMatch: hasMatches,
+      score: hasMatches ? totalScore / this.chunks.length : 1
+    };
+
+    if (hasMatches && includeMatches) {
+      result.indices = allIndices;
+    }
+
+    return result;
+  }
+
+}
+
+class BaseMatch {
+  constructor(pattern) {
+    this.pattern = pattern;
+  }
+
+  static isMultiMatch(pattern) {
+    return getMatch(pattern, this.multiRegex);
+  }
+
+  static isSingleMatch(pattern) {
+    return getMatch(pattern, this.singleRegex);
+  }
+
+  search() {}
+
+}
+
+function getMatch(pattern, exp) {
+  const matches = pattern.match(exp);
+  return matches ? matches[1] : null;
+} // Token: 'file
+
+
+class ExactMatch extends BaseMatch {
+  constructor(pattern) {
+    super(pattern);
+  }
+
+  static get type() {
+    return 'exact';
+  }
+
+  static get multiRegex() {
+    return /^="(.*)"$/;
+  }
+
+  static get singleRegex() {
+    return /^=(.*)$/;
+  }
+
+  search(text) {
+    const isMatch = text === this.pattern;
+    return {
+      isMatch,
+      score: isMatch ? 0 : 1,
+      indices: [0, this.pattern.length - 1]
+    };
+  }
+
+} // Token: !fire
+
+
+class InverseExactMatch extends BaseMatch {
+  constructor(pattern) {
+    super(pattern);
+  }
+
+  static get type() {
+    return 'inverse-exact';
+  }
+
+  static get multiRegex() {
+    return /^!"(.*)"$/;
+  }
+
+  static get singleRegex() {
+    return /^!(.*)$/;
+  }
+
+  search(text) {
+    const index = text.indexOf(this.pattern);
+    const isMatch = index === -1;
+    return {
+      isMatch,
+      score: isMatch ? 0 : 1,
+      indices: [0, text.length - 1]
+    };
+  }
+
+} // Token: ^file
+
+
+class PrefixExactMatch extends BaseMatch {
+  constructor(pattern) {
+    super(pattern);
+  }
+
+  static get type() {
+    return 'prefix-exact';
+  }
+
+  static get multiRegex() {
+    return /^\^"(.*)"$/;
+  }
+
+  static get singleRegex() {
+    return /^\^(.*)$/;
+  }
+
+  search(text) {
+    const isMatch = text.startsWith(this.pattern);
+    return {
+      isMatch,
+      score: isMatch ? 0 : 1,
+      indices: [0, this.pattern.length - 1]
+    };
+  }
+
+} // Token: !^fire
+
+
+class InversePrefixExactMatch extends BaseMatch {
+  constructor(pattern) {
+    super(pattern);
+  }
+
+  static get type() {
+    return 'inverse-prefix-exact';
+  }
+
+  static get multiRegex() {
+    return /^!\^"(.*)"$/;
+  }
+
+  static get singleRegex() {
+    return /^!\^(.*)$/;
+  }
+
+  search(text) {
+    const isMatch = !text.startsWith(this.pattern);
+    return {
+      isMatch,
+      score: isMatch ? 0 : 1,
+      indices: [0, text.length - 1]
+    };
+  }
+
+} // Token: .file$
+
+
+class SuffixExactMatch extends BaseMatch {
+  constructor(pattern) {
+    super(pattern);
+  }
+
+  static get type() {
+    return 'suffix-exact';
+  }
+
+  static get multiRegex() {
+    return /^"(.*)"\$$/;
+  }
+
+  static get singleRegex() {
+    return /^(.*)\$$/;
+  }
+
+  search(text) {
+    const isMatch = text.endsWith(this.pattern);
+    return {
+      isMatch,
+      score: isMatch ? 0 : 1,
+      indices: [text.length - this.pattern.length, text.length - 1]
+    };
+  }
+
+} // Token: !.file$
+
+
+class InverseSuffixExactMatch extends BaseMatch {
+  constructor(pattern) {
+    super(pattern);
+  }
+
+  static get type() {
+    return 'inverse-suffix-exact';
+  }
+
+  static get multiRegex() {
+    return /^!"(.*)"\$$/;
+  }
+
+  static get singleRegex() {
+    return /^!(.*)\$$/;
+  }
+
+  search(text) {
+    const isMatch = !text.endsWith(this.pattern);
+    return {
+      isMatch,
+      score: isMatch ? 0 : 1,
+      indices: [0, text.length - 1]
+    };
+  }
+
+}
+
+class FuzzyMatch extends BaseMatch {
+  constructor(pattern, {
+    location = Config.location,
+    threshold = Config.threshold,
+    distance = Config.distance,
+    includeMatches = Config.includeMatches,
+    findAllMatches = Config.findAllMatches,
+    minMatchCharLength = Config.minMatchCharLength,
+    isCaseSensitive = Config.isCaseSensitive,
+    ignoreDiacritics = Config.ignoreDiacritics,
+    ignoreLocation = Config.ignoreLocation
+  } = {}) {
+    super(pattern);
+    this._bitapSearch = new BitapSearch(pattern, {
+      location,
+      threshold,
+      distance,
+      includeMatches,
+      findAllMatches,
+      minMatchCharLength,
+      isCaseSensitive,
+      ignoreDiacritics,
+      ignoreLocation
+    });
+  }
+
+  static get type() {
+    return 'fuzzy';
+  }
+
+  static get multiRegex() {
+    return /^"(.*)"$/;
+  }
+
+  static get singleRegex() {
+    return /^(.*)$/;
+  }
+
+  search(text) {
+    return this._bitapSearch.searchIn(text);
+  }
+
+} // Token: 'file
+
+
+class IncludeMatch extends BaseMatch {
+  constructor(pattern) {
+    super(pattern);
+  }
+
+  static get type() {
+    return 'include';
+  }
+
+  static get multiRegex() {
+    return /^'"(.*)"$/;
+  }
+
+  static get singleRegex() {
+    return /^'(.*)$/;
+  }
+
+  search(text) {
+    let location = 0;
+    let index;
+    const indices = [];
+    const patternLen = this.pattern.length; // Get all exact matches
+
+    while ((index = text.indexOf(this.pattern, location)) > -1) {
+      location = index + patternLen;
+      indices.push([index, location - 1]);
+    }
+
+    const isMatch = !!indices.length;
+    return {
+      isMatch,
+      score: isMatch ? 0 : 1,
+      indices
+    };
+  }
+
+} // ❗Order is important. DO NOT CHANGE.
+
+
+const searchers = [ExactMatch, IncludeMatch, PrefixExactMatch, InversePrefixExactMatch, InverseSuffixExactMatch, SuffixExactMatch, InverseExactMatch, FuzzyMatch];
+const searchersLen = searchers.length; // Regex to split by spaces, but keep anything in quotes together
+
+const SPACE_RE = / +(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/;
+const OR_TOKEN = '|'; // Return a 2D array representation of the query, for simpler parsing.
+// Example:
+// "^core go$ | rb$ | py$ xy$" => [["^core", "go$"], ["rb$"], ["py$", "xy$"]]
+
+function parseQuery(pattern, options = {}) {
+  return pattern.split(OR_TOKEN).map(item => {
+    let query = item.trim().split(SPACE_RE).filter(item => item && !!item.trim());
+    let results = [];
+
+    for (let i = 0, len = query.length; i < len; i += 1) {
+      const queryItem = query[i]; // 1. Handle multiple query match (i.e, once that are quoted, like `"hello world"`)
+
+      let found = false;
+      let idx = -1;
+
+      while (!found && ++idx < searchersLen) {
+        const searcher = searchers[idx];
+        let token = searcher.isMultiMatch(queryItem);
+
+        if (token) {
+          results.push(new searcher(token, options));
+          found = true;
+        }
+      }
+
+      if (found) {
+        continue;
+      } // 2. Handle single query matches (i.e, once that are *not* quoted)
+
+
+      idx = -1;
+
+      while (++idx < searchersLen) {
+        const searcher = searchers[idx];
+        let token = searcher.isSingleMatch(queryItem);
+
+        if (token) {
+          results.push(new searcher(token, options));
+          break;
+        }
+      }
+    }
+
+    return results;
+  });
+} // These extended matchers can return an array of matches, as opposed
+// to a singl match
+
+
+const MultiMatchSet = new Set([FuzzyMatch.type, IncludeMatch.type]);
+/**
+ * Command-like searching
+ * ======================
+ *
+ * Given multiple search terms delimited by spaces.e.g. `^jscript .python$ ruby !java`,
+ * search in a given text.
+ *
+ * Search syntax:
+ *
+ * | Token       | Match type                 | Description                            |
+ * | ----------- | -------------------------- | -------------------------------------- |
+ * | `jscript`   | fuzzy-match                | Items that fuzzy match `jscript`       |
+ * | `=scheme`   | exact-match                | Items that are `scheme`                |
+ * | `'python`   | include-match              | Items that include `python`            |
+ * | `!ruby`     | inverse-exact-match        | Items that do not include `ruby`       |
+ * | `^java`     | prefix-exact-match         | Items that start with `java`           |
+ * | `!^earlang` | inverse-prefix-exact-match | Items that do not start with `earlang` |
+ * | `.js$`      | suffix-exact-match         | Items that end with `.js`              |
+ * | `!.go$`     | inverse-suffix-exact-match | Items that do not end with `.go`       |
+ *
+ * A single pipe character acts as an OR operator. For example, the following
+ * query matches entries that start with `core` and end with either`go`, `rb`,
+ * or`py`.
+ *
+ * ```
+ * ^core go$ | rb$ | py$
+ * ```
+ */
+
+class ExtendedSearch {
+  constructor(pattern, {
+    isCaseSensitive = Config.isCaseSensitive,
+    ignoreDiacritics = Config.ignoreDiacritics,
+    includeMatches = Config.includeMatches,
+    minMatchCharLength = Config.minMatchCharLength,
+    ignoreLocation = Config.ignoreLocation,
+    findAllMatches = Config.findAllMatches,
+    location = Config.location,
+    threshold = Config.threshold,
+    distance = Config.distance
+  } = {}) {
+    this.query = null;
+    this.options = {
+      isCaseSensitive,
+      ignoreDiacritics,
+      includeMatches,
+      minMatchCharLength,
+      findAllMatches,
+      ignoreLocation,
+      location,
+      threshold,
+      distance
+    };
+    pattern = isCaseSensitive ? pattern : pattern.toLowerCase();
+    pattern = ignoreDiacritics ? stripDiacritics(pattern) : pattern;
+    this.pattern = pattern;
+    this.query = parseQuery(this.pattern, this.options);
+  }
+
+  static condition(_, options) {
+    return options.useExtendedSearch;
+  }
+
+  searchIn(text) {
+    const query = this.query;
+
+    if (!query) {
+      return {
+        isMatch: false,
+        score: 1
+      };
+    }
+
+    const {
+      includeMatches,
+      isCaseSensitive,
+      ignoreDiacritics
+    } = this.options;
+    text = isCaseSensitive ? text : text.toLowerCase();
+    text = ignoreDiacritics ? stripDiacritics(text) : text;
+    let numMatches = 0;
+    let allIndices = [];
+    let totalScore = 0; // ORs
+
+    for (let i = 0, qLen = query.length; i < qLen; i += 1) {
+      const searchers = query[i]; // Reset indices
+
+      allIndices.length = 0;
+      numMatches = 0; // ANDs
+
+      for (let j = 0, pLen = searchers.length; j < pLen; j += 1) {
+        const searcher = searchers[j];
+        const {
+          isMatch,
+          indices,
+          score
+        } = searcher.search(text);
+
+        if (isMatch) {
+          numMatches += 1;
+          totalScore += score;
+
+          if (includeMatches) {
+            const type = searcher.constructor.type;
+
+            if (MultiMatchSet.has(type)) {
+              allIndices = [...allIndices, ...indices];
+            } else {
+              allIndices.push(indices);
+            }
+          }
+        } else {
+          totalScore = 0;
+          numMatches = 0;
+          allIndices.length = 0;
+          break;
+        }
+      } // OR condition, so if TRUE, return
+
+
+      if (numMatches) {
+        let result = {
+          isMatch: true,
+          score: totalScore / numMatches
+        };
+
+        if (includeMatches) {
+          result.indices = allIndices;
+        }
+
+        return result;
+      }
+    } // Nothing was matched
+
+
+    return {
+      isMatch: false,
+      score: 1
+    };
+  }
+
+}
+
+const registeredSearchers = [];
+
+function register(...args) {
+  registeredSearchers.push(...args);
+}
+
+function createSearcher(pattern, options) {
+  for (let i = 0, len = registeredSearchers.length; i < len; i += 1) {
+    let searcherClass = registeredSearchers[i];
+
+    if (searcherClass.condition(pattern, options)) {
+      return new searcherClass(pattern, options);
+    }
+  }
+
+  return new BitapSearch(pattern, options);
+}
+
+const LogicalOperator = {
+  AND: '$and',
+  OR: '$or'
+};
+const KeyType = {
+  PATH: '$path',
+  PATTERN: '$val'
+};
+
+const isExpression = query => !!(query[LogicalOperator.AND] || query[LogicalOperator.OR]);
+
+const isPath = query => !!query[KeyType.PATH];
+
+const isLeaf = query => !isArray(query) && isObject(query) && !isExpression(query);
+
+const convertToExplicit = query => ({
+  [LogicalOperator.AND]: Object.keys(query).map(key => ({
+    [key]: query[key]
+  }))
+}); // When `auto` is `true`, the parse function will infer and initialize and add
+// the appropriate `Searcher` instance
+
+
+function parse(query, options, {
+  auto = true
+} = {}) {
+  const next = query => {
+    let keys = Object.keys(query);
+    const isQueryPath = isPath(query);
+
+    if (!isQueryPath && keys.length > 1 && !isExpression(query)) {
+      return next(convertToExplicit(query));
+    }
+
+    if (isLeaf(query)) {
+      const key = isQueryPath ? query[KeyType.PATH] : keys[0];
+      const pattern = isQueryPath ? query[KeyType.PATTERN] : query[key];
+
+      if (!isString(pattern)) {
+        throw new Error(LOGICAL_SEARCH_INVALID_QUERY_FOR_KEY(key));
+      }
+
+      const obj = {
+        keyId: createKeyId(key),
+        pattern
+      };
+
+      if (auto) {
+        obj.searcher = createSearcher(pattern, options);
+      }
+
+      return obj;
+    }
+
+    let node = {
+      children: [],
+      operator: keys[0]
+    };
+    keys.forEach(key => {
+      const value = query[key];
+
+      if (isArray(value)) {
+        value.forEach(item => {
+          node.children.push(next(item));
+        });
+      }
+    });
+    return node;
+  };
+
+  if (!isExpression(query)) {
+    query = convertToExplicit(query);
+  }
+
+  return next(query);
+} // Practical scoring function
+
+
+function computeScore(results, {
+  ignoreFieldNorm = Config.ignoreFieldNorm
+}) {
+  results.forEach(result => {
+    let totalScore = 1;
+    result.matches.forEach(({
+      key,
+      norm,
+      score
+    }) => {
+      const weight = key ? key.weight : null;
+      totalScore *= Math.pow(score === 0 && weight ? Number.EPSILON : score, (weight || 1) * (ignoreFieldNorm ? 1 : norm));
+    });
+    result.score = totalScore;
+  });
+}
+
+function transformMatches(result, data) {
+  const matches = result.matches;
+  data.matches = [];
+
+  if (!isDefined(matches)) {
+    return;
+  }
+
+  matches.forEach(match => {
+    if (!isDefined(match.indices) || !match.indices.length) {
+      return;
+    }
+
+    const {
+      indices,
+      value
+    } = match;
+    let obj = {
+      indices,
+      value
+    };
+
+    if (match.key) {
+      obj.key = match.key.src;
+    }
+
+    if (match.idx > -1) {
+      obj.refIndex = match.idx;
+    }
+
+    data.matches.push(obj);
+  });
+}
+
+function transformScore(result, data) {
+  data.score = result.score;
+}
+
+function format(results, docs, {
+  includeMatches = Config.includeMatches,
+  includeScore = Config.includeScore
+} = {}) {
+  const transformers = [];
+  if (includeMatches) transformers.push(transformMatches);
+  if (includeScore) transformers.push(transformScore);
+  return results.map(result => {
+    const {
+      idx
+    } = result;
+    const data = {
+      item: docs[idx],
+      refIndex: idx
+    };
+
+    if (transformers.length) {
+      transformers.forEach(transformer => {
+        transformer(result, data);
+      });
+    }
+
+    return data;
+  });
+}
+
+class Fuse {
+  constructor(docs, options = {}, index) {
+    this.options = { ...Config,
+      ...options
+    };
+
+    if (this.options.useExtendedSearch && !true) {}
+
+    this._keyStore = new KeyStore(this.options.keys);
+    this.setCollection(docs, index);
+  }
+
+  setCollection(docs, index) {
+    this._docs = docs;
+
+    if (index && !(index instanceof FuseIndex)) {
+      throw new Error(INCORRECT_INDEX_TYPE);
+    }
+
+    this._myIndex = index || createIndex(this.options.keys, this._docs, {
+      getFn: this.options.getFn,
+      fieldNormWeight: this.options.fieldNormWeight
+    });
+  }
+
+  add(doc) {
+    if (!isDefined(doc)) {
+      return;
+    }
+
+    this._docs.push(doc);
+
+    this._myIndex.add(doc);
+  }
+
+  remove(predicate = () => false) {
+    const results = [];
+
+    for (let i = 0, len = this._docs.length; i < len; i += 1) {
+      const doc = this._docs[i];
+
+      if (predicate(doc, i)) {
+        this.removeAt(i);
+        i -= 1;
+        len -= 1;
+        results.push(doc);
+      }
+    }
+
+    return results;
+  }
+
+  removeAt(idx) {
+    this._docs.splice(idx, 1);
+
+    this._myIndex.removeAt(idx);
+  }
+
+  getIndex() {
+    return this._myIndex;
+  }
+
+  search(query, {
+    limit = -1
+  } = {}) {
+    const {
+      includeMatches,
+      includeScore,
+      shouldSort,
+      sortFn,
+      ignoreFieldNorm
+    } = this.options;
+    let results = isString(query) ? isString(this._docs[0]) ? this._searchStringList(query) : this._searchObjectList(query) : this._searchLogical(query);
+    computeScore(results, {
+      ignoreFieldNorm
+    });
+
+    if (shouldSort) {
+      results.sort(sortFn);
+    }
+
+    if (isNumber(limit) && limit > -1) {
+      results = results.slice(0, limit);
+    }
+
+    return format(results, this._docs, {
+      includeMatches,
+      includeScore
+    });
+  }
+
+  _searchStringList(query) {
+    const searcher = createSearcher(query, this.options);
+    const {
+      records
+    } = this._myIndex;
+    const results = []; // Iterate over every string in the index
+
+    records.forEach(({
+      v: text,
+      i: idx,
+      n: norm
+    }) => {
+      if (!isDefined(text)) {
+        return;
+      }
+
+      const {
+        isMatch,
+        score,
+        indices
+      } = searcher.searchIn(text);
+
+      if (isMatch) {
+        results.push({
+          item: text,
+          idx,
+          matches: [{
+            score,
+            value: text,
+            norm,
+            indices
+          }]
+        });
+      }
+    });
+    return results;
+  }
+
+  _searchLogical(query) {
+    const expression = parse(query, this.options);
+
+    const evaluate = (node, item, idx) => {
+      if (!node.children) {
+        const {
+          keyId,
+          searcher
+        } = node;
+
+        const matches = this._findMatches({
+          key: this._keyStore.get(keyId),
+          value: this._myIndex.getValueForItemAtKeyId(item, keyId),
+          searcher
+        });
+
+        if (matches && matches.length) {
+          return [{
+            idx,
+            item,
+            matches
+          }];
+        }
+
+        return [];
+      }
+
+      const res = [];
+
+      for (let i = 0, len = node.children.length; i < len; i += 1) {
+        const child = node.children[i];
+        const result = evaluate(child, item, idx);
+
+        if (result.length) {
+          res.push(...result);
+        } else if (node.operator === LogicalOperator.AND) {
+          return [];
+        }
+      }
+
+      return res;
+    };
+
+    const records = this._myIndex.records;
+    const resultMap = {};
+    const results = [];
+    records.forEach(({
+      $: item,
+      i: idx
+    }) => {
+      if (isDefined(item)) {
+        let expResults = evaluate(expression, item, idx);
+
+        if (expResults.length) {
+          // Dedupe when adding
+          if (!resultMap[idx]) {
+            resultMap[idx] = {
+              idx,
+              item,
+              matches: []
+            };
+            results.push(resultMap[idx]);
+          }
+
+          expResults.forEach(({
+            matches
+          }) => {
+            resultMap[idx].matches.push(...matches);
+          });
+        }
+      }
+    });
+    return results;
+  }
+
+  _searchObjectList(query) {
+    const searcher = createSearcher(query, this.options);
+    const {
+      keys,
+      records
+    } = this._myIndex;
+    const results = []; // List is Array<Object>
+
+    records.forEach(({
+      $: item,
+      i: idx
+    }) => {
+      if (!isDefined(item)) {
+        return;
+      }
+
+      let matches = []; // Iterate over every key (i.e, path), and fetch the value at that key
+
+      keys.forEach((key, keyIndex) => {
+        matches.push(...this._findMatches({
+          key,
+          value: item[keyIndex],
+          searcher
+        }));
+      });
+
+      if (matches.length) {
+        results.push({
+          idx,
+          item,
+          matches
+        });
+      }
+    });
+    return results;
+  }
+
+  _findMatches({
+    key,
+    value,
+    searcher
+  }) {
+    if (!isDefined(value)) {
+      return [];
+    }
+
+    let matches = [];
+
+    if (isArray(value)) {
+      value.forEach(({
+        v: text,
+        i: idx,
+        n: norm
+      }) => {
+        if (!isDefined(text)) {
+          return;
+        }
+
+        const {
+          isMatch,
+          score,
+          indices
+        } = searcher.searchIn(text);
+
+        if (isMatch) {
+          matches.push({
+            score,
+            key,
+            value: text,
+            idx,
+            norm,
+            indices
+          });
+        }
+      });
+    } else {
+      const {
+        v: text,
+        n: norm
+      } = value;
+      const {
+        isMatch,
+        score,
+        indices
+      } = searcher.searchIn(text);
+
+      if (isMatch) {
+        matches.push({
+          score,
+          key,
+          value: text,
+          norm,
+          indices
+        });
+      }
+    }
+
+    return matches;
+  }
+
+}
+
+Fuse.version = '7.1.0';
+Fuse.createIndex = createIndex;
+Fuse.parseIndex = parseIndex;
+Fuse.config = Config;
+{
+  Fuse.parseQuery = parse;
+}
+{
+  register(ExtendedSearch);
+}
+
 
 /***/ }),
 
@@ -65950,6 +66124,453 @@ function toString(value) {
 }
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (toString);
+
+/***/ }),
+
+/***/ 7582:
+/*!******************************************!*\
+  !*** ./node_modules/tslib/tslib.es6.mjs ***!
+  \******************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "__addDisposableResource": () => (/* binding */ __addDisposableResource),
+/* harmony export */   "__assign": () => (/* binding */ __assign),
+/* harmony export */   "__asyncDelegator": () => (/* binding */ __asyncDelegator),
+/* harmony export */   "__asyncGenerator": () => (/* binding */ __asyncGenerator),
+/* harmony export */   "__asyncValues": () => (/* binding */ __asyncValues),
+/* harmony export */   "__await": () => (/* binding */ __await),
+/* harmony export */   "__awaiter": () => (/* binding */ __awaiter),
+/* harmony export */   "__classPrivateFieldGet": () => (/* binding */ __classPrivateFieldGet),
+/* harmony export */   "__classPrivateFieldIn": () => (/* binding */ __classPrivateFieldIn),
+/* harmony export */   "__classPrivateFieldSet": () => (/* binding */ __classPrivateFieldSet),
+/* harmony export */   "__createBinding": () => (/* binding */ __createBinding),
+/* harmony export */   "__decorate": () => (/* binding */ __decorate),
+/* harmony export */   "__disposeResources": () => (/* binding */ __disposeResources),
+/* harmony export */   "__esDecorate": () => (/* binding */ __esDecorate),
+/* harmony export */   "__exportStar": () => (/* binding */ __exportStar),
+/* harmony export */   "__extends": () => (/* binding */ __extends),
+/* harmony export */   "__generator": () => (/* binding */ __generator),
+/* harmony export */   "__importDefault": () => (/* binding */ __importDefault),
+/* harmony export */   "__importStar": () => (/* binding */ __importStar),
+/* harmony export */   "__makeTemplateObject": () => (/* binding */ __makeTemplateObject),
+/* harmony export */   "__metadata": () => (/* binding */ __metadata),
+/* harmony export */   "__param": () => (/* binding */ __param),
+/* harmony export */   "__propKey": () => (/* binding */ __propKey),
+/* harmony export */   "__read": () => (/* binding */ __read),
+/* harmony export */   "__rest": () => (/* binding */ __rest),
+/* harmony export */   "__rewriteRelativeImportExtension": () => (/* binding */ __rewriteRelativeImportExtension),
+/* harmony export */   "__runInitializers": () => (/* binding */ __runInitializers),
+/* harmony export */   "__setFunctionName": () => (/* binding */ __setFunctionName),
+/* harmony export */   "__spread": () => (/* binding */ __spread),
+/* harmony export */   "__spreadArray": () => (/* binding */ __spreadArray),
+/* harmony export */   "__spreadArrays": () => (/* binding */ __spreadArrays),
+/* harmony export */   "__values": () => (/* binding */ __values),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
+
+var extendStatics = function(d, b) {
+  extendStatics = Object.setPrototypeOf ||
+      ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+      function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+  return extendStatics(d, b);
+};
+
+function __extends(d, b) {
+  if (typeof b !== "function" && b !== null)
+      throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+  extendStatics(d, b);
+  function __() { this.constructor = d; }
+  d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+}
+
+var __assign = function() {
+  __assign = Object.assign || function __assign(t) {
+      for (var s, i = 1, n = arguments.length; i < n; i++) {
+          s = arguments[i];
+          for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+      }
+      return t;
+  }
+  return __assign.apply(this, arguments);
+}
+
+function __rest(s, e) {
+  var t = {};
+  for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+      t[p] = s[p];
+  if (s != null && typeof Object.getOwnPropertySymbols === "function")
+      for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+          if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+              t[p[i]] = s[p[i]];
+      }
+  return t;
+}
+
+function __decorate(decorators, target, key, desc) {
+  var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+  else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+  return c > 3 && r && Object.defineProperty(target, key, r), r;
+}
+
+function __param(paramIndex, decorator) {
+  return function (target, key) { decorator(target, key, paramIndex); }
+}
+
+function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+  function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+  var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+  var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+  var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+  var _, done = false;
+  for (var i = decorators.length - 1; i >= 0; i--) {
+      var context = {};
+      for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+      for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+      context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+      var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+      if (kind === "accessor") {
+          if (result === void 0) continue;
+          if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+          if (_ = accept(result.get)) descriptor.get = _;
+          if (_ = accept(result.set)) descriptor.set = _;
+          if (_ = accept(result.init)) initializers.unshift(_);
+      }
+      else if (_ = accept(result)) {
+          if (kind === "field") initializers.unshift(_);
+          else descriptor[key] = _;
+      }
+  }
+  if (target) Object.defineProperty(target, contextIn.name, descriptor);
+  done = true;
+};
+
+function __runInitializers(thisArg, initializers, value) {
+  var useValue = arguments.length > 2;
+  for (var i = 0; i < initializers.length; i++) {
+      value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+  }
+  return useValue ? value : void 0;
+};
+
+function __propKey(x) {
+  return typeof x === "symbol" ? x : "".concat(x);
+};
+
+function __setFunctionName(f, name, prefix) {
+  if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+  return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+};
+
+function __metadata(metadataKey, metadataValue) {
+  if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(metadataKey, metadataValue);
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+  function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+  return new (P || (P = Promise))(function (resolve, reject) {
+      function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+      function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+      function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+      step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+}
+
+function __generator(thisArg, body) {
+  var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+  return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+  function verb(n) { return function (v) { return step([n, v]); }; }
+  function step(op) {
+      if (f) throw new TypeError("Generator is already executing.");
+      while (g && (g = 0, op[0] && (_ = 0)), _) try {
+          if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+          if (y = 0, t) op = [op[0] & 2, t.value];
+          switch (op[0]) {
+              case 0: case 1: t = op; break;
+              case 4: _.label++; return { value: op[1], done: false };
+              case 5: _.label++; y = op[1]; op = [0]; continue;
+              case 7: op = _.ops.pop(); _.trys.pop(); continue;
+              default:
+                  if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                  if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                  if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                  if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                  if (t[2]) _.ops.pop();
+                  _.trys.pop(); continue;
+          }
+          op = body.call(thisArg, _);
+      } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+      if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+  }
+}
+
+var __createBinding = Object.create ? (function(o, m, k, k2) {
+  if (k2 === undefined) k2 = k;
+  var desc = Object.getOwnPropertyDescriptor(m, k);
+  if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+  }
+  Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+  if (k2 === undefined) k2 = k;
+  o[k2] = m[k];
+});
+
+function __exportStar(m, o) {
+  for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(o, p)) __createBinding(o, m, p);
+}
+
+function __values(o) {
+  var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+  if (m) return m.call(o);
+  if (o && typeof o.length === "number") return {
+      next: function () {
+          if (o && i >= o.length) o = void 0;
+          return { value: o && o[i++], done: !o };
+      }
+  };
+  throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+}
+
+function __read(o, n) {
+  var m = typeof Symbol === "function" && o[Symbol.iterator];
+  if (!m) return o;
+  var i = m.call(o), r, ar = [], e;
+  try {
+      while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+  }
+  catch (error) { e = { error: error }; }
+  finally {
+      try {
+          if (r && !r.done && (m = i["return"])) m.call(i);
+      }
+      finally { if (e) throw e.error; }
+  }
+  return ar;
+}
+
+/** @deprecated */
+function __spread() {
+  for (var ar = [], i = 0; i < arguments.length; i++)
+      ar = ar.concat(__read(arguments[i]));
+  return ar;
+}
+
+/** @deprecated */
+function __spreadArrays() {
+  for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+  for (var r = Array(s), k = 0, i = 0; i < il; i++)
+      for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+          r[k] = a[j];
+  return r;
+}
+
+function __spreadArray(to, from, pack) {
+  if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+      if (ar || !(i in from)) {
+          if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+          ar[i] = from[i];
+      }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+}
+
+function __await(v) {
+  return this instanceof __await ? (this.v = v, this) : new __await(v);
+}
+
+function __asyncGenerator(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i, q = [];
+  return i = Object.create((typeof AsyncIterator === "function" ? AsyncIterator : Object).prototype), verb("next"), verb("throw"), verb("return", awaitReturn), i[Symbol.asyncIterator] = function () { return this; }, i;
+  function awaitReturn(f) { return function (v) { return Promise.resolve(v).then(f, reject); }; }
+  function verb(n, f) { if (g[n]) { i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; if (f) i[n] = f(i[n]); } }
+  function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+  function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+  function fulfill(value) { resume("next", value); }
+  function reject(value) { resume("throw", value); }
+  function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+}
+
+function __asyncDelegator(o) {
+  var i, p;
+  return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+  function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v; } : f; }
+}
+
+function __asyncValues(o) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var m = o[Symbol.asyncIterator], i;
+  return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+  function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+  function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+}
+
+function __makeTemplateObject(cooked, raw) {
+  if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+  return cooked;
+};
+
+var __setModuleDefault = Object.create ? (function(o, v) {
+  Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+  o["default"] = v;
+};
+
+var ownKeys = function(o) {
+  ownKeys = Object.getOwnPropertyNames || function (o) {
+    var ar = [];
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+    return ar;
+  };
+  return ownKeys(o);
+};
+
+function __importStar(mod) {
+  if (mod && mod.__esModule) return mod;
+  var result = {};
+  if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+  __setModuleDefault(result, mod);
+  return result;
+}
+
+function __importDefault(mod) {
+  return (mod && mod.__esModule) ? mod : { default: mod };
+}
+
+function __classPrivateFieldGet(receiver, state, kind, f) {
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+}
+
+function __classPrivateFieldSet(receiver, state, value, kind, f) {
+  if (kind === "m") throw new TypeError("Private method is not writable");
+  if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+  return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+}
+
+function __classPrivateFieldIn(state, receiver) {
+  if (receiver === null || (typeof receiver !== "object" && typeof receiver !== "function")) throw new TypeError("Cannot use 'in' operator on non-object");
+  return typeof state === "function" ? receiver === state : state.has(receiver);
+}
+
+function __addDisposableResource(env, value, async) {
+  if (value !== null && value !== void 0) {
+    if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+    var dispose, inner;
+    if (async) {
+      if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+      dispose = value[Symbol.asyncDispose];
+    }
+    if (dispose === void 0) {
+      if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+      dispose = value[Symbol.dispose];
+      if (async) inner = dispose;
+    }
+    if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+    if (inner) dispose = function() { try { inner.call(this); } catch (e) { return Promise.reject(e); } };
+    env.stack.push({ value: value, dispose: dispose, async: async });
+  }
+  else if (async) {
+    env.stack.push({ async: true });
+  }
+  return value;
+}
+
+var _SuppressedError = typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+  var e = new Error(message);
+  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
+
+function __disposeResources(env) {
+  function fail(e) {
+    env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
+    env.hasError = true;
+  }
+  var r, s = 0;
+  function next() {
+    while (r = env.stack.pop()) {
+      try {
+        if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+        if (r.dispose) {
+          var result = r.dispose.call(r.value);
+          if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) { fail(e); return next(); });
+        }
+        else s |= 1;
+      }
+      catch (e) {
+        fail(e);
+      }
+    }
+    if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+    if (env.hasError) throw env.error;
+  }
+  return next();
+}
+
+function __rewriteRelativeImportExtension(path, preserveJsx) {
+  if (typeof path === "string" && /^\.\.?\//.test(path)) {
+      return path.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function (m, tsx, d, ext, cm) {
+          return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : (d + ext + "." + cm.toLowerCase() + "js");
+      });
+  }
+  return path;
+}
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
+  __extends,
+  __assign,
+  __rest,
+  __decorate,
+  __param,
+  __esDecorate,
+  __runInitializers,
+  __propKey,
+  __setFunctionName,
+  __metadata,
+  __awaiter,
+  __generator,
+  __createBinding,
+  __exportStar,
+  __values,
+  __read,
+  __spread,
+  __spreadArrays,
+  __spreadArray,
+  __await,
+  __asyncGenerator,
+  __asyncDelegator,
+  __asyncValues,
+  __makeTemplateObject,
+  __importStar,
+  __importDefault,
+  __classPrivateFieldGet,
+  __classPrivateFieldSet,
+  __classPrivateFieldIn,
+  __addDisposableResource,
+  __disposeResources,
+  __rewriteRelativeImportExtension,
+});
+
 
 /***/ })
 
