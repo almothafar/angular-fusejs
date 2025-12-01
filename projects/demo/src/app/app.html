@@ -31,7 +31,7 @@
       </div>
 
       <div class="book-grid">
-        @for (book of books | fuseJsSearch: searchTerm() : searchOptions; track book.isbn) {
+        @for (book of searchResults(); track book.isbn) {
           <div class="book-card">
             <div class="book-content">
               <h3 class="book-title" [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
