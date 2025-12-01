@@ -4,7 +4,7 @@ Modern Angular integration for [Fuse.js](https://fusejs.io/) with built-in highl
 
 ## Features
 
-- 🚀 **Modern Angular** - Built for Angular 21+ with standalone components
+- 🚀 **Modern Angular** - Built for Angular 20+ with standalone components
 - 🔍 **Fuzzy Search** - Powered by Fuse.js
 - ✨ **Highlight Support** - Automatically highlight matched terms
 - 🎯 **Type Safe** - Full TypeScript support
@@ -115,7 +115,7 @@ All [Fuse.js options](https://fusejs.io/api/options.html) are supported, plus:
 
 **Breaking Changes:**
 
-1. **Angular Version**: Requires Angular 21+ (use v2.x for Angular 14)
+1. **Angular Version**: Requires Angular 20+ (use v2.x for Angular 14)
 2. **Standalone**: Library is now fully standalone
 3. **No Module**: No need to import `AngularFuseJsModule`
 4. **Import Changes**: Import service/pipe directly
