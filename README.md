@@ -1,7 +1,7 @@
 # Angular fuse.js
 
 Angular module using [fuse.js](http://fusejs.io/) to fuzzy-search through a list of objects.
-Also, easily **highlight** matched terms which is the true added value of this module.
+Also, easily **highlight** matched terms which are the true added value of this module.
 
 ### Forked and Revamped by Al-Mothafar for Angular 10+,
 
@@ -74,4 +74,4 @@ Replace `whateverAttribute` with your attribute name, trust it as HTML and you a
 
 I made this just for fun, to learn a bit more about fuzzy search + angular. Fuzzy search + detecting what should be highlighted is 100% handled by [fuse.js](http://fusejs.io/).
 
-If you encounter any bug, please check who is the culprit before submitting an issue - it might be a bug in fuse.js library.
+If you encounter any bug, please check who is the culprit before submitting an issue - it might be a bug in the fuse.js library.

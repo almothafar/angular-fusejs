@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { AngularFuseJsService } from './angular-fusejs.service';
 
 describe('AngularFusejsService', () => {
-  let service: AngularFuseJsService;
+  let service: AngularFuseJsService<string>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});

@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
-import Fuse from 'fuse.js';
+import Fuse, { IFuseOptions } from 'fuse.js';
 
 import {set as _set} from 'lodash-es';
 import {get as _get} from 'lodash-es';
 
-import IFuseOptions = Fuse.IFuseOptions;
 
 export interface AngularFuseJsOptions<T> extends IFuseOptions<T> {
   supportHighlight?: boolean;
