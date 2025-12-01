@@ -184,7 +184,13 @@ export class AngularFuseJsService<T = any> {
           const tagEnd = `</${options.highlightTag ?? 'em'}>`;
 
           for (const [start, end] of match.indices) {
-            const currentValue = PropertyAccessor.get(item[highlightKey], key);
+            let currentValue = PropertyAccessor.get(item[highlightKey], key);
+
+            // Convert numbers to strings for highlighting
+            if (typeof currentValue === 'number') {
+              currentValue = String(currentValue);
+              PropertyAccessor.set(item[highlightKey], key, currentValue);
+            }
 
             if (typeof currentValue !== 'string') {
               continue;

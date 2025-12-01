@@ -5,6 +5,11 @@
     "packageManager": "npm",
     "analytics": false
   },
+  "schematics": {
+    "@schematics/angular:component": {
+      "style": "scss"
+    }
+  },
   "newProjectRoot": "projects",
   "projects": {
     "@almothafar/angular-fusejs": {
@@ -52,7 +57,7 @@
               }
             ],
             "styles": [
-              "projects/demo/src/styles.css"
+              "projects/demo/src/styles.scss"
             ]
           },
           "configurations": {

@@ -9,12 +9,12 @@
       <input
         type="text"
         [(ngModel)]="searchTerm"
-        placeholder="Search by title or author... (try 'javascript' or 'martin')"
+        placeholder="Search by title, author, or year... (try 'javascript', 'martin', or '2008')"
         class="search-input"
       />
       @if (!searchTerm()) {
         <span class="search-hint">
-          💡 Try: "clean code", "pragmatic", "knuth"
+          💡 Try: "clean code", "pragmatic", "knuth", "2008"
         </span>
       }
     </div>
@@ -25,7 +25,7 @@
           @if (searchTerm()) {
             Search Results
           } @else {
-            All Books ({{ books.length }})
+            All Books ({{ searchResults().length }})
           }
         </h2>
       </div>
@@ -37,7 +37,7 @@
               <h3 class="book-title" [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
               <p class="book-author" [innerHTML]="book.fuseJsHighlighted?.author || book.author"></p>
               <div class="book-meta">
-                <span class="book-year">{{ book.year }}</span>
+                <span class="book-year" [innerHTML]="book.fuseJsHighlighted?.year || book.year"></span>
                 @if (book.fuseJsScore !== undefined && searchTerm()) {
                   <span class="book-score">
                     Match: {{ (1 - book.fuseJsScore) * 100 | number:'1.0-0' }}%

@@ -7,12 +7,13 @@
 [![npm version](https://badge.fury.io/js/@almothafar%2Fangular-fusejs.svg)](https://www.npmjs.com/package/@almothafar/angular-fusejs)
 [![npm downloads](https://img.shields.io/npm/dm/@almothafar/angular-fusejs.svg)](https://www.npmjs.com/package/@almothafar/angular-fusejs)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Angular](https://img.shields.io/badge/Angular-21+-red.svg)](https://angular.dev/)
+[![Angular](https://img.shields.io/badge/Angular-20+-red.svg)](https://angular.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Try_it_now!-success.svg)](https://almothafar.github.io/angular-fusejs/)
 
 Powerful fuzzy search for Angular applications with automatic highlighting, built on [Fuse.js](https://fusejs.io/)
 
-[Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Examples](#examples) • [Demo](#demo)
+[🚀 **Try Live Demo**](https://almothafar.github.io/angular-fusejs/) • [Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Examples](#examples)
 
 </div>
 
@@ -20,7 +21,7 @@ Powerful fuzzy search for Angular applications with automatic highlighting, buil
 
 ## Features
 
-- 🚀 **Modern Angular** - Built for Angular 21+ with standalone components
+- 🚀 **Modern Angular** - Built for Angular 20+ (LTS) with standalone components
 - 🔍 **Fuzzy Search** - Powered by Fuse.js
 - ✨ **Highlight Support** - Automatically highlight matched terms
 - 🎯 **Type Safe** - Full TypeScript support
@@ -275,9 +276,9 @@ The package is configured to automatically publish as public (no need for `--acc
 
 ## Migration from v2.x
 
-Version 3.0.0 is a complete rewrite for Angular 21+. See the [migration guide](./projects/almothafar/angular-fusejs/README.md#migration-from-v2x) for breaking changes.
+Version 3.0.0 is a complete rewrite for Angular 20+ (LTS). See the [migration guide](./projects/almothafar/angular-fusejs/README.md#migration-from-v2x) for breaking changes.
 
-For Angular 14 support, use version 2.x:
+For older Angular versions (14-19), use version 2.x:
 ```bash
 npm install @almothafar/angular-fusejs@2.1.0
 ```
@@ -288,7 +289,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT © [Jalal Almothafar](https://jalal.dev)
+MIT © [Al-Mothafar Al-Hasan](https://almothafar.com)
 
 ## Support
 

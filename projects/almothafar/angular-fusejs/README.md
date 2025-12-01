@@ -142,4 +142,4 @@ import {AngularFuseJsService, AngularFuseJsPipe} from '@almothafar/angular-fusej
 
 ## License
 
-MIT © [Jalal Almothafar](https://jalal.dev)
+MIT © [Al-Mothafar Al-Hasan](https://almothafar.com)
