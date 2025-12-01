@@ -36,9 +36,9 @@ npm install @almothafar/angular-fusejs fuse.js
 ## Quick Start
 
 ```typescript
-import { Component } from '@angular/core';
-import { AngularFuseJsPipe } from '@almothafar/angular-fusejs';
-import { FormsModule } from '@angular/forms';
+import {Component} from '@angular/core';
+import {AngularFuseJsPipe} from '@almothafar/angular-fusejs';
+import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-search',
@@ -53,9 +53,9 @@ import { FormsModule } from '@angular/forms';
 })
 export class SearchComponent {
   books = [
-    { title: 'JavaScript: The Good Parts', author: 'Douglas Crockford' },
-    { title: 'Clean Code', author: 'Robert Martin' },
-    { title: 'The Pragmatic Programmer', author: 'Hunt and Thomas' }
+    {title: 'JavaScript: The Good Parts', author: 'Douglas Crockford'},
+    {title: 'Clean Code', author: 'Robert Martin'},
+    {title: 'The Pragmatic Programmer', author: 'Hunt and Thomas'}
   ];
 
   searchTerm = '';

@@ -22,8 +22,8 @@ npm install @almothafar/angular-fusejs fuse.js
 ### Service
 
 ```typescript
-import { Component, inject } from '@angular/core';
-import { AngularFuseJsService } from '@almothafar/angular-fusejs';
+import {Component, inject} from '@angular/core';
+import {AngularFuseJsService} from '@almothafar/angular-fusejs';
 
 @Component({
   selector: 'app-search',
@@ -39,8 +39,8 @@ export class SearchComponent {
   private fuseService = inject(AngularFuseJsService);
 
   books = [
-    { title: 'JavaScript: The Good Parts', author: 'Douglas Crockford' },
-    { title: 'Clean Code', author: 'Robert Martin' }
+    {title: 'JavaScript: The Good Parts', author: 'Douglas Crockford'},
+    {title: 'Clean Code', author: 'Robert Martin'}
   ];
 
   searchTerm = '';
@@ -67,9 +67,9 @@ export class SearchComponent {
 ### Pipe
 
 ```typescript
-import { Component } from '@angular/core';
-import { AngularFuseJsPipe } from '@almothafar/angular-fusejs';
-import { FormsModule } from '@angular/forms';
+import {Component} from '@angular/core';
+import {AngularFuseJsPipe} from '@almothafar/angular-fusejs';
+import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-search',
@@ -84,8 +84,8 @@ import { FormsModule } from '@angular/forms';
 })
 export class SearchComponent {
   books = [
-    { title: 'JavaScript: The Good Parts', author: 'Douglas Crockford' },
-    { title: 'Clean Code', author: 'Robert Martin' }
+    {title: 'JavaScript: The Good Parts', author: 'Douglas Crockford'},
+    {title: 'Clean Code', author: 'Robert Martin'}
   ];
 
   searchTerm = '';
@@ -102,14 +102,14 @@ export class SearchComponent {
 
 All [Fuse.js options](https://fusejs.io/api/options.html) are supported, plus:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `supportHighlight` | `boolean` | `true` | Enable search result highlighting |
-| `fuseJsHighlightKey` | `string` | `'fuseJsHighlighted'` | Key for highlighted results |
-| `fuseJsScoreKey` | `string` | `'fuseJsScore'` | Key for match score |
-| `minSearchTermLength` | `number` | `3` | Minimum search term length |
-| `maximumScore` | `number` | `undefined` | Maximum score threshold |
-| `highlightTag` | `string` | `'em'` | HTML tag for highlighting |
+| Option                | Type      | Default               | Description                       |
+|-----------------------|-----------|-----------------------|-----------------------------------|
+| `supportHighlight`    | `boolean` | `true`                | Enable search result highlighting |
+| `fuseJsHighlightKey`  | `string`  | `'fuseJsHighlighted'` | Key for highlighted results       |
+| `fuseJsScoreKey`      | `string`  | `'fuseJsScore'`       | Key for match score               |
+| `minSearchTermLength` | `number`  | `3`                   | Minimum search term length        |
+| `maximumScore`        | `number`  | `undefined`           | Maximum score threshold           |
+| `highlightTag`        | `string`  | `'em'`                | HTML tag for highlighting         |
 
 ## Migration from v2.x
 
@@ -121,8 +121,9 @@ All [Fuse.js options](https://fusejs.io/api/options.html) are supported, plus:
 4. **Import Changes**: Import service/pipe directly
 
 **Before (v2.x):**
+
 ```typescript
-import { AngularFuseJsModule } from '@almothafar/angular-fusejs';
+import {AngularFuseJsModule} from '@almothafar/angular-fusejs';
 
 @NgModule({
   imports: [AngularFuseJsModule]
@@ -130,8 +131,9 @@ import { AngularFuseJsModule } from '@almothafar/angular-fusejs';
 ```
 
 **After (v3.x):**
+
 ```typescript
-import { AngularFuseJsService, AngularFuseJsPipe } from '@almothafar/angular-fusejs';
+import {AngularFuseJsService, AngularFuseJsPipe} from '@almothafar/angular-fusejs';
 
 @Component({
   imports: [AngularFuseJsPipe] // if using pipe
