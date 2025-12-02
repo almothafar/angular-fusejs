@@ -1,13 +1,38 @@
 {
   "name": "@almothafar/angular-fusejs",
-  "version": "2.1.0",
+  "version": "3.0.0",
+  "description": "Angular integration for Fuse.js with highlighting support",
+  "author": "Al-Mothafar Al-Hasan <almothafar@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/almothafar/angular-fusejs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/almothafar/angular-fusejs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/almothafar/angular-fusejs/issues"
+  },
+  "keywords": [
+    "angular",
+    "fuse",
+    "fusejs",
+    "search",
+    "fuzzy",
+    "fuzzy-search",
+    "highlight",
+    "filter",
+    "pipe"
+  ],
   "peerDependencies": {
-    "@angular/common": ">=14.0.0",
-    "@angular/core": ">=14.0.0"
+    "@angular/common": ">=20.0.0",
+    "@angular/core": ">=20.0.0",
+    "fuse.js": ">=7.1.0"
   },
   "dependencies": {
-    "fuse.js": "^7.1.0",
-    "lodash-es": "^4.17.21",
-    "tslib": "^2.4.0"
+    "tslib": "^2.8.1"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
   }
 }

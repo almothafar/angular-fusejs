@@ -1,77 +1,298 @@
-# Angular fuse.js
+<div align="center">
 
-Angular module using [fuse.js](http://fusejs.io/) to fuzzy-search through a list of objects.
-Also, easily **highlight** matched terms which are the true added value of this module.
+# 🔍 Angular FuseJS
 
-### Forked and Revamped by Al-Mothafar for Angular 10+,
+### Modern Fuzzy Search for Angular
 
-Demo: <https://almothafar.github.io/angular-fusejs/>
+[![npm version](https://badge.fury.io/js/@almothafar%2Fangular-fusejs.svg)](https://www.npmjs.com/package/@almothafar/angular-fusejs)
+[![npm downloads](https://img.shields.io/npm/dm/@almothafar/angular-fusejs.svg)](https://www.npmjs.com/package/@almothafar/angular-fusejs)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Angular](https://img.shields.io/badge/Angular-20+-red.svg)](https://angular.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Try_it_now!-success.svg)](https://almothafar.github.io/angular-fusejs/)
 
-## How to install?
+Powerful fuzzy search for Angular applications with automatic highlighting, built on [Fuse.js](https://fusejs.io/)
 
-This module is available through npm. It is compatible with module bundlers (webpack / browserify ...).
+[🚀 **Try Live Demo**](https://almothafar.github.io/angular-fusejs/) • [Installation](#installation) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Examples](#examples)
 
-1. `# npm install @almothafar/angular-fusejs`
+</div>
 
+---
 
-2. Import `AngularFuseJsModule` into your module:
+## Features
+
+- 🚀 **Modern Angular** - Built for Angular 20+ (LTS) with standalone components
+- 🔍 **Fuzzy Search** - Powered by Fuse.js
+- ✨ **Highlight Support** - Automatically highlight matched terms
+- 🎯 **Type Safe** - Full TypeScript support
+- 🪶 **Lightweight** - Zero dependencies (except Angular & Fuse.js)
+- 📦 **Tree Shakeable** - Optimized bundle size
+
+## Installation
+
+```bash
+npm install @almothafar/angular-fusejs fuse.js
 ```
-import { AngularFuseJsModule } from '@almothafar/angular-fusejs'
-@NgModule({
-  imports: [
-    ...
-    AngularFuseJsModule,
-  ],
-  ...
+
+## Quick Start
+
+```typescript
+import {Component} from '@angular/core';
+import {AngularFuseJsPipe} from '@almothafar/angular-fusejs';
+import {FormsModule} from '@angular/forms';
+
+@Component({
+  selector: 'app-search',
+  imports: [AngularFuseJsPipe, FormsModule],
+  template: `
+    <input [(ngModel)]="searchTerm" placeholder="Search books...">
+    <div *ngFor="let book of books | fuseJsSearch: searchTerm : { keys: ['title', 'author'], supportHighlight: true }">
+      <h3 [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
+      <p>{{ book.author }}</p>
+    </div>
+  `
 })
-```
+export class SearchComponent {
+  books = [
+    {title: 'JavaScript: The Good Parts', author: 'Douglas Crockford'},
+    {title: 'Clean Code', author: 'Robert Martin'},
+    {title: 'The Pragmatic Programmer', author: 'Hunt and Thomas'}
+  ];
 
-## How to use?
-
-### Filter elements in a *ngFor
-Use `fuseJs` pipe in a *ngFor to search through a list of elements. Pass search string as first parameter. Pass fusejs option object as second parameter (optional):
-```
-<li *ngFor="let element of (listOfElement | fuseJs:searchString:{keys: ['name', 'author']})"></li>
-```
-
-Params:
-- Array(required): Array of objects to search in
-- String(optional): search string
-- Object(optional): options (see below)
-
-#### Options
-Supports all fusejs options (see <http://fusejs.io/>) and also those:
-- **supportHighlight** (boolean), defaults to true: Whether to include highlight info in returning object. If set to false, it will just call FuseJS search, without any additional processing.
-- **minSearchTermLength** (number), defaults to 3: Minimal search string length. If length is less than this value, FuseJS will not be called.
-- **fuseJsHighlightKey** (string), defaults to 'fuseJsHighlighted': Key under which the highlighted results will be stored in the objects of the array. You probably do not need to change this.
-- **fuseJsScoreKey** (string), defaults to 'fuseJsHighlighted': Key under which the fuse.js returned score will be stored in the objects of the array. You probably do not need to change this.
-
-By default, here are the options set by angular-fusejs:
-```
-{
-    supportHighlight: true,
-    shouldSort: true,
-    threshold: 0.6,
-    location: 0,
-    distance: 100,
-    minMatchCharLength: 2,
-    includeScore: true,
-    minSearchTermLength: 3,
-    fuseJsHighlightKey: 'fuseJsHighlighted',
-    fuseJsScoreKey: 'fuseJsScore',
+  searchTerm = '';
 }
 ```
 
-You can override those default options by injecting `AngularFuseJsService` in your app and setting `AngularFuseJsService.defaultOptions` to whatever you want.
+## Documentation
 
-### Show highlighted terms
+For complete documentation, examples, and API reference, see the [library README](./projects/almothafar/angular-fusejs/README.md).
+
+## Demo
+
+Run the demo application locally:
+
+```bash
+# Install dependencies
+npm install
+
+# Serve demo app (automatically uses local library)
+npm start
 ```
-{{element.fuseJsHighlighted.whateverAttribute}}
+
+Navigate to `http://localhost:4200/` to see the library in action!
+
+## Examples
+
+### Basic Search with Highlighting
+
+```typescript
+import { Component } from '@angular/core';
+import { AngularFuseJsPipe } from '@almothafar/angular-fusejs';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-book-search',
+  imports: [CommonModule, FormsModule, AngularFuseJsPipe],
+  template: `
+    <div class="search-container">
+      <input
+        [(ngModel)]="searchQuery"
+        placeholder="Search books..."
+        class="search-input"
+      >
+
+      <div class="results">
+        <div
+          *ngFor="let book of books | fuseJsSearch: searchQuery : searchOptions"
+          class="book-card"
+        >
+          <h3 [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
+          <p class="author" [innerHTML]="book.fuseJsHighlighted?.author || book.author"></p>
+          <span class="score">Match: {{ (1 - (book.fuseJsScore || 0)) * 100 | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+  `
+})
+export class BookSearchComponent {
+  searchQuery = '';
+
+  books = [
+    { title: 'JavaScript: The Good Parts', author: 'Douglas Crockford', year: 2008 },
+    { title: 'Clean Code', author: 'Robert C. Martin', year: 2008 },
+    { title: 'The Pragmatic Programmer', author: 'Andrew Hunt', year: 1999 },
+    { title: 'Design Patterns', author: 'Gang of Four', year: 1994 }
+  ];
+
+  searchOptions = {
+    keys: ['title', 'author'],
+    supportHighlight: true,
+    threshold: 0.4,
+    minSearchTermLength: 2
+  };
+}
 ```
-Replace `whateverAttribute` with your attribute name, trust it as HTML and you are good to go.
 
-## Disclaimer
+### Using the Service Directly
 
-I made this just for fun, to learn a bit more about fuzzy search + angular. Fuzzy search + detecting what should be highlighted is 100% handled by [fuse.js](http://fusejs.io/).
+```typescript
+import { Component, OnInit, inject } from '@angular/core';
+import { AngularFuseJsService } from '@almothafar/angular-fusejs';
+import { FormControl } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
-If you encounter any bug, please check who is the culprit before submitting an issue - it might be a bug in the fuse.js library.
+@Component({
+  selector: 'app-advanced-search',
+  template: `
+    <input [formControl]="searchControl" placeholder="Type to search...">
+
+    <div *ngFor="let item of results">
+      <h4 [innerHTML]="item.fuseJsHighlighted.name"></h4>
+      <small>Relevance: {{ (1 - item.fuseJsScore) * 100 }}%</small>
+    </div>
+  `
+})
+export class AdvancedSearchComponent implements OnInit {
+  private fuseService = inject(AngularFuseJsService);
+
+  searchControl = new FormControl('');
+  results: any[] = [];
+
+  data = [
+    { name: 'Angular Framework', description: 'Web application framework' },
+    { name: 'React Library', description: 'JavaScript library for UI' },
+    { name: 'Vue.js', description: 'Progressive JavaScript framework' }
+  ];
+
+  ngOnInit() {
+    this.searchControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(searchTerm => {
+      this.results = this.fuseService.searchList(
+        this.data,
+        searchTerm || '',
+        {
+          keys: ['name', 'description'],
+          supportHighlight: true,
+          threshold: 0.3,
+          maximumScore: 0.6  // Only show good matches
+        }
+      );
+    });
+  }
+}
+```
+
+## Development
+
+### Build Library
+
+```bash
+npm run build
+```
+
+### Build for Production
+
+```bash
+npm run build:prod
+```
+
+### Run Tests
+
+```bash
+npm test
+```
+
+### Test Local Changes in Demo
+
+The demo app automatically uses the local library via TypeScript path mapping. Just run:
+
+```bash
+npm start
+```
+
+Any changes you make to the library will require a rebuild:
+
+```bash
+npm run build
+# Then restart the demo
+```
+
+### Testing Your Changes
+
+Before publishing, always test your changes:
+
+1. **Build the library:**
+   ```bash
+   npm run build
+   ```
+
+2. **Run unit tests:**
+   ```bash
+   npm test
+   ```
+
+3. **Test in the demo app:**
+   ```bash
+   # The demo automatically uses the local built library
+   npm start
+   # Visit http://localhost:4200 and test the functionality
+   ```
+
+4. **Check for TypeScript errors:**
+   ```bash
+   npx ng build @almothafar/angular-fusejs --configuration production
+   ```
+
+### Publishing to NPM
+
+The package is configured to automatically publish as public (no need for `--access=public` flag).
+
+1. **Ensure you're logged in to npm:**
+   ```bash
+   npm login
+   ```
+
+2. **Build the production version:**
+   ```bash
+   npm run build:prod
+   ```
+
+3. **Publish from the dist folder:**
+   ```bash
+   cd dist/almothafar/angular-fusejs
+   npm publish
+   ```
+
+   Or use the convenience scripts:
+   ```bash
+   npm run build:prod
+   cd dist/almothafar/angular-fusejs && npm publish
+   ```
+
+**Note:** The `publishConfig` in package.json is set to `"access": "public"`, so you don't need to add `--access=public` manually!
+
+## Migration from v2.x
+
+Version 3.0.0 is a complete rewrite for Angular 20+ (LTS). See the [migration guide](./projects/almothafar/angular-fusejs/README.md#migration-from-v2x) for breaking changes.
+
+For older Angular versions (14-19), use version 2.x:
+```bash
+npm install @almothafar/angular-fusejs@2.1.0
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT © [Al-Mothafar Al-Hasan](https://almothafar.com)
+
+## Support
+
+- 🐛 [Report Bug](https://github.com/almothafar/angular-fusejs/issues)
+- 💡 [Request Feature](https://github.com/almothafar/angular-fusejs/issues)
+- ⭐ Star this repo if you find it helpful!

@@ -1,0 +1,77 @@
+<div class="demo-container">
+  <header>
+    <h1>🔍 {{ title() }}</h1>
+    <p>Try fuzzy searching through 260+ programming books in English & Arabic</p>
+    <small class="disclaimer">
+      ⚠️ Demo dataset generated with AI assistance - data may contain inaccuracies
+    </small>
+  </header>
+
+  <div class="search-section">
+    <div class="search-box">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        placeholder="Search by title, author, or year... (try 'javascript', 'martin', or '2008')"
+        class="search-input"
+      />
+      @if (!searchTerm()) {
+        <span class="search-hint">
+          💡 Try: "clean code", "pragmatic", "knuth", "2008"
+        </span>
+      }
+    </div>
+
+    <div class="results-container">
+      <div class="results-header">
+        <h2>
+          @if (searchTerm()) {
+            Search Results
+          } @else {
+            All Books ({{ searchResults().length }})
+          }
+        </h2>
+      </div>
+
+      <div class="book-grid">
+        @for (book of searchResults(); track book.isbn) {
+          <div class="book-card" [attr.data-lang]="book.language">
+            <div class="book-content">
+              <h3 class="book-title" [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
+              <p class="book-author" [innerHTML]="book.fuseJsHighlighted?.author || book.author"></p>
+              <div class="book-meta">
+                <span class="book-year" [innerHTML]="book.fuseJsHighlighted?.year || book.year"></span>
+                @if (book.fuseJsScore !== undefined && searchTerm()) {
+                  <span class="book-score">
+                    Match: {{ (1 - book.fuseJsScore) * 100 | number:'1.0-0' }}%
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+        } @empty {
+          <div class="no-results">
+            <p>No books found matching "{{ searchTerm() }}"</p>
+            <small>Try a different search term</small>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>
+      Built with
+      <a href="https://angular.dev" target="_blank">Angular {{ title().includes('21') ? '21' : '' }}</a>
+      +
+      <a href="https://www.npmjs.com/package/@almothafar/angular-fusejs" target="_blank">@almothafar/angular-fusejs</a>
+      +
+      <a href="https://fusejs.io" target="_blank">Fuse.js</a>
+    </p>
+    <p>
+      <a href="https://github.com/almothafar/angular-fusejs" target="_blank">
+        View on GitHub
+      </a>
+    </p>
+  </footer>
+</div>

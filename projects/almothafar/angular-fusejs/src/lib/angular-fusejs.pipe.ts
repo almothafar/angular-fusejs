@@ -1,16 +1,42 @@
-import { Pipe, PipeTransform } from '@angular/core';
-import { AngularFuseJsOptions, AngularFuseJsService } from './angular-fusejs.service';
+import { Pipe, PipeTransform, inject } from '@angular/core';
+import { AngularFuseJsService, AngularFuseJsOptions, AngularFuseJsResult } from './angular-fusejs.service';
 
+/**
+ * Angular pipe for filtering lists with Fuse.js
+ *
+ * @example
+ * ```html
+ * <!-- Basic usage -->
+ * <div *ngFor="let item of items | fuseJsSearch: searchTerm : { keys: ['name', 'email'] }">
+ *   {{ item.name }}
+ * </div>
+ *
+ * <!-- With highlighting -->
+ * <div *ngFor="let item of items | fuseJsSearch: searchTerm : { keys: ['title'], supportHighlight: true }">
+ *   <div [innerHTML]="item.fuseJsHighlighted.title"></div>
+ * </div>
+ * ```
+ */
+@Pipe({
+  name: 'fuseJsSearch',
+  standalone: true,
+})
+export class AngularFuseJsPipe implements PipeTransform {
+  private fuseJsService = inject(AngularFuseJsService);
 
-@Pipe({name: 'fuseJs'})
-export class AngularFuseJsPipe<T> implements PipeTransform {
-  constructor(
-    private _fuseJsService: AngularFuseJsService<T>
-  ) {}
+  /**
+   * Transform array using Fuse.js search
+   *
+   * @param list - Array to search through
+   * @param searchTerms - Search query
+   * @param options - Fuse.js options
+   * @returns Filtered array with optional highlighting
+   */
+  transform<T>(list: T[] | null | undefined, searchTerms: string, options?: AngularFuseJsOptions<T>): AngularFuseJsResult<T>[] {
+    if (!list || !Array.isArray(list)) {
+      return [];
+    }
 
-  transform(elements: Array<T>,
-            searchTerms: string,
-            options: AngularFuseJsOptions<T> = {}) {
-    return this._fuseJsService.searchList(elements, searchTerms, options);
+    return this.fuseJsService.searchList(list, searchTerms, options);
   }
 }

@@ -3,6 +3,5 @@
   "dest": "../../../dist/almothafar/angular-fusejs",
   "lib": {
     "entryFile": "src/public-api.ts"
-  },
-  "allowedNonPeerDependencies": ["fuse.js", "lodash-es"]
+  }
 }

@@ -1,24 +1,145 @@
-# AngularFusejs
+# Angular FuseJS
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 12.2.0.
+Modern Angular integration for [Fuse.js](https://fusejs.io/) with built-in highlighting support.
 
-## Code scaffolding
+## Features
 
-Run `ng generate component component-name --project angular-fusejs` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project angular-fusejs`.
-> Note: Don't forget to add `--project angular-fusejs` or else it will be added to the default project in your `angular.json` file. 
+- 🚀 **Modern Angular** - Built for Angular 20+ with standalone components
+- 🔍 **Fuzzy Search** - Powered by Fuse.js
+- ✨ **Highlight Support** - Automatically highlight matched terms
+- 🎯 **Type Safe** - Full TypeScript support
+- 🪶 **Lightweight** - Zero dependencies (except Angular & Fuse.js)
+- 📦 **Tree Shakeable** - Optimized bundle size
 
-## Build
+## Installation
 
-Run `ng build angular-fusejs` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+npm install @almothafar/angular-fusejs fuse.js
+```
 
-## Publishing
+## Usage
 
-After building your library with `ng build angular-fusejs`, go to the dist folder `cd dist/angular-fusejs` and run `npm publish`.
+### Service
 
-## Running unit tests
+```typescript
+import {Component, inject} from '@angular/core';
+import {AngularFuseJsService} from '@almothafar/angular-fusejs';
 
-Run `ng test angular-fusejs` to execute the unit tests via [Karma](https://karma-runner.github.io).
+@Component({
+  selector: 'app-search',
+  template: `
+    <input [(ngModel)]="searchTerm" placeholder="Search...">
+    <div *ngFor="let book of searchResults">
+      <h3 [innerHTML]="book.fuseJsHighlighted.title"></h3>
+      <p>Score: {{ book.fuseJsScore }}</p>
+    </div>
+  `
+})
+export class SearchComponent {
+  private fuseService = inject(AngularFuseJsService);
 
-## Further help
+  books = [
+    {title: 'JavaScript: The Good Parts', author: 'Douglas Crockford'},
+    {title: 'Clean Code', author: 'Robert Martin'}
+  ];
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+  searchTerm = '';
+  searchResults: any[] = [];
+
+  ngOnInit() {
+    this.search();
+  }
+
+  search() {
+    this.searchResults = this.fuseService.searchList(
+      this.books,
+      this.searchTerm,
+      {
+        keys: ['title', 'author'],
+        supportHighlight: true,
+        threshold: 0.3
+      }
+    );
+  }
+}
+```
+
+### Pipe
+
+```typescript
+import {Component} from '@angular/core';
+import {AngularFuseJsPipe} from '@almothafar/angular-fusejs';
+import {FormsModule} from '@angular/forms';
+
+@Component({
+  selector: 'app-search',
+  imports: [AngularFuseJsPipe, FormsModule],
+  template: `
+    <input [(ngModel)]="searchTerm" placeholder="Search...">
+    <div *ngFor="let book of books | fuseJsSearch: searchTerm : searchOptions">
+      <h3 [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
+      <p>{{ book.author }}</p>
+    </div>
+  `
+})
+export class SearchComponent {
+  books = [
+    {title: 'JavaScript: The Good Parts', author: 'Douglas Crockford'},
+    {title: 'Clean Code', author: 'Robert Martin'}
+  ];
+
+  searchTerm = '';
+
+  searchOptions = {
+    keys: ['title', 'author'],
+    supportHighlight: true,
+    threshold: 0.3
+  };
+}
+```
+
+## Options
+
+All [Fuse.js options](https://fusejs.io/api/options.html) are supported, plus:
+
+| Option                | Type      | Default               | Description                       |
+|-----------------------|-----------|-----------------------|-----------------------------------|
+| `supportHighlight`    | `boolean` | `true`                | Enable search result highlighting |
+| `fuseJsHighlightKey`  | `string`  | `'fuseJsHighlighted'` | Key for highlighted results       |
+| `fuseJsScoreKey`      | `string`  | `'fuseJsScore'`       | Key for match score               |
+| `minSearchTermLength` | `number`  | `3`                   | Minimum search term length        |
+| `maximumScore`        | `number`  | `undefined`           | Maximum score threshold           |
+| `highlightTag`        | `string`  | `'em'`                | HTML tag for highlighting         |
+
+## Migration from v2.x
+
+**Breaking Changes:**
+
+1. **Angular Version**: Requires Angular 20+ (use v2.x for Angular 14)
+2. **Standalone**: Library is now fully standalone
+3. **No Module**: No need to import `AngularFuseJsModule`
+4. **Import Changes**: Import service/pipe directly
+
+**Before (v2.x):**
+
+```typescript
+import {AngularFuseJsModule} from '@almothafar/angular-fusejs';
+
+@NgModule({
+  imports: [AngularFuseJsModule]
+})
+```
+
+**After (v3.x):**
+
+```typescript
+import {AngularFuseJsService, AngularFuseJsPipe} from '@almothafar/angular-fusejs';
+
+@Component({
+  imports: [AngularFuseJsPipe] // if using pipe
+})
+```
+
+## License
+
+MIT © [Al-Mothafar Al-Hasan](https://almothafar.com)
