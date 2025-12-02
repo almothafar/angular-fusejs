@@ -94,11 +94,7 @@ export class AngularFuseJsService<T = any> {
    * @param options - Search options (merged with defaults)
    * @returns Array of search results (with highlights if enabled)
    */
-  searchList(
-    list: T[],
-    searchTerms: string,
-    options: AngularFuseJsOptions<T> = {}
-  ): AngularFuseJsResult<T>[] {
+  searchList(list: T[], searchTerms: string, options: AngularFuseJsOptions<T> = {}): AngularFuseJsResult<T>[] {
     const fuseOptions: AngularFuseJsOptions<T> = { ...this.defaultOptions, ...options };
 
     // Return original list if search term is too short

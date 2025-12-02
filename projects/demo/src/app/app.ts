@@ -9,6 +9,7 @@ interface Book {
   author: string;
   year: number;
   isbn: string;
+  language: 'en' | 'ar';
 }
 
 type BookResult = AngularFuseJsResult<Book>;

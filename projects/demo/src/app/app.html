@@ -1,7 +1,10 @@
 <div class="demo-container">
   <header>
     <h1>🔍 {{ title() }}</h1>
-    <p>Try fuzzy searching through classic programming books</p>
+    <p>Try fuzzy searching through 260+ programming books in English & Arabic</p>
+    <small class="disclaimer">
+      ⚠️ Demo dataset generated with AI assistance - data may contain inaccuracies
+    </small>
   </header>
 
   <div class="search-section">
@@ -32,7 +35,7 @@
 
       <div class="book-grid">
         @for (book of searchResults(); track book.isbn) {
-          <div class="book-card">
+          <div class="book-card" [attr.data-lang]="book.language">
             <div class="book-content">
               <h3 class="book-title" [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
               <p class="book-author" [innerHTML]="book.fuseJsHighlighted?.author || book.author"></p>

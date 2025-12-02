@@ -70,6 +70,14 @@ header {
     color: $text-medium;
     margin: 0;
   }
+
+  .disclaimer {
+    display: block;
+    margin-top: $spacing-md;
+    font-size: 0.875rem;
+    color: $text-light;
+    font-style: italic;
+  }
 }
 
 // Search section
@@ -137,6 +145,15 @@ header {
     transform: translateY(-4px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
     border-color: $primary-color;
+  }
+
+  // RTL support for Arabic books
+  &[data-lang='ar'] {
+    direction: rtl;
+
+    .book-meta {
+      flex-direction: row-reverse;
+    }
   }
 }
 
