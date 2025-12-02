@@ -1,4 +1,4 @@
-<div align="center">
+<div style="text-align: center;">
 
 # 🔍 Angular FuseJS
 
@@ -231,7 +231,7 @@ Before publishing, always test your changes:
 
 2. **Run unit tests:**
    ```bash
-   npm test
+   npm run test
    ```
 
 3. **Test in the demo app:**
@@ -246,39 +246,11 @@ Before publishing, always test your changes:
    npx ng build @almothafar/angular-fusejs --configuration production
    ```
 
-### Publishing to NPM
-
-The package is configured to automatically publish as public (no need for `--access=public` flag).
-
-1. **Ensure you're logged in to npm:**
-   ```bash
-   npm login
-   ```
-
-2. **Build the production version:**
-   ```bash
-   npm run build:prod
-   ```
-
-3. **Publish from the dist folder:**
-   ```bash
-   cd dist/almothafar/angular-fusejs
-   npm publish
-   ```
-
-   Or use the convenience scripts:
-   ```bash
-   npm run build:prod
-   cd dist/almothafar/angular-fusejs && npm publish
-   ```
-
-**Note:** The `publishConfig` in package.json is set to `"access": "public"`, so you don't need to add `--access=public` manually!
-
 ## Migration from v2.x
 
 Version 3.0.0 is a complete rewrite for Angular 20+ (LTS). See the [migration guide](./projects/almothafar/angular-fusejs/README.md#migration-from-v2x) for breaking changes.
 
-For older Angular versions (14-19), use version 2.x:
+For older Angular versions (14 to "Until it breaks"), use version 2.x:
 ```bash
 npm install @almothafar/angular-fusejs@2.1.0
 ```
@@ -296,3 +268,8 @@ MIT © [Al-Mothafar Al-Hasan](https://almothafar.com)
 - 🐛 [Report Bug](https://github.com/almothafar/angular-fusejs/issues)
 - 💡 [Request Feature](https://github.com/almothafar/angular-fusejs/issues)
 - ⭐ Star this repo if you find it helpful!
+- ♥️ Consider buying me a coffee!
+
+---
+
+Made with ❤️ by [Al-Mothafar Al-Hasan](https://almothafar.com)

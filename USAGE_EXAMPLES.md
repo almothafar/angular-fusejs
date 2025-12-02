@@ -135,7 +135,7 @@ export class BooksComponent {
   searchTerm = '';
   books = [/* ... */];
 
-  // Define options with 'as const' for type inference
+  // Define options with 'as const' for type inference, as const is Optional if you got issues
   searchOptions = {
     keys: ['title', 'author'],
     supportHighlight: true,
@@ -143,26 +143,6 @@ export class BooksComponent {
     fuseJsScoreKey: 'score',
   } as const;
 }
-```
-
-## Why Use `as const`?
-
-Without `as const`, TypeScript treats string values as type `string`:
-
-```typescript
-// ❌ Without 'as const'
-const options = {
-  fuseJsHighlightKey: 'highlighted', // Type: string
-};
-// Results will have type: AngularFuseJsResultWithKeys<T, string, string>
-// Not useful for type safety!
-
-// ✅ With 'as const'
-const options = {
-  fuseJsHighlightKey: 'highlighted', // Type: 'highlighted' (literal)
-} as const;
-// Results will have type: AngularFuseJsResultWithKeys<T, 'highlighted', 'fuseJsScore'>
-// Now you get autocomplete for result.highlighted!
 ```
 
 ## Key Benefits
