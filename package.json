@@ -1,5 +1,5 @@
 {
-  "name": "angular-fusejs-temp",
+  "name": "angular-fusejs-workspace",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -9,6 +9,7 @@
     "build:docs": "ng build demo --configuration production --output-path docs --base-href /angular-fusejs/ && node scripts/post-build-docs.js",
     "build:all": "npm run build:prod && npm run build:docs",
     "watch": "ng build --watch --configuration development",
+    "publish": "cd dist/almothafar/angular-fusejs/ && npm publish",
     "test": "ng test",
     "lint": "ng lint"
   },
