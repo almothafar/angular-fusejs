@@ -1,4 +1,4 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform, inject } from '@angular/core';
 import { AngularFuseJsService, AngularFuseJsOptions } from './angular-fusejs.service';
 
 /**
@@ -19,10 +19,10 @@ import { AngularFuseJsService, AngularFuseJsOptions } from './angular-fusejs.ser
  */
 @Pipe({
   name: 'fuseJsSearch',
-  standalone: true
+  standalone: true,
 })
 export class AngularFuseJsPipe implements PipeTransform {
-  constructor(private fuseJsService: AngularFuseJsService) {}
+  private fuseJsService = inject(AngularFuseJsService);
 
   /**
    * Transform array using Fuse.js search
@@ -35,7 +35,7 @@ export class AngularFuseJsPipe implements PipeTransform {
   transform<T>(
     list: T[] | null | undefined,
     searchTerms: string,
-    options?: AngularFuseJsOptions<T>
+    options?: AngularFuseJsOptions<T>,
   ): T[] {
     if (!list || !Array.isArray(list)) {
       return [];

@@ -36,7 +36,7 @@ class PropertyAccessor {
    * e.g., get(obj, 'user.name') or get(obj, 'items[0].title')
    */
   static get(obj: any, path: string): any {
-    const keys = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+    const keys = path.replace(/\[(\d+)]/g, '.$1').split('.');
     return keys.reduce((acc, key) => acc?.[key], obj);
   }
 
@@ -45,7 +45,7 @@ class PropertyAccessor {
    * e.g., set(obj, 'user.name', 'John') or set(obj, 'items[0].title', 'Title')
    */
   static set(obj: any, path: string, value: any): void {
-    const keys = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+    const keys = path.replace(/\[(\d+)]/g, '.$1').split('.');
     const lastKey = keys.pop()!;
     const target = keys.reduce((acc, key) => {
       if (!acc[key]) acc[key] = {};
@@ -68,7 +68,7 @@ class PropertyAccessor {
  * ```
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AngularFuseJsService<T = any> {
   /**
@@ -94,7 +94,11 @@ export class AngularFuseJsService<T = any> {
    * @param options - Search options (merged with defaults)
    * @returns Array of search results (with highlights if enabled)
    */
-  searchList(list: T[], searchTerms: string, options: AngularFuseJsOptions<T> = {}): AngularFuseJsResult<T>[] {
+  searchList(
+    list: T[],
+    searchTerms: string,
+    options: AngularFuseJsOptions<T> = {},
+  ): AngularFuseJsResult<T>[] {
     const fuseOptions: AngularFuseJsOptions<T> = { ...this.defaultOptions, ...options };
 
     // Return original list if search term is too short
@@ -109,7 +113,7 @@ export class AngularFuseJsService<T = any> {
 
     // Perform search
     const fuse = new Fuse(list, fuseOptions);
-    let results = fuse.search(searchTerms);
+    const results = fuse.search(searchTerms);
 
     // Apply highlighting if enabled
     if (fuseOptions.supportHighlight) {
@@ -140,12 +144,12 @@ export class AngularFuseJsService<T = any> {
    */
   private handleHighlight(
     results: FuseResult<T>[],
-    options: AngularFuseJsOptions<T>
+    options: AngularFuseJsOptions<T>,
   ): AngularFuseJsResult<T>[] {
     // Filter by maximum score if specified
     if (options.maximumScore !== undefined && options.includeScore) {
-      results = results.filter(result =>
-        result.score !== undefined && result.score <= (options.maximumScore ?? 0)
+      results = results.filter(
+        result => result.score !== undefined && result.score <= (options.maximumScore ?? 0),
       );
     }
 
@@ -226,7 +230,7 @@ export class AngularFuseJsService<T = any> {
 
     const cloned: any = {};
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.hasOwn(obj, key)) {
         cloned[key] = this.deepClone(obj[key]);
       }
     }

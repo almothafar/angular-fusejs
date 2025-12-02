@@ -2,7 +2,7 @@ import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { AngularFuseJsPipe, AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
+import { AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
 
 interface Book {
   title: string;
@@ -18,7 +18,7 @@ type BookResult = AngularFuseJsResult<Book>;
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
 export class App implements OnInit {
   private http = inject(HttpClient);
@@ -42,34 +42,35 @@ export class App implements OnInit {
    * - Removes Arabic diacritics (tashkeel)
    */
   private normalizeArabicText(text: string): string {
-    return text
-      // Normalize alef variations
-      .replace(/[أإآ]/g, 'ا')
-      // Normalize ta marbuta to ha
-      .replace(/ة/g, 'ه')
-      // Remove Arabic diacritics (tashkeel)
-      .replace(/[\u064B-\u065F]/g, '');
+    return (
+      text
+        // Normalize alef variations
+        .replace(/[أإآ]/g, 'ا')
+        // Normalize ta marbuta to ha
+        .replace(/ة/g, 'ه')
+        // Remove Arabic diacritics (tashkeel)
+        .replace(/[\u064B-\u065F]/g, '')
+    );
   }
 
   // Computed signal that returns properly typed search results
   searchResults = computed<BookResult[]>(() => {
-    return this.fuseService.searchList(
-      this.books(),
-      this.searchTerm(),
-      {
-        keys: ['title', 'author', 'year'],
-        supportHighlight: true,
-        threshold: 0.4,
-        minSearchTermLength: 2,
-        includeScore: true,
-        // Custom getFn to normalize Arabic text before searching
-        getFn: (obj: Book, path: string | string[]) => {
-          const keys = Array.isArray(path) ? path : [path];
-          const value = keys.reduce((acc: any, key) => acc?.[key], obj as any);
-          const stringValue = String(value ?? '');
-          return this.normalizeArabicText(stringValue);
+    return this.fuseService.searchList(this.books(), this.searchTerm(), {
+      keys: ['title', 'author', 'year'],
+      supportHighlight: true,
+      threshold: 0.4,
+      minSearchTermLength: 2,
+      includeScore: true,
+      // Custom getFn to normalize Arabic text before searching
+      getFn: (obj: Book, path: string | string[]) => {
+        const keys = Array.isArray(path) ? path : [path];
+        let value: unknown = obj;
+        for (const key of keys) {
+          value = (value as Record<string, unknown>)?.[key];
         }
-      }
-    );
+        const stringValue = String(value ?? '');
+        return this.normalizeArabicText(stringValue);
+      },
+    });
   });
 }

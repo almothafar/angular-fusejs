@@ -7,12 +7,17 @@
     "build": "ng build",
     "build:prod": "ng build @almothafar/angular-fusejs --configuration production",
     "build:docs": "ng build demo --configuration production --output-path docs --base-href /angular-fusejs/ && node scripts/post-build-docs.js",
+    "build:all": "npm run build:prod && npm run build:docs",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "lint": "ng lint"
   },
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
+    "trailingComma": "all",
+    "bracketSpacing": true,
+    "arrowParens": "avoid",
     "overrides": [
       {
         "files": "*.html",
@@ -39,9 +44,14 @@
     "@angular/build": "^21.0.1",
     "@angular/cli": "^21.0.1",
     "@angular/compiler-cli": "^21.0.2",
+    "angular-eslint": "21.0.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "jsdom": "^27.2.0",
     "ng-packagr": "^21.0.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.0.14"
+    "typescript-eslint": "^8.48.1",
+    "vitest": "^4.0.15"
   }
 }

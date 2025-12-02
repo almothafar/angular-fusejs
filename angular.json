@@ -35,6 +35,15 @@
           "options": {
             "tsConfig": "projects/almothafar/angular-fusejs/tsconfig.spec.json"
           }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/almothafar/angular-fusejs/**/*.ts",
+              "projects/almothafar/angular-fusejs/**/*.html"
+            ]
+          }
         }
       }
     },
@@ -98,6 +107,15 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/demo/**/*.ts",
+              "projects/demo/**/*.html"
+            ]
+          }
         }
       }
     }

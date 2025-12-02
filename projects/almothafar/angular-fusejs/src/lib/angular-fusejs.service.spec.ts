@@ -12,7 +12,7 @@ describe('AngularFuseJsService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AngularFuseJsService]
+      providers: [AngularFuseJsService],
     });
     service = TestBed.inject(AngularFuseJsService);
   });
@@ -24,7 +24,7 @@ describe('AngularFuseJsService', () => {
   it('should search and return matching results', () => {
     const results = service.searchList(mockData, 'JavaScript', {
       keys: ['title'],
-      supportHighlight: false
+      supportHighlight: false,
     });
 
     expect(results.length).toBeGreaterThan(0);
@@ -35,7 +35,7 @@ describe('AngularFuseJsService', () => {
     const results = service.searchList(mockData, 'ab', {
       keys: ['title'],
       minSearchTermLength: 3,
-      supportHighlight: false
+      supportHighlight: false,
     });
 
     expect(results.length).toBe(mockData.length);
@@ -45,7 +45,7 @@ describe('AngularFuseJsService', () => {
     const results = service.searchList(mockData, 'JavaScript', {
       keys: ['title'],
       supportHighlight: true,
-      fuseJsHighlightKey: 'highlighted'
+      fuseJsHighlightKey: 'highlighted',
     });
 
     expect(results.length).toBeGreaterThan(0);
@@ -59,7 +59,7 @@ describe('AngularFuseJsService', () => {
       keys: ['title'],
       supportHighlight: true,
       highlightTag: 'mark',
-      fuseJsHighlightKey: 'highlighted'
+      fuseJsHighlightKey: 'highlighted',
     });
 
     const result = results[0] as any;
@@ -72,7 +72,7 @@ describe('AngularFuseJsService', () => {
       keys: ['title'],
       supportHighlight: true,
       includeScore: true,
-      fuseJsScoreKey: 'score'
+      fuseJsScoreKey: 'score',
     });
 
     const result = results[0] as any;
@@ -85,7 +85,7 @@ describe('AngularFuseJsService', () => {
       keys: ['title'],
       supportHighlight: true,
       maximumScore: 0.3,
-      includeScore: true
+      includeScore: true,
     });
 
     // Should filter out results with score > 0.3
@@ -99,7 +99,7 @@ describe('AngularFuseJsService', () => {
   it('should handle empty list', () => {
     const results = service.searchList([], 'test', {
       keys: ['title'],
-      supportHighlight: false
+      supportHighlight: false,
     });
 
     expect(results).toEqual([]);
@@ -110,7 +110,7 @@ describe('AngularFuseJsService', () => {
 
     service.searchList(mockData, 'JavaScript', {
       keys: ['title'],
-      supportHighlight: true
+      supportHighlight: true,
     });
 
     expect(mockData).toEqual(originalData);
