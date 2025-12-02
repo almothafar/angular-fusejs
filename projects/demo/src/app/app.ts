@@ -35,6 +35,22 @@ export class App implements OnInit {
     });
   }
 
+  /**
+   * Normalizes Arabic text for better fuzzy search matching
+   * - Converts alef variations (أ, إ, آ) to plain alef (ا)
+   * - Converts ta marbuta (ة) to ha (ه)
+   * - Removes Arabic diacritics (tashkeel)
+   */
+  private normalizeArabicText(text: string): string {
+    return text
+      // Normalize alef variations
+      .replace(/[أإآ]/g, 'ا')
+      // Normalize ta marbuta to ha
+      .replace(/ة/g, 'ه')
+      // Remove Arabic diacritics (tashkeel)
+      .replace(/[\u064B-\u065F]/g, '');
+  }
+
   // Computed signal that returns properly typed search results
   searchResults = computed<BookResult[]>(() => {
     return this.fuseService.searchList(
@@ -45,7 +61,14 @@ export class App implements OnInit {
         supportHighlight: true,
         threshold: 0.4,
         minSearchTermLength: 2,
-        includeScore: true
+        includeScore: true,
+        // Custom getFn to normalize Arabic text before searching
+        getFn: (obj: Book, path: string | string[]) => {
+          const keys = Array.isArray(path) ? path : [path];
+          const value = keys.reduce((acc: any, key) => acc?.[key], obj as any);
+          const stringValue = String(value ?? '');
+          return this.normalizeArabicText(stringValue);
+        }
       }
     );
   });
