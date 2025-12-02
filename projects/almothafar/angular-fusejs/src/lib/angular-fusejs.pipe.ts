@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform, inject } from '@angular/core';
-import { AngularFuseJsService, AngularFuseJsOptions } from './angular-fusejs.service';
+import { AngularFuseJsService, AngularFuseJsOptions, AngularFuseJsResult } from './angular-fusejs.service';
 
 /**
  * Angular pipe for filtering lists with Fuse.js
@@ -32,11 +32,7 @@ export class AngularFuseJsPipe implements PipeTransform {
    * @param options - Fuse.js options
    * @returns Filtered array with optional highlighting
    */
-  transform<T>(
-    list: T[] | null | undefined,
-    searchTerms: string,
-    options?: AngularFuseJsOptions<T>,
-  ): T[] {
+  transform<T>(list: T[] | null | undefined, searchTerms: string, options?: AngularFuseJsOptions<T>): AngularFuseJsResult<T>[] {
     if (!list || !Array.isArray(list)) {
       return [];
     }

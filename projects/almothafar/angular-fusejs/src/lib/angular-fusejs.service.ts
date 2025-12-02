@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import Fuse, { IFuseOptions, FuseResult } from 'fuse.js';
+import Fuse, { FuseResult, IFuseOptions } from 'fuse.js';
 
 /**
  * Extended options for Angular FuseJS with highlight support
@@ -21,11 +21,26 @@ export interface AngularFuseJsOptions<T> extends IFuseOptions<T> {
 
 /**
  * Result type with highlighting and score information
+ * Supports both default keys and custom keys for type-safe access
+ *
+ * @template T - The base item type
+ * @template HighlightKey - Key name for highlighted results (default: 'fuseJsHighlighted')
+ * @template ScoreKey - Key name for match score (default: 'fuseJsScore')
+ *
+ * @example
+ * ```typescript
+ * // Default keys
+ * type BookResult = AngularFuseJsResult<Book>;
+ * // bookResult.fuseJsHighlighted and bookResult.fuseJsScore
+ *
+ * // Custom keys
+ * type CustomBookResult = AngularFuseJsResult<Book, 'highlighted', 'score'>;
+ * // bookResult.highlighted and bookResult.score
+ * ```
  */
-export type AngularFuseJsResult<T> = T & {
-  fuseJsHighlighted?: T;
-  fuseJsScore?: number;
-};
+export type AngularFuseJsResult<T, HighlightKey extends string = 'fuseJsHighlighted', ScoreKey extends string = 'fuseJsScore'> = T &
+  Partial<Record<HighlightKey, T>> &
+  Partial<Record<ScoreKey, number>>;
 
 /**
  * Helper functions for deep property access without lodash
@@ -35,22 +50,30 @@ class PropertyAccessor {
    * Get nested property value from object using dot notation
    * e.g., get(obj, 'user.name') or get(obj, 'items[0].title')
    */
-  static get(obj: any, path: string): any {
+  static get<T>(obj: T, path: string): unknown {
     const keys = path.replace(/\[(\d+)]/g, '.$1').split('.');
-    return keys.reduce((acc, key) => acc?.[key], obj);
+    return keys.reduce((acc: unknown, key) => {
+      return (acc as Record<string, unknown>)?.[key];
+    }, obj as unknown);
   }
 
   /**
    * Set nested property value in object using dot notation
    * e.g., set(obj, 'user.name', 'John') or set(obj, 'items[0].title', 'Title')
    */
-  static set(obj: any, path: string, value: any): void {
+  static set<T>(obj: T, path: string, value: unknown): void {
     const keys = path.replace(/\[(\d+)]/g, '.$1').split('.');
     const lastKey = keys.pop()!;
-    const target = keys.reduce((acc, key) => {
-      if (!acc[key]) acc[key] = {};
-      return acc[key];
-    }, obj);
+    const target = keys.reduce(
+      (acc: Record<string, unknown>, key) => {
+        const current = acc[key];
+        if (!current || typeof current !== 'object') {
+          acc[key] = {};
+        }
+        return acc[key] as Record<string, unknown>;
+      },
+      obj as Record<string, unknown>,
+    );
     target[lastKey] = value;
   }
 }
@@ -70,7 +93,7 @@ class PropertyAccessor {
 @Injectable({
   providedIn: 'root',
 })
-export class AngularFuseJsService<T = any> {
+export class AngularFuseJsService<T = unknown> {
   /**
    * Default search options
    */
@@ -93,17 +116,32 @@ export class AngularFuseJsService<T = any> {
    * @param searchTerms - Search query string
    * @param options - Search options (merged with defaults)
    * @returns Array of search results (with highlights if enabled)
+   *
+   * @example
+   * ```typescript
+   * // With custom keys - type-safe access
+   * const results = service.searchList(books, 'search', {
+   *   keys: ['title'],
+   *   supportHighlight: true,
+   *   fuseJsHighlightKey: 'highlighted',
+   *   fuseJsScoreKey: 'score',
+   * } as const);
+   * // Now you can use: results[0].highlighted and results[0].score
+   * ```
    */
-  searchList(
+  searchList<HighlightKey extends string = 'fuseJsHighlighted', ScoreKey extends string = 'fuseJsScore'>(
     list: T[],
     searchTerms: string,
-    options: AngularFuseJsOptions<T> = {},
-  ): AngularFuseJsResult<T>[] {
+    options?: AngularFuseJsOptions<T> & {
+      fuseJsHighlightKey?: HighlightKey;
+      fuseJsScoreKey?: ScoreKey;
+    },
+  ): AngularFuseJsResult<T, HighlightKey, ScoreKey>[] {
     const fuseOptions: AngularFuseJsOptions<T> = { ...this.defaultOptions, ...options };
 
     // Return original list if search term is too short
     if (!searchTerms || searchTerms.length < (fuseOptions.minSearchTermLength ?? 0)) {
-      return this.handleEmptySearch(list, fuseOptions);
+      return this.handleEmptySearch(list, fuseOptions) as AngularFuseJsResult<T, HighlightKey, ScoreKey>[];
     }
 
     // Enable matches for highlighting
@@ -117,22 +155,22 @@ export class AngularFuseJsService<T = any> {
 
     // Apply highlighting if enabled
     if (fuseOptions.supportHighlight) {
-      return this.handleHighlight(results, fuseOptions);
+      return this.handleHighlight(results, fuseOptions) as AngularFuseJsResult<T, HighlightKey, ScoreKey>[];
     }
 
     // Return just the items without FuseResult wrapper
-    return results.map(result => result.item) as AngularFuseJsResult<T>[];
+    return results.map(result => result.item) as AngularFuseJsResult<T, HighlightKey, ScoreKey>[];
   }
 
   /**
-   * Handle case when search term is empty or too short
+   * Handle case when the search term is empty or too short
    */
   private handleEmptySearch(list: T[], options: AngularFuseJsOptions<T>): AngularFuseJsResult<T>[] {
     const clonedList = this.deepClone(list) as AngularFuseJsResult<T>[];
 
     if (options.supportHighlight) {
-      clonedList.forEach((element: any) => {
-        element[options.fuseJsHighlightKey || '_'] = this.deepClone(element);
+      clonedList.forEach(element => {
+        (element as Record<string, unknown>)[options.fuseJsHighlightKey || '_'] = this.deepClone(element);
       });
     }
 
@@ -142,25 +180,21 @@ export class AngularFuseJsService<T = any> {
   /**
    * Add highlight markup to search results
    */
-  private handleHighlight(
-    results: FuseResult<T>[],
-    options: AngularFuseJsOptions<T>,
-  ): AngularFuseJsResult<T>[] {
+  private handleHighlight(results: FuseResult<T>[], options: AngularFuseJsOptions<T>): AngularFuseJsResult<T>[] {
     // Filter by maximum score if specified
     if (options.maximumScore !== undefined && options.includeScore) {
-      results = results.filter(
-        result => result.score !== undefined && result.score <= (options.maximumScore ?? 0),
-      );
+      results = results.filter(result => result.score !== undefined && result.score <= (options.maximumScore ?? 0));
     }
 
     return results.map(matchObject => {
-      const item = this.deepClone(matchObject.item) as any;
+      const item = this.deepClone(matchObject.item) as AngularFuseJsResult<T>;
+      const itemRecord = item as unknown as Record<string, unknown>;
       const highlightKey = options.fuseJsHighlightKey || '_';
       const scoreKey = options.fuseJsScoreKey || '_';
 
       // Store highlighted version and score
-      item[highlightKey] = this.deepClone(item);
-      item[scoreKey] = matchObject.score;
+      itemRecord[highlightKey] = this.deepClone(item);
+      itemRecord[scoreKey] = matchObject.score;
 
       // Process matches
       if (matchObject.matches) {
@@ -170,9 +204,9 @@ export class AngularFuseJsService<T = any> {
           let key = match.key as string;
 
           // Handle array indices
-          const arrayIndex = (match as any).arrayIndex;
+          const arrayIndex = (match as Record<string, unknown>)['arrayIndex'];
           if (arrayIndex !== undefined) {
-            const value = PropertyAccessor.get(item[highlightKey], key);
+            const value = PropertyAccessor.get(itemRecord[highlightKey], key);
             if (Array.isArray(value)) {
               key += `[${arrayIndex}]`;
             }
@@ -184,12 +218,12 @@ export class AngularFuseJsService<T = any> {
           const tagEnd = `</${options.highlightTag ?? 'em'}>`;
 
           for (const [start, end] of match.indices) {
-            let currentValue = PropertyAccessor.get(item[highlightKey], key);
+            let currentValue = PropertyAccessor.get(itemRecord[highlightKey], key);
 
             // Convert numbers to strings for highlighting
             if (typeof currentValue === 'number') {
               currentValue = String(currentValue);
-              PropertyAccessor.set(item[highlightKey], key, currentValue);
+              PropertyAccessor.set(itemRecord[highlightKey], key, currentValue);
             }
 
             if (typeof currentValue !== 'string') {
@@ -200,14 +234,10 @@ export class AngularFuseJsService<T = any> {
             const endOffset = end + highlightOffset + 1;
             const highlightedTerm = currentValue.substring(startOffset, endOffset);
             const newValue =
-              currentValue.substring(0, startOffset) +
-              tagStart +
-              highlightedTerm +
-              tagEnd +
-              currentValue.substring(endOffset);
+              currentValue.substring(0, startOffset) + tagStart + highlightedTerm + tagEnd + currentValue.substring(endOffset);
 
             highlightOffset += tagStart.length + tagEnd.length;
-            PropertyAccessor.set(item[highlightKey], key, newValue);
+            PropertyAccessor.set(itemRecord[highlightKey], key, newValue);
           }
         }
       }
@@ -225,16 +255,16 @@ export class AngularFuseJsService<T = any> {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.deepClone(item)) as any;
+      return obj.map(item => this.deepClone(item)) as T;
     }
 
-    const cloned: any = {};
+    const cloned = {} as Record<string, unknown>;
     for (const key in obj) {
       if (Object.hasOwn(obj, key)) {
-        cloned[key] = this.deepClone(obj[key]);
+        cloned[key] = this.deepClone((obj as Record<string, unknown>)[key]);
       }
     }
 
-    return cloned;
+    return cloned as T;
   }
 }
