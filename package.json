@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "build:prod": "ng build @almothafar/angular-fusejs --configuration production",
-    "build:docs": "ng build demo --configuration production --output-path docs --base-href /angular-fusejs/",
+    "build:docs": "ng build demo --configuration production --output-path docs --base-href /angular-fusejs/ && node scripts/post-build-docs.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
