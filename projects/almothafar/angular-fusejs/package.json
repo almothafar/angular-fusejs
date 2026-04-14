@@ -1,6 +1,6 @@
 {
   "name": "@almothafar/angular-fusejs",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Angular integration for Fuse.js with highlighting support",
   "author": "Al-Mothafar Al-Hasan <almothafar@gmail.com>",
   "license": "MIT",

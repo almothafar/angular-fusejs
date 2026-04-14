@@ -204,11 +204,10 @@ export class AngularFuseJsService<T = unknown> {
           let key = match.key as string;
 
           // Handle array indices
-          const arrayIndex = (match as Record<string, unknown>)['arrayIndex'];
-          if (arrayIndex !== undefined) {
+          if (match.refIndex !== undefined) {
             const value = PropertyAccessor.get(itemRecord[highlightKey], key);
             if (Array.isArray(value)) {
-              key += `[${arrayIndex}]`;
+              key += `[${match.refIndex}]`;
             }
           }
 
