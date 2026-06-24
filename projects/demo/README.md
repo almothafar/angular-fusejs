@@ -19,14 +19,14 @@ Live demonstration of [@almothafar/angular-fusejs](https://www.npmjs.com/package
 ## Running Locally
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies (this repo uses pnpm)
+pnpm install
 
 # Start the demo (from project root)
-npm start
+pnpm start
 
 # Or run directly
-npx ng serve demo
+pnpm exec ng serve demo
 ```
 
 Navigate to `http://localhost:4200/` to see it in action!
