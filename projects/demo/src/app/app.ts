@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
+import { BUILD_INFO } from './build-info';
 
 interface Book {
   title: string;
@@ -26,6 +27,7 @@ export class App implements OnInit {
   private fuseService = new AngularFuseJsService<Book>();
 
   protected readonly title = signal('Angular FuseJS Demo');
+  protected readonly buildTime = BUILD_INFO.timestamp;
 
   searchTerm = signal('');
   books = signal<Book[]>([]);

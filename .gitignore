@@ -4,6 +4,9 @@
 /dist
 /tmp
 /out-tsc
+
+# auto-generated build metadata (written by scripts/generate-build-info.mjs)
+/projects/demo/src/app/build-info.ts
 # Only exists if Bazel was run
 /bazel-out
 
