@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "generate-build-info": "node scripts/generate-build-info.mjs",
+    "postinstall": "npm run generate-build-info",
+    "prestart": "npm run generate-build-info",
     "start": "ng serve",
     "build": "ng build",
     "build:prod": "ng build @almothafar/angular-fusejs --configuration production",
+    "prebuild:docs": "npm run generate-build-info",
     "build:docs": "ng build demo --configuration production --output-path docs --base-href /angular-fusejs/ && node scripts/post-build-docs.js",
     "build:all": "npm run build:prod && npm run build:docs",
     "watch": "ng build --watch --configuration development",
