@@ -4,14 +4,14 @@
   "scripts": {
     "ng": "ng",
     "generate-build-info": "node scripts/generate-build-info.mjs",
-    "postinstall": "npm run generate-build-info",
-    "prestart": "npm run generate-build-info",
+    "postinstall": "node scripts/generate-build-info.mjs",
+    "prestart": "node scripts/generate-build-info.mjs",
     "start": "ng serve",
     "build": "ng build",
     "build:prod": "ng build @almothafar/angular-fusejs --configuration production",
-    "prebuild:docs": "npm run generate-build-info",
+    "prebuild:docs": "node scripts/generate-build-info.mjs",
     "build:docs": "ng build demo --configuration production",
-    "build:all": "npm run build:prod && npm run build:docs",
+    "build:all": "pnpm run build:prod && pnpm run build:docs",
     "watch": "ng build --watch --configuration development",
     "publish": "cd dist/almothafar/angular-fusejs/ && npm publish",
     "test": "ng test",
@@ -35,7 +35,7 @@
     ]
   },
   "private": true,
-  "packageManager": "npm@11.12.1",
+  "packageManager": "pnpm@11.9.0",
   "dependencies": {
     "@angular/common": "^22.0.2",
     "@angular/compiler": "^22.0.2",

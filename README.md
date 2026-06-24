@@ -72,11 +72,11 @@ For complete documentation, examples, and API reference, see the [library README
 Run the demo application locally:
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies (this repo uses pnpm)
+pnpm install
 
 # Serve demo app (automatically uses local library)
-npm start
+pnpm start
 ```
 
 Navigate to `http://localhost:4200/` to see the library in action!
@@ -190,19 +190,19 @@ export class AdvancedSearchComponent implements OnInit {
 ### Build Library
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Build for Production
 
 ```bash
-npm run build:prod
+pnpm run build:prod
 ```
 
 ### Run Tests
 
 ```bash
-npm test
+pnpm test
 ```
 
 ### Test Local Changes in Demo
@@ -210,13 +210,13 @@ npm test
 The demo app automatically uses the local library via TypeScript path mapping. Just run:
 
 ```bash
-npm start
+pnpm start
 ```
 
 Any changes you make to the library will require a rebuild:
 
 ```bash
-npm run build
+pnpm run build
 # Then restart the demo
 ```
 
@@ -226,24 +226,24 @@ Before publishing, always test your changes:
 
 1. **Build the library:**
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 2. **Run unit tests:**
    ```bash
-   npm run test
+   pnpm run test
    ```
 
 3. **Test in the demo app:**
    ```bash
    # The demo automatically uses the local built library
-   npm start
+   pnpm start
    # Visit http://localhost:4200 and test the functionality
    ```
 
 4. **Check for TypeScript errors:**
    ```bash
-   npx ng build @almothafar/angular-fusejs --configuration production
+   pnpm exec ng build @almothafar/angular-fusejs --configuration production
    ```
 
 ## Migration from v2.x
