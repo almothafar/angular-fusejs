@@ -39,10 +39,7 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": [
-              "projects/almothafar/angular-fusejs/**/*.ts",
-              "projects/almothafar/angular-fusejs/**/*.html"
-            ]
+            "lintFilePatterns": ["projects/almothafar/angular-fusejs/**/*.ts", "projects/almothafar/angular-fusejs/**/*.html"]
           }
         }
       }
@@ -65,9 +62,7 @@
                 "input": "projects/demo/public"
               }
             ],
-            "styles": [
-              "projects/demo/src/styles.scss"
-            ]
+            "styles": ["projects/demo/src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -111,10 +106,7 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": [
-              "projects/demo/**/*.ts",
-              "projects/demo/**/*.html"
-            ]
+            "lintFilePatterns": ["projects/demo/**/*.ts", "projects/demo/**/*.html"]
           }
         }
       }

@@ -1,3 +1,4 @@
+import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AngularFuseJsPipe } from './angular-fusejs.pipe';
 import { AngularFuseJsService } from './angular-fusejs.service';
@@ -20,7 +21,7 @@ describe('AngularFuseJsPipe', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AngularFuseJsPipe, AngularFuseJsService],
+      providers: [provideZonelessChangeDetection(), AngularFuseJsPipe, AngularFuseJsService],
     });
     pipe = TestBed.inject(AngularFuseJsPipe);
     service = TestBed.inject(AngularFuseJsService);
