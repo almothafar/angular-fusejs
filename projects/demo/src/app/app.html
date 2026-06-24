@@ -2,9 +2,7 @@
   <header>
     <h1>🔍 {{ title() }}</h1>
     <p>Try fuzzy searching through 260+ programming books in English & Arabic</p>
-    <small class="disclaimer">
-      ⚠️ Demo dataset generated with AI assistance - data may contain inaccuracies
-    </small>
+    <small class="disclaimer"> ⚠️ Demo dataset generated with AI assistance - data may contain inaccuracies </small>
   </header>
 
   <div class="search-section">
@@ -16,9 +14,7 @@
         class="search-input"
       />
       @if (!searchTerm()) {
-        <span class="search-hint">
-          💡 Try: "clean code", "pragmatic", "knuth", "2008"
-        </span>
+        <span class="search-hint"> 💡 Try: "clean code", "pragmatic", "knuth", "2008" </span>
       }
     </div>
 
@@ -42,9 +38,7 @@
               <div class="book-meta">
                 <span class="book-year" [innerHTML]="book.fuseJsHighlighted?.year || book.year"></span>
                 @if (book.fuseJsScore !== undefined && searchTerm()) {
-                  <span class="book-score">
-                    Match: {{ (1 - book.fuseJsScore) * 100 | number:'1.0-0' }}%
-                  </span>
+                  <span class="book-score"> Match: {{ (1 - book.fuseJsScore) * 100 | number: '1.0-0' }}% </span>
                 }
               </div>
             </div>
@@ -69,9 +63,7 @@
       <a href="https://fusejs.io" target="_blank">Fuse.js</a>
     </p>
     <p>
-      <a href="https://github.com/almothafar/angular-fusejs" target="_blank">
-        View on GitHub
-      </a>
+      <a href="https://github.com/almothafar/angular-fusejs" target="_blank"> View on GitHub </a>
     </p>
   </footer>
 </div>

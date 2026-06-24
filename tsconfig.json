@@ -4,9 +4,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "@almothafar/angular-fusejs": [
-        "./dist/almothafar/angular-fusejs"
-      ]
+      "@almothafar/angular-fusejs": ["./dist/almothafar/angular-fusejs"]
     },
     "strict": true,
     "noImplicitOverride": true,
