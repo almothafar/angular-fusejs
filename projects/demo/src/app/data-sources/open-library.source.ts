@@ -8,6 +8,8 @@ interface OpenLibraryResponse {
     author_name?: string[];
     first_publish_year?: number;
     cover_i?: number;
+    /** Work key, e.g. "/works/OL45804W" — appended to the site origin for the detail page. */
+    key?: string;
   }[];
 }
 
@@ -34,17 +36,22 @@ export const openLibrarySource: DemoSource = {
     }
     const url =
       `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}` +
-      '&limit=100&fields=title,author_name,first_publish_year,cover_i';
+      '&limit=100&fields=title,author_name,first_publish_year,cover_i,key';
     const res = await firstValueFrom(http.get<OpenLibraryResponse>(url));
     return (res.docs ?? []).map<DemoRecord>(doc => ({
       title: doc.title ?? '',
       author: (doc.author_name ?? []).join(', '),
       year: doc.first_publish_year ?? '',
       cover: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : '',
+      key: doc.key ?? '',
     }));
   },
   imageUrl(record: DemoRecord): string | undefined {
     const cover = record['cover'];
     return typeof cover === 'string' && cover ? cover : undefined;
+  },
+  detailUrl(record: DemoRecord): string | undefined {
+    const key = record['key'];
+    return typeof key === 'string' && key ? `https://openlibrary.org${key}` : undefined;
   },
 };

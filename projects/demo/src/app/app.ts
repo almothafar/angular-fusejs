@@ -182,6 +182,8 @@ export class App implements OnInit {
     const hasTerm = !!this.searchTerm().trim();
     // Only sources that resolve images get a cover slot; '' within that means "use the placeholder".
     const resolveImage = source.imageUrl;
+    // detailUrl reads the raw (non-highlighted) record so the link key isn't wrapped in <em>.
+    const resolveLink = source.detailUrl;
     return this.results().map((result, index) => {
       const highlighted = (result.fuseJsHighlighted ?? result) as DemoRecord;
       const score = result.fuseJsScore;
@@ -194,6 +196,7 @@ export class App implements OnInit {
         matchPercent: hasTerm && score !== undefined ? Math.round((1 - score) * 100) : null,
         lang: typeof lang === 'string' ? lang : null,
         imageUrl: resolveImage ? (resolveImage(result) ?? '') : null,
+        detailUrl: resolveLink ? (resolveLink(result) ?? null) : null,
       };
     });
   });
