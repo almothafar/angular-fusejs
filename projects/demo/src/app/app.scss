@@ -1,23 +1,34 @@
 @use './theme' as *;
 
-// Host styles
+// Host styles — fill the viewport so only the results region scrolls (not the page)
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: $text-dark;
 }
 
-// Container
+// Container — a full-height flex column: header + controls + footer take their natural
+// size, the results region flexes to fill the rest.
 .demo-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: $spacing-xl;
+  box-sizing: border-box;
 }
 
 // Header
 header {
+  flex: 0 0 auto;
   text-align: center;
-  margin-bottom: $spacing-xl;
+  margin-bottom: $spacing-lg;
 
   h1 {
     font-size: 3rem;
@@ -34,6 +45,7 @@ header {
 
 // Controls panel: source switch + view controls (row 1) and the search field (row 2)
 .controls {
+  flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -51,22 +63,29 @@ header {
   }
 }
 
-// Results
+// Results — flexes to fill the remaining height; the inner box scrolls
 .results-container {
-  margin-top: $spacing-xl;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: $spacing-md;
 }
 
 .results-header {
+  flex: 0 0 auto;
+
   h2 {
     font-size: 1.5rem;
-    margin: 0 0 $spacing-lg;
+    margin: 0 0 $spacing-md;
     color: $text-dark;
   }
 }
 
-// Scrollable results box: the inner box scrolls instead of the whole page
+// Scrollable results box: fills the leftover space and scrolls internally (no page scroll)
 .results-scroll {
-  max-height: 65vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: $spacing-xs;
   border-radius: $border-radius;
@@ -125,16 +144,18 @@ header {
   }
 }
 
-// Footer
+// Footer — pinned at the bottom of the viewport-height column
 footer {
-  margin-top: $spacing-3xl;
-  padding-top: $spacing-xl;
+  flex: 0 0 auto;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
   border-top: 1px solid $border-color;
   text-align: center;
   color: $text-medium;
+  font-size: 0.9rem;
 
   p {
-    margin: $spacing-xs 0;
+    margin: 0.2rem 0;
   }
 
   a {

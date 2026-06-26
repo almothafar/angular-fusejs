@@ -1,6 +1,12 @@
 /* Global styles. Shared UI primitives live here so components don't duplicate them. */
 @use './app/theme' as *;
 
+// The app fills the viewport (app.scss :host is 100dvh); drop the default body margin
+// so that height doesn't overflow into a page scroll.
+body {
+  margin: 0;
+}
+
 // Pill button shared by the source switcher and the view controls
 .chip {
   padding: 0.4rem 0.9rem;
