@@ -6,12 +6,13 @@ import { DatePipe } from '@angular/common';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
 import { AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
 import { BUILD_INFO } from './build-info';
-import { DemoRecord, DemoSource, valueAt } from './data-sources/demo-source';
+import { DemoRecord, DemoSource, readPath, valueAt } from './data-sources/demo-source';
 import { localBooksSource } from './data-sources/local-books.source';
+import { countriesSource } from './data-sources/countries.source';
 import { openLibrarySource } from './data-sources/open-library.source';
 import { SourceSwitcherComponent } from './components/source-switcher.component';
 import { ViewControlsComponent } from './components/view-controls.component';
-import { SearchBarComponent } from './components/search-bar.component';
+import { SearchBarComponent, Suggestion } from './components/search-bar.component';
 import { CardVM, ResultCardComponent } from './components/result-card.component';
 
 type DemoResult = AngularFuseJsResult<DemoRecord>;
@@ -21,6 +22,9 @@ const REMOTE_DEBOUNCE_MS = 800;
 
 /** Minimum characters before a remote source will fetch. */
 const MIN_REMOTE_QUERY_LENGTH = 3;
+
+/** How many type-ahead suggestions to surface (sources that opt in). */
+const MAX_SUGGESTIONS = 8;
 
 @Component({
   selector: 'app-root',
@@ -42,7 +46,7 @@ export class App {
   protected readonly buildTime = BUILD_INFO.timestamp;
 
   // --- Data sources -------------------------------------------------------
-  protected readonly sources: readonly DemoSource[] = [localBooksSource, openLibrarySource];
+  protected readonly sources: readonly DemoSource[] = [localBooksSource, countriesSource, openLibrarySource];
   protected readonly activeSource = signal<DemoSource>(this.sources[0]);
 
   protected readonly searchTerm = signal('');
@@ -196,12 +200,12 @@ export class App {
       includeScore: true,
       // Normalize Arabic text before matching (alef/ta-marbuta variants + tashkeel).
       getFn: (obj: DemoRecord, path: string | string[]): string => {
-        const keys = Array.isArray(path) ? path : [path];
-        let value: unknown = obj;
-        for (const key of keys) {
-          value = (value as Record<string, unknown>)?.[key];
-        }
-        return this.normalizeArabicText(String(value ?? ''));
+        // Fuse may hand us a single key or an array of segments; normalize to a
+        // dotted path so nested keys like "name.common" resolve to their value.
+        const dotted = (Array.isArray(path) ? path : [path]).join('.');
+        const value = readPath(obj, dotted);
+        const text = Array.isArray(value) ? value.join(' ') : String(value ?? '');
+        return this.normalizeArabicText(text);
       },
     });
   });
@@ -227,9 +231,33 @@ export class App {
         matchPercent: hasTerm && score !== undefined ? Math.round((1 - score) * 100) : null,
         lang: typeof lang === 'string' ? lang : null,
         imageUrl: resolveImage ? (resolveImage(result) ?? '') : null,
+        imageStyle: source.imageStyle ?? 'poster',
         detailUrl: resolveLink ? (resolveLink(result) ?? null) : null,
       };
     });
+  });
+
+  /**
+   * Top matches for the type-ahead dropdown, for sources that opt in (`suggestions`).
+   * Reuses the already-ranked `results()`; choosing one sets the term to that title.
+   */
+  protected readonly suggestions = computed<Suggestion[]>(() => {
+    const source = this.activeSource();
+    if (!source.suggestions || !this.searchTerm().trim()) {
+      return [];
+    }
+    const titlePath = source.mapping.titlePath;
+    const resolveImage = source.imageUrl;
+    return this.results()
+      .slice(0, MAX_SUGGESTIONS)
+      .map(result => {
+        const highlighted = (result.fuseJsHighlighted ?? result) as DemoRecord;
+        return {
+          label: valueAt(highlighted, titlePath),
+          value: valueAt(result, titlePath),
+          imageUrl: resolveImage ? (resolveImage(result) ?? null) : null,
+        };
+      });
   });
 
   /**

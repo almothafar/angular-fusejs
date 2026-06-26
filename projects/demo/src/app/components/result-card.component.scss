@@ -21,6 +21,19 @@
     border-radius: 6px;
     background: transparent;
   }
+
+  // Flags are wide: show the whole image (no crop) on a neutral plate, not a poster.
+  &.flag {
+    animation: none;
+    background: $border-light;
+
+    img {
+      width: 60px;
+      height: 40px;
+      object-fit: contain;
+      border: 1px solid $border-light;
+    }
+  }
 }
 
 @keyframes cover-shimmer {
@@ -87,6 +100,10 @@
       width: 34px;
       height: 50px;
       border-radius: 4px;
+    }
+
+    .book-cover.flag img {
+      height: 22px;
     }
 
     .book-content {
