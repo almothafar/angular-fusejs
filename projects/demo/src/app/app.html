@@ -1,55 +1,109 @@
-<div class="demo-container">
+<div class="demo-container" [style.--font-scale]="fontScale()" [style.--columns]="columns() || null">
   <header>
     <h1>🔍 {{ title() }}</h1>
-    <p>Try fuzzy searching through 260+ programming books in English & Arabic</p>
-    <small class="disclaimer"> ⚠️ Demo dataset generated with AI assistance - data may contain inaccuracies </small>
+    <p>Fuzzy-search local data or a live remote API — all matching runs client-side via Fuse.js</p>
+    <small class="disclaimer"> ⚠️ Local book dataset generated with AI assistance — data may contain inaccuracies </small>
   </header>
+
+  <div class="controls">
+    <div class="source-switch" role="group" aria-label="Data source">
+      @for (source of sources; track source.id) {
+        <button type="button" class="chip" [class.active]="source === activeSource()" (click)="selectSource(source)">
+          {{ source.label }}
+        </button>
+      }
+    </div>
+
+    @if (activeSource().kind === 'remote') {
+      <div class="seed-row">
+        <input
+          type="text"
+          class="seed-input"
+          [(ngModel)]="seedQuery"
+          [placeholder]="activeSource().seedPlaceholder || 'Seed query'"
+          (keyup.enter)="reload()"
+        />
+        <button type="button" class="load-btn" (click)="reload()" [disabled]="loading()">
+          {{ loading() ? 'Loading…' : 'Load' }}
+        </button>
+      </div>
+    }
+
+    <div class="view-controls">
+      <div class="control">
+        <span class="control-label">View</span>
+        <button type="button" class="chip" [class.active]="density() === 'comfortable'" (click)="density.set('comfortable')">
+          Comfortable
+        </button>
+        <button type="button" class="chip" [class.active]="density() === 'compact'" (click)="density.set('compact')">Compact</button>
+      </div>
+      <div class="control">
+        <span class="control-label">Font</span>
+        <button type="button" class="chip" (click)="adjustFont(-0.1)" aria-label="Decrease font size">A−</button>
+        <button type="button" class="chip" (click)="adjustFont(0.1)" aria-label="Increase font size">A+</button>
+      </div>
+      <div class="control">
+        <label class="control-label" for="columns">Columns</label>
+        <select id="columns" class="select" [ngModel]="columns()" (ngModelChange)="columns.set(+$event)">
+          <option [ngValue]="0">Auto</option>
+          <option [ngValue]="1">1</option>
+          <option [ngValue]="2">2</option>
+          <option [ngValue]="3">3</option>
+          <option [ngValue]="4">4</option>
+        </select>
+      </div>
+    </div>
+  </div>
 
   <div class="search-section">
     <div class="search-box">
-      <input
-        type="text"
-        [(ngModel)]="searchTerm"
-        placeholder="Search by title, author, or year... (try 'javascript', 'martin', or '2008')"
-        class="search-input"
-      />
-      @if (!searchTerm()) {
-        <span class="search-hint"> 💡 Try: "clean code", "pragmatic", "knuth", "2008" </span>
-      }
+      <input type="text" [(ngModel)]="searchTerm" placeholder="Fuzzy search the loaded data… (typos welcome!)" class="search-input" />
     </div>
 
     <div class="results-container">
       <div class="results-header">
         <h2>
           @if (searchTerm()) {
-            Search Results
+            Search Results ({{ cards().length }})
+          } @else if (totalCount()) {
+            Showing {{ cards().length }} of {{ totalCount() }} — type to fuzzy-search all
           } @else {
-            All Books ({{ searchResults().length }})
+            No data loaded
           }
         </h2>
       </div>
 
-      <div class="book-grid">
-        @for (book of searchResults(); track book.isbn) {
-          <div class="book-card" [attr.data-lang]="book.language">
-            <div class="book-content">
-              <h3 class="book-title" [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
-              <p class="book-author" [innerHTML]="book.fuseJsHighlighted?.author || book.author"></p>
-              <div class="book-meta">
-                <span class="book-year" [innerHTML]="book.fuseJsHighlighted?.year || book.year"></span>
-                @if (book.fuseJsScore !== undefined && searchTerm()) {
-                  <span class="book-score"> Match: {{ (1 - book.fuseJsScore) * 100 | number: '1.0-0' }}% </span>
+      @if (loadError()) {
+        <div class="state state-error">{{ loadError() }}</div>
+      } @else if (loading()) {
+        <div class="state state-loading">Loading data…</div>
+      } @else {
+        <div class="book-grid" [class.compact]="density() === 'compact'">
+          @for (card of cards(); track card.id) {
+            <div class="book-card" [attr.data-lang]="card.lang">
+              <div class="book-content">
+                <h3 class="book-title" [innerHTML]="card.title"></h3>
+                @if (card.subtitle) {
+                  <p class="book-author" [innerHTML]="card.subtitle"></p>
                 }
+                <div class="book-meta">
+                  @if (card.meta) {
+                    <span class="book-year" [innerHTML]="card.meta"></span>
+                  }
+                  @if (card.matchPercent !== null) {
+                    <span class="book-score"> Match: {{ card.matchPercent }}% </span>
+                  }
+                </div>
               </div>
             </div>
-          </div>
-        } @empty {
-          <div class="no-results">
-            <p>No books found matching "{{ searchTerm() }}"</p>
-            <small>Try a different search term</small>
-          </div>
-        }
-      </div>
+          } @empty {
+            <div class="no-results">
+              <p>No results matching "{{ searchTerm() }}"</p>
+              <small>Try a different search term</small>
+            </div>
+          }
+        </div>
+      }
     </div>
   </div>
 

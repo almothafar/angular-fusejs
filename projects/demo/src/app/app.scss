@@ -56,7 +56,7 @@ $transition: all 0.3s ease;
 // Header
 header {
   text-align: center;
-  margin-bottom: $spacing-2xl;
+  margin-bottom: $spacing-xl;
 
   h1 {
     font-size: 3rem;
@@ -76,6 +76,119 @@ header {
     font-size: 0.875rem;
     color: $text-light;
     font-style: italic;
+  }
+}
+
+// Controls toolbar (source switch + view controls)
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  padding: $spacing-md $spacing-lg;
+  background: #fafafe;
+  border: 1px solid $border-light;
+  border-radius: $border-radius;
+}
+
+.source-switch,
+.view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.view-controls {
+  gap: $spacing-md;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.control-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $text-light;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+// Pill buttons reused by source switch + view controls
+.chip {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-pill;
+  background: $white;
+  color: $text-medium;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+
+  &.active {
+    @include gradient-bg;
+    color: $white;
+    border-color: transparent;
+  }
+}
+
+.select {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
+  background: $white;
+  color: $text-medium;
+  cursor: pointer;
+}
+
+// Remote seed query row
+.seed-row {
+  display: flex;
+  gap: $spacing-xs;
+  flex: 1 1 100%;
+  margin-top: $spacing-xs;
+}
+
+.seed-input {
+  flex: 1;
+  padding: $spacing-xs $spacing-md;
+  font-size: 1rem;
+  border: 2px solid $border-color;
+  border-radius: $border-radius;
+  outline: none;
+  transition: $transition;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+}
+
+.load-btn {
+  padding: $spacing-xs $spacing-lg;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: $border-radius;
+  @include gradient-bg;
+  color: $white;
+  cursor: pointer;
+  transition: $transition;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
   }
 }
 
@@ -105,13 +218,6 @@ header {
   }
 }
 
-.search-hint {
-  display: block;
-  margin-top: $spacing-xs;
-  font-size: 0.875rem;
-  color: $text-light;
-}
-
 // Results
 .results-container {
   margin-top: $spacing-xl;
@@ -125,10 +231,61 @@ header {
   }
 }
 
+// Loading / error states
+.state {
+  text-align: center;
+  padding: $spacing-2xl $spacing-xl;
+  border-radius: $border-radius;
+  font-size: 1.125rem;
+}
+
+.state-loading {
+  color: $text-medium;
+  background: $border-light;
+}
+
+.state-error {
+  color: #b3261e;
+  background: rgba(#b3261e, 0.08);
+  border: 1px solid rgba(#b3261e, 0.2);
+}
+
 .book-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(var(--columns, auto-fill), minmax(280px, 1fr));
   gap: $spacing-lg;
+
+  // Compact density: single-column rows, title + author inline
+  &.compact {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+
+    .book-card {
+      padding: $spacing-sm $spacing-md;
+    }
+
+    .book-content {
+      flex-direction: row;
+      align-items: baseline;
+      gap: $spacing-md;
+    }
+
+    .book-title {
+      font-size: calc(1rem * var(--font-scale, 1));
+    }
+
+    .book-author {
+      font-size: calc(0.875rem * var(--font-scale, 1));
+      margin: 0;
+    }
+
+    .book-meta {
+      margin: 0 0 0 auto;
+      padding: 0;
+      border: none;
+      flex-shrink: 0;
+    }
+  }
 }
 
 // Book card
@@ -163,7 +320,7 @@ header {
 }
 
 .book-title {
-  font-size: 1.25rem;
+  font-size: calc(1.25rem * var(--font-scale, 1));
   margin: 0;
   color: $text-dark;
   line-height: 1.4;
@@ -174,7 +331,7 @@ header {
 }
 
 .book-author {
-  font-size: 1rem;
+  font-size: calc(1rem * var(--font-scale, 1));
   margin: 0;
   color: $text-medium;
 
@@ -194,7 +351,7 @@ header {
 }
 
 .book-year {
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--font-scale, 1));
   color: $text-light;
 
   ::ng-deep em {
@@ -209,6 +366,7 @@ header {
   color: $white;
   border-radius: $border-radius-pill;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 // No results
@@ -265,6 +423,11 @@ footer {
     p {
       font-size: 1rem;
     }
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .book-grid {
