@@ -45,9 +45,9 @@ yarn-error.log
 testem.log
 /typings
 
-# Local-only planning/decision docs (never committed).
-# NOTE: /docs (ignored above) is the demo's PRODUCTION BUILD OUTPUT and is wiped
-# on every `build:docs`, so ADRs live in /.adr instead.
+# Local-only planning docs (never committed). ADRs/decisions are tracked as GitHub
+# issues now, not files. NOTE: /docs (ignored above) is the demo's PRODUCTION BUILD
+# OUTPUT, wiped on every `build:docs` — don't author docs there.
 /.adr
 DEMO_IDEAS.md
 

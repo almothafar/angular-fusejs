@@ -1,27 +1,19 @@
 import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
 import { AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
 import { BUILD_INFO } from './build-info';
 import { DemoRecord, DemoSource, valueAt } from './data-sources/demo-source';
 import { localBooksSource } from './data-sources/local-books.source';
 import { openLibrarySource } from './data-sources/open-library.source';
+import { SourceSwitcherComponent } from './components/source-switcher.component';
+import { ViewControlsComponent } from './components/view-controls.component';
+import { SearchBarComponent } from './components/search-bar.component';
+import { CardVM, ResultCardComponent } from './components/result-card.component';
 
 type DemoResult = AngularFuseJsResult<DemoRecord>;
-
-/** What the template renders for a single result — display is driven by the active source's mapping. */
-interface CardVM {
-  id: string;
-  /** May contain highlight <em> markup, so it is bound via [innerHTML]. */
-  title: string;
-  subtitle: string;
-  meta: string;
-  matchPercent: number | null;
-  lang: string | null;
-}
 
 /** How long to wait after the user stops typing before a remote source fetches. */
 const REMOTE_DEBOUNCE_MS = 800;
@@ -31,7 +23,7 @@ const MIN_REMOTE_QUERY_LENGTH = 3;
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, FormsModule],
+  imports: [DatePipe, SourceSwitcherComponent, ViewControlsComponent, SearchBarComponent, ResultCardComponent],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.scss',
@@ -54,11 +46,14 @@ export class App implements OnInit {
   /** The query whose results are currently loaded (for remote sources). */
   protected readonly loadedQuery = signal<string | null>(null);
 
-  // --- View controls ------------------------------------------------------
+  // --- View controls (two-way bound into <app-view-controls>) -------------
   protected readonly density = signal<'comfortable' | 'compact'>('comfortable');
   protected readonly fontScale = signal(1);
   /** 0 means "auto" (auto-fill columns). Ignored in compact mode. */
   protected readonly columns = signal(0);
+
+  /** Minimum characters before a remote source fetches (exposed to the template). */
+  protected readonly minRemoteChars = MIN_REMOTE_QUERY_LENGTH;
 
   constructor() {
     // Remote sources fetch as you type: debounced, only on change, only while a remote source is active.
@@ -118,14 +113,7 @@ export class App implements OnInit {
     }
   }
 
-  protected adjustFont(delta: number): void {
-    this.fontScale.update(value => Math.min(1.4, Math.max(0.8, +(value + delta).toFixed(2))));
-  }
-
   protected readonly totalCount = computed(() => this.items().length);
-
-  /** Minimum characters before a remote source fetches (exposed to the template). */
-  protected readonly minRemoteChars = MIN_REMOTE_QUERY_LENGTH;
 
   /** Remote source with nothing loaded yet and not enough characters typed — prompt the user. */
   protected readonly awaitingRemoteInput = computed(

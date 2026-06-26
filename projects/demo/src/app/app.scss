@@ -1,43 +1,4 @@
-// Variables
-$primary-color: #667eea;
-$secondary-color: #764ba2;
-$text-dark: #333;
-$text-medium: #666;
-$text-light: #999;
-$border-color: #e0e0e0;
-$border-light: #f0f0f0;
-$white: white;
-
-$spacing-xs: 0.5rem;
-$spacing-sm: 0.75rem;
-$spacing-md: 1rem;
-$spacing-lg: 1.5rem;
-$spacing-xl: 2rem;
-$spacing-2xl: 3rem;
-$spacing-3xl: 4rem;
-
-$border-radius: 12px;
-$border-radius-pill: 20px;
-
-$transition: all 0.3s ease;
-
-// Mixins
-@mixin gradient-text {
-  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-@mixin gradient-bg {
-  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
-}
-
-@mixin highlight-text($weight: 700, $style: normal) {
-  @include gradient-text;
-  font-style: $style;
-  font-weight: $weight;
-}
+@use './theme' as *;
 
 // Host styles
 :host {
@@ -71,16 +32,7 @@ header {
   }
 }
 
-// Per-source note under the search field (always present so switching sources doesn't shift layout)
-.source-note {
-  display: block;
-  margin-top: $spacing-xs;
-  font-size: 0.8rem;
-  color: $text-light;
-  font-style: italic;
-}
-
-// Controls toolbar (source switch + view controls)
+// Controls panel: source switch + view controls (row 1) and the search field (row 2)
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -94,134 +46,9 @@ header {
   border-radius: $border-radius;
 }
 
-.source-switch,
-.view-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: $spacing-xs;
-}
-
-.view-controls {
-  gap: $spacing-md;
-}
-
-.control {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-}
-
-.control-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: $text-light;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-// Pill buttons reused by source switch + view controls
-.chip {
-  padding: 0.4rem 0.9rem;
-  font-size: 0.9rem;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-pill;
-  background: $white;
-  color: $text-medium;
-  cursor: pointer;
-  transition: $transition;
-
-  &:hover {
-    border-color: $primary-color;
-    color: $primary-color;
-  }
-
-  &.active {
-    @include gradient-bg;
-    color: $white;
-    border-color: transparent;
-  }
-}
-
-.select {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.9rem;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
-  background: $white;
-  color: $text-medium;
-  cursor: pointer;
-}
-
-// Disabled control (e.g. columns while in compact list view)
-.control.disabled {
-  opacity: 0.45;
-}
-
-.select:disabled {
-  cursor: not-allowed;
-}
-
-// Search field — full-width row INSIDE the controls panel (below the view controls)
-.search-row {
-  flex: 1 1 100%;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-xs;
-}
-
-.search-input {
-  width: 100%;
-  padding: $spacing-md $spacing-lg;
-  font-size: 1.125rem;
-  border: 2px solid $border-color;
-  border-radius: $border-radius;
-  outline: none;
-  transition: $transition;
-  box-sizing: border-box;
-
-  &:focus {
-    border-color: $primary-color;
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
-  }
-}
-
-// Inline "searching…" status under the search field
-.search-status {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  margin-top: $spacing-xs;
-  font-size: 0.875rem;
-  color: $primary-color;
-}
-
-.spinner {
-  width: 0.9rem;
-  height: 0.9rem;
-  border: 2px solid rgba($primary-color, 0.3);
-  border-top-color: $primary-color;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 // Results
 .results-container {
   margin-top: $spacing-xl;
-}
-
-// Scrollable results box: the inner box scrolls instead of the whole page
-.results-scroll {
-  max-height: 65vh;
-  overflow-y: auto;
-  padding: $spacing-xs;
-  border-radius: $border-radius;
 }
 
 .results-header {
@@ -232,17 +59,31 @@ header {
   }
 }
 
-// Loading / error states
+// Scrollable results box: the inner box scrolls instead of the whole page
+.results-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+  padding: $spacing-xs;
+  border-radius: $border-radius;
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, auto-fill), minmax(280px, 1fr));
+  gap: $spacing-lg;
+
+  &.compact {
+    grid-template-columns: 1fr;
+    gap: $spacing-xs;
+  }
+}
+
+// Loading / prompt / error states
 .state {
   text-align: center;
   padding: $spacing-2xl $spacing-xl;
   border-radius: $border-radius;
   font-size: 1.125rem;
-}
-
-.state-loading {
-  color: $text-medium;
-  background: $border-light;
 }
 
 .state-error {
@@ -258,132 +99,8 @@ header {
 
   p {
     font-size: 1.25rem;
-    margin: 0 0 $spacing-xs;
+    margin: 0;
   }
-
-  small {
-    font-size: 0.875rem;
-    color: $text-light;
-  }
-}
-
-.book-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--columns, auto-fill), minmax(280px, 1fr));
-  gap: $spacing-lg;
-
-  // Compact density: single-column rows, title + author inline
-  &.compact {
-    grid-template-columns: 1fr;
-    gap: $spacing-xs;
-
-    .book-card {
-      padding: $spacing-sm $spacing-md;
-    }
-
-    .book-content {
-      flex-direction: row;
-      align-items: baseline;
-      gap: $spacing-md;
-    }
-
-    .book-title {
-      font-size: calc(1rem * var(--font-scale, 1));
-    }
-
-    .book-author {
-      font-size: calc(0.875rem * var(--font-scale, 1));
-      margin: 0;
-    }
-
-    .book-meta {
-      margin: 0 0 0 auto;
-      padding: 0;
-      border: none;
-      flex-shrink: 0;
-    }
-  }
-}
-
-// Book card
-.book-card {
-  background: $white;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
-  padding: $spacing-lg;
-  transition: $transition;
-  cursor: pointer;
-
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-    border-color: $primary-color;
-  }
-
-  // RTL support for Arabic books
-  &[data-lang='ar'] {
-    direction: rtl;
-
-    .book-meta {
-      flex-direction: row-reverse;
-    }
-  }
-}
-
-.book-content {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.book-title {
-  font-size: calc(1.25rem * var(--font-scale, 1));
-  margin: 0;
-  color: $text-dark;
-  line-height: 1.4;
-
-  ::ng-deep em {
-    @include highlight-text(700, normal);
-  }
-}
-
-.book-author {
-  font-size: calc(1rem * var(--font-scale, 1));
-  margin: 0;
-  color: $text-medium;
-
-  ::ng-deep em {
-    @include highlight-text(600, normal);
-  }
-}
-
-.book-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: $spacing-md;
-  margin-top: $spacing-xs;
-  padding-top: $spacing-sm;
-  border-top: 1px solid $border-light;
-}
-
-.book-year {
-  font-size: calc(0.875rem * var(--font-scale, 1));
-  color: $text-light;
-
-  ::ng-deep em {
-    @include highlight-text(700, italic);
-  }
-}
-
-.book-score {
-  font-size: 0.875rem;
-  padding: 0.25rem $spacing-sm;
-  @include gradient-bg;
-  color: $white;
-  border-radius: $border-radius-pill;
-  font-weight: 500;
-  white-space: nowrap;
 }
 
 // No results
@@ -432,14 +149,12 @@ footer {
     padding: $spacing-md;
   }
 
-  header {
-    h1 {
-      font-size: 2rem;
-    }
+  header h1 {
+    font-size: 2rem;
+  }
 
-    p {
-      font-size: 1rem;
-    }
+  header p {
+    font-size: 1rem;
   }
 
   .controls {

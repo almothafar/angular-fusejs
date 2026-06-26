@@ -1,0 +1,7 @@
+@use '../theme' as *;
+
+.source-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}

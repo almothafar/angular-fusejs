@@ -1,0 +1,54 @@
+@use '../theme' as *;
+
+.search-row {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.search-input {
+  width: 100%;
+  padding: $spacing-md $spacing-lg;
+  font-size: 1.125rem;
+  border: 2px solid $border-color;
+  border-radius: $border-radius;
+  outline: none;
+  transition: $transition;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+}
+
+.search-status {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: 0.875rem;
+  color: $primary-color;
+}
+
+.spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid rgba($primary-color, 0.3);
+  border-top-color: $primary-color;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Per-source note (always present so switching sources doesn't shift layout)
+.source-note {
+  font-size: 0.8rem;
+  color: $text-light;
+  font-style: italic;
+}
