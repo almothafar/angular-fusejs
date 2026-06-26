@@ -23,6 +23,8 @@ export interface DemoSource {
   readonly kind: 'local' | 'remote';
   /** Placeholder for the unified search field. */
   readonly searchPlaceholder: string;
+  /** Short note shown under the search field (always present, so switching sources doesn't shift layout). */
+  readonly note: string;
   readonly mapping: FieldMapping;
   /** Load the dataset. `query` drives remote sources; local sources ignore it. */
   load(http: HttpClient, query?: string): Promise<DemoRecord[]>;

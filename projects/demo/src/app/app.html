@@ -2,9 +2,6 @@
   <header>
     <h1>🔍 {{ title() }}</h1>
     <p>Fuzzy-search local data or a live remote API — all matching runs client-side via Fuse.js</p>
-    @if (activeSource().kind === 'local') {
-      <small class="disclaimer"> ⚠️ Local book dataset generated with AI assistance — data may contain inaccuracies </small>
-    }
   </header>
 
   <div class="controls">
@@ -55,6 +52,7 @@
       @if (searching()) {
         <div class="search-status"><span class="spinner"></span> Searching…</div>
       }
+      <small class="source-note">{{ activeSource().note }}</small>
     </div>
 
     <div class="results-container">
@@ -62,14 +60,17 @@
         <div class="state state-error">{{ loadError() }}</div>
       } @else if (awaitingRemoteInput()) {
         <div class="state state-prompt">
-          <p>Type above to search {{ activeSource().label }}</p>
-          <small>Results are fetched live, then fuzzy-ranked and highlighted by the library.</small>
+          <p>Type at least {{ minRemoteChars }} characters to search {{ activeSource().label }}</p>
         </div>
       } @else {
         <div class="results-header">
           <h2>
             @if (searchTerm().trim()) {
-              {{ cards().length }} {{ cards().length === 1 ? 'result' : 'results' }}
+              @if (searching() && cards().length === 0) {
+                Searching…
+              } @else {
+                {{ cards().length }} {{ cards().length === 1 ? 'result' : 'results' }}
+              }
             } @else {
               Showing all {{ totalCount() }}
             }

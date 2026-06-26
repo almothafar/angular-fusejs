@@ -26,6 +26,9 @@ interface CardVM {
 /** How long to wait after the user stops typing before a remote source fetches. */
 const REMOTE_DEBOUNCE_MS = 800;
 
+/** Minimum characters before a remote source will fetch. */
+const MIN_REMOTE_QUERY_LENGTH = 3;
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule, FormsModule],
@@ -68,7 +71,7 @@ export class App implements OnInit {
         takeUntilDestroyed(),
       )
       .subscribe(term => {
-        if (term) {
+        if (term.length >= MIN_REMOTE_QUERY_LENGTH) {
           void this.loadFrom(term);
         } else {
           this.items.set([]);
@@ -121,21 +124,24 @@ export class App implements OnInit {
 
   protected readonly totalCount = computed(() => this.items().length);
 
-  /** Whether the active remote source has nothing loaded yet (prompt the user to type). */
+  /** Minimum characters before a remote source fetches (exposed to the template). */
+  protected readonly minRemoteChars = MIN_REMOTE_QUERY_LENGTH;
+
+  /** Remote source with nothing loaded yet and not enough characters typed — prompt the user. */
   protected readonly awaitingRemoteInput = computed(
-    () => this.activeSource().kind === 'remote' && !this.searchTerm().trim() && this.items().length === 0,
+    () => this.activeSource().kind === 'remote' && this.items().length === 0 && this.searchTerm().trim().length < MIN_REMOTE_QUERY_LENGTH,
   );
 
   /**
-   * True while a fetch is in flight OR a remote query has been typed but not yet fetched
-   * (covers the debounce window so the user gets immediate feedback).
+   * True while a fetch is in flight OR a remote query (≥ min length) has been typed but not yet
+   * fetched — covers the debounce window so the user gets immediate feedback.
    */
   protected readonly searching = computed(() => {
     if (this.loading()) {
       return true;
     }
     const term = this.searchTerm().trim();
-    return this.activeSource().kind === 'remote' && !!term && term !== this.loadedQuery();
+    return this.activeSource().kind === 'remote' && term.length >= MIN_REMOTE_QUERY_LENGTH && term !== this.loadedQuery();
   });
 
   /** Raw Fuse results, or the whole loaded dataset when there is no search term. */

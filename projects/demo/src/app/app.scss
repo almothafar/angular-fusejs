@@ -69,14 +69,15 @@ header {
     color: $text-medium;
     margin: 0;
   }
+}
 
-  .disclaimer {
-    display: block;
-    margin-top: $spacing-md;
-    font-size: 0.875rem;
-    color: $text-light;
-    font-style: italic;
-  }
+// Per-source note under the search field (always present so switching sources doesn't shift layout)
+.source-note {
+  display: block;
+  margin-top: $spacing-xs;
+  font-size: 0.8rem;
+  color: $text-light;
+  font-style: italic;
 }
 
 // Controls toolbar (source switch + view controls)

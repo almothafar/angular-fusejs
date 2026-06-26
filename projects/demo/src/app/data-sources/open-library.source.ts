@@ -21,6 +21,7 @@ export const openLibrarySource: DemoSource = {
   label: '🌐 Open Library',
   kind: 'remote',
   searchPlaceholder: 'Search Open Library… fetches as you type',
+  note: 'Results are fetched live from Open Library, then fuzzy-ranked & highlighted by the library.',
   mapping: {
     keys: ['title', 'author', 'year'],
     titlePath: 'title',

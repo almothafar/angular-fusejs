@@ -8,6 +8,7 @@ export const localBooksSource: DemoSource = {
   label: '📚 Local books',
   kind: 'local',
   searchPlaceholder: 'Fuzzy-search the books… (typos welcome!)',
+  note: '⚠️ Local book dataset generated with AI assistance — data may contain inaccuracies',
   mapping: {
     keys: ['title', 'author', 'year'],
     titlePath: 'title',
