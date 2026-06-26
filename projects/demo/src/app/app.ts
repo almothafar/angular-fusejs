@@ -1,5 +1,6 @@
-import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { NavigationEnd, PRIMARY_OUTLET, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
@@ -28,11 +29,14 @@ const MIN_REMOTE_QUERY_LENGTH = 3;
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.scss',
 })
-export class App implements OnInit {
+export class App {
   private http = inject(HttpClient);
+  private router = inject(Router);
   private fuseService = new AngularFuseJsService<DemoRecord>();
   /** Monotonic load counter — only the latest load may mutate state (discards stale responses). */
   private requestSeq = 0;
+  /** Guards the first route sync so the default source still loads even when its id matches. */
+  private initialized = false;
 
   protected readonly title = signal('Angular FuseJS Demo');
   protected readonly buildTime = BUILD_INFO.timestamp;
@@ -79,17 +83,44 @@ export class App implements OnInit {
           this.loadedQuery.set(null);
         }
       });
+
+    // The URL is the source of truth: the switcher navigates, and every navigation
+    // (including the initial one and back/forward) drives the active source from here.
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.syncSourceFromUrl());
   }
 
-  ngOnInit(): void {
-    // Default source is local books — load the full set immediately.
-    void this.loadFrom(undefined);
-  }
-
+  /** The switcher only navigates; `syncSourceFromUrl` does the actual switch on NavigationEnd. */
   protected selectSource(source: DemoSource): void {
     if (source === this.activeSource()) {
       return;
     }
+    void this.router.navigate(['/', source.id]);
+  }
+
+  /** Resolve the `:sourceId` segment to a source and activate it (normalizing unknown ids). */
+  private syncSourceFromUrl(): void {
+    const tree = this.router.parseUrl(this.router.url);
+    const id = tree.root.children[PRIMARY_OUTLET]?.segments[0]?.path ?? '';
+    const source = this.sources.find(s => s.id === id);
+    if (!source) {
+      // Empty / unknown hash → normalize to the default source (replace, don't stack history).
+      void this.router.navigate(['/', this.sources[0].id], { replaceUrl: true });
+      return;
+    }
+    this.activateSource(source);
+  }
+
+  private activateSource(source: DemoSource): void {
+    // Skip redundant re-activation, but always run once so the initial source loads.
+    if (source === this.activeSource() && this.initialized) {
+      return;
+    }
+    this.initialized = true;
     this.activeSource.set(source);
     this.searchTerm.set('');
     this.loadError.set(null);

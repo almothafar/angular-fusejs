@@ -2,7 +2,10 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
+import { provideLocationMocks } from '@angular/common/testing';
 import { App } from './app';
+import { routes } from './app.routes';
 
 describe('App', () => {
   let httpMock: HttpTestingController;
@@ -10,14 +13,20 @@ describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter(routes),
+        provideLocationMocks(),
+      ],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => {
-    // ngOnInit loads the default local source (books.json); answer any such
-    // request with an empty list so no real request escapes, then verify.
+    // Navigating to the default route (#/books) loads the local source (books.json);
+    // answer any such request with an empty list so no real request escapes, then verify.
     httpMock.match('books.json').forEach(req => req.flush([]));
     httpMock.verify();
   });
