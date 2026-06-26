@@ -4,7 +4,38 @@
   display: block;
 }
 
+// Optional cover thumbnail (shown only when the source provides images).
+// A shimmer skeleton sits behind the image and is covered once the image paints.
+.book-cover {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef0f6 25%, #e2e6f0 37%, #eef0f6 63%);
+  background-size: 400% 100%;
+  animation: cover-shimmer 1.4s ease infinite;
+
+  img {
+    display: block;
+    width: 60px;
+    height: 88px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: transparent;
+  }
+}
+
+@keyframes cover-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
 .book-card {
+  display: flex;
+  gap: $spacing-md;
+  align-items: flex-start;
   background: $white;
   border: 1px solid $border-color;
   border-radius: $border-radius;
@@ -32,6 +63,13 @@
   // Compact density: a single inline row instead of a card
   &.compact {
     padding: $spacing-sm $spacing-md;
+    align-items: center;
+
+    .book-cover img {
+      width: 34px;
+      height: 50px;
+      border-radius: 4px;
+    }
 
     .book-content {
       flex-direction: row;
@@ -58,6 +96,8 @@
 }
 
 .book-content {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;

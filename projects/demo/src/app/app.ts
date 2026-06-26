@@ -31,6 +31,8 @@ const MIN_REMOTE_QUERY_LENGTH = 3;
 export class App implements OnInit {
   private http = inject(HttpClient);
   private fuseService = new AngularFuseJsService<DemoRecord>();
+  /** Monotonic load counter — only the latest load may mutate state (discards stale responses). */
+  private requestSeq = 0;
 
   protected readonly title = signal('Angular FuseJS Demo');
   protected readonly buildTime = BUILD_INFO.timestamp;
@@ -69,6 +71,9 @@ export class App implements OnInit {
         if (term.length >= MIN_REMOTE_QUERY_LENGTH) {
           void this.loadFrom(term);
         } else {
+          // Below the threshold: invalidate any in-flight load and reset to the prompt.
+          this.requestSeq++;
+          this.loading.set(false);
           this.items.set([]);
           this.loadError.set(null);
           this.loadedQuery.set(null);
@@ -92,24 +97,36 @@ export class App implements OnInit {
     if (source.kind === 'local') {
       void this.loadFrom(undefined);
     } else {
-      // Remote: start empty and wait for the user to type (no prefetch).
+      // Remote: invalidate any in-flight load and wait for the user to type (no prefetch).
+      this.requestSeq++;
+      this.loading.set(false);
       this.items.set([]);
     }
   }
 
   private async loadFrom(query: string | undefined): Promise<void> {
     const source = this.activeSource();
+    const seq = ++this.requestSeq;
     this.loading.set(true);
     this.loadError.set(null);
     try {
       const data = await source.load(this.http, query);
+      if (seq !== this.requestSeq) {
+        return; // a newer load (or a source switch) superseded this one — discard
+      }
       this.items.set(data);
-      this.loadedQuery.set(query ?? null);
     } catch {
+      if (seq !== this.requestSeq) {
+        return;
+      }
       this.items.set([]);
       this.loadError.set('Could not load data. Check your connection and try again.');
     } finally {
-      this.loading.set(false);
+      // Only the latest load settles the shared loading/searching state.
+      if (seq === this.requestSeq) {
+        this.loading.set(false);
+        this.loadedQuery.set(query ?? null);
+      }
     }
   }
 
@@ -160,8 +177,11 @@ export class App implements OnInit {
 
   /** View models for the template, projected through the active source's mapping. */
   protected readonly cards = computed<CardVM[]>(() => {
-    const mapping = this.activeSource().mapping;
+    const source = this.activeSource();
+    const mapping = source.mapping;
     const hasTerm = !!this.searchTerm().trim();
+    // Only sources that resolve images get a cover slot; '' within that means "use the placeholder".
+    const resolveImage = source.imageUrl;
     return this.results().map((result, index) => {
       const highlighted = (result.fuseJsHighlighted ?? result) as DemoRecord;
       const score = result.fuseJsScore;
@@ -173,6 +193,7 @@ export class App implements OnInit {
         meta: mapping.metaPath ? valueAt(highlighted, mapping.metaPath) : '',
         matchPercent: hasTerm && score !== undefined ? Math.round((1 - score) * 100) : null,
         lang: typeof lang === 'string' ? lang : null,
+        imageUrl: resolveImage ? (resolveImage(result) ?? '') : null,
       };
     });
   });

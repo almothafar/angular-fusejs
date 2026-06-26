@@ -33,7 +33,12 @@ header {
   h1 {
     font-size: 3rem;
     margin: 0 0 $spacing-md;
-    @include gradient-text;
+
+    // Gradient applies to the title text only — keep the emoji out of the
+    // background-clip: text trick so it renders in its real colors.
+    .title {
+      @include gradient-text;
+    }
   }
 
   p {
@@ -93,7 +98,9 @@ header {
 
 .book-grid {
   display: grid;
-  grid-template-columns: repeat(var(--columns, auto-fill), minmax(280px, 1fr));
+  // Auto mode keeps a 280px floor so auto-fill can pick a count; an explicit column
+  // count sets --col-min: 0 so the columns shrink to fit (no horizontal overflow).
+  grid-template-columns: repeat(var(--columns, auto-fill), minmax(var(--col-min, 280px), 1fr));
   gap: $spacing-lg;
 
   &.compact {
@@ -153,12 +160,12 @@ footer {
   justify-content: center;
   gap: $spacing-xs $spacing-sm;
   padding: $spacing-sm $spacing-lg;
-  background: #2b2d42;
-  color: rgba($white, 0.75);
+  background: $footer-bg;
+  color: $footer-text;
   font-size: 0.85rem;
 
   a {
-    color: #c3cbff;
+    color: $footer-link;
     text-decoration: none;
     font-weight: 500;
 
