@@ -5,7 +5,9 @@
   [style.--col-min]="columns() ? '0' : null"
 >
   <header>
-    <h1>🔍 {{ title() }}</h1>
+    <h1>
+      <span class="logo" aria-hidden="true">🔍</span> <span class="title">{{ title() }}</span>
+    </h1>
     <p>Fuzzy-search local data or a live remote API — all matching runs client-side via Fuse.js</p>
   </header>
 
