@@ -162,14 +162,12 @@ header {
   cursor: not-allowed;
 }
 
-// Search section
-.search-section {
-  margin-bottom: $spacing-xl;
-}
-
-.search-box {
-  margin-bottom: $spacing-xl;
-  position: relative;
+// Search field — full-width row INSIDE the controls panel (below the view controls)
+.search-row {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
 }
 
 .search-input {

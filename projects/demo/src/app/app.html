@@ -44,70 +44,68 @@
         </select>
       </div>
     </div>
-  </div>
 
-  <div class="search-section">
-    <div class="search-box">
-      <input type="text" [(ngModel)]="searchTerm" [placeholder]="activeSource().searchPlaceholder" class="search-input" />
+    <div class="search-row">
+      <input type="text" class="search-input" [(ngModel)]="searchTerm" [placeholder]="activeSource().searchPlaceholder" />
       @if (searching()) {
         <div class="search-status"><span class="spinner"></span> Searching…</div>
       }
       <small class="source-note">{{ activeSource().note }}</small>
     </div>
+  </div>
 
-    <div class="results-container">
-      @if (loadError()) {
-        <div class="state state-error">{{ loadError() }}</div>
-      } @else if (awaitingRemoteInput()) {
-        <div class="state state-prompt">
-          <p>Type at least {{ minRemoteChars }} characters to search {{ activeSource().label }}</p>
-        </div>
-      } @else {
-        <div class="results-header">
-          <h2>
-            @if (searchTerm().trim()) {
-              @if (searching() && cards().length === 0) {
-                Searching…
-              } @else {
-                {{ cards().length }} {{ cards().length === 1 ? 'result' : 'results' }}
-              }
+  <div class="results-container">
+    @if (loadError()) {
+      <div class="state state-error">{{ loadError() }}</div>
+    } @else if (awaitingRemoteInput()) {
+      <div class="state state-prompt">
+        <p>Type at least {{ minRemoteChars }} characters to search {{ activeSource().label }}</p>
+      </div>
+    } @else {
+      <div class="results-header">
+        <h2>
+          @if (searchTerm().trim()) {
+            @if (searching() && cards().length === 0) {
+              Searching…
             } @else {
-              Showing all {{ totalCount() }}
+              {{ cards().length }} {{ cards().length === 1 ? 'result' : 'results' }}
             }
-          </h2>
-        </div>
+          } @else {
+            Showing all {{ totalCount() }}
+          }
+        </h2>
+      </div>
 
-        <div class="results-scroll">
-          <div class="book-grid" [class.compact]="density() === 'compact'">
-            @for (card of cards(); track card.id) {
-              <div class="book-card" [attr.data-lang]="card.lang">
-                <div class="book-content">
-                  <h3 class="book-title" [innerHTML]="card.title"></h3>
-                  @if (card.subtitle) {
-                    <p class="book-author" [innerHTML]="card.subtitle"></p>
+      <div class="results-scroll">
+        <div class="book-grid" [class.compact]="density() === 'compact'">
+          @for (card of cards(); track card.id) {
+            <div class="book-card" [attr.data-lang]="card.lang">
+              <div class="book-content">
+                <h3 class="book-title" [innerHTML]="card.title"></h3>
+                @if (card.subtitle) {
+                  <p class="book-author" [innerHTML]="card.subtitle"></p>
+                }
+                <div class="book-meta">
+                  @if (card.meta) {
+                    <span class="book-year" [innerHTML]="card.meta"></span>
                   }
-                  <div class="book-meta">
-                    @if (card.meta) {
-                      <span class="book-year" [innerHTML]="card.meta"></span>
-                    }
-                    @if (card.matchPercent !== null) {
-                      <span class="book-score"> Match: {{ card.matchPercent }}% </span>
-                    }
-                  </div>
+                  @if (card.matchPercent !== null) {
+                    <span class="book-score"> Match: {{ card.matchPercent }}% </span>
+                  }
                 </div>
               </div>
-            } @empty {
-              @if (!searching()) {
-                <div class="no-results">
-                  <p>No results matching "{{ searchTerm() }}"</p>
-                  <small>Try a different search term</small>
-                </div>
-              }
+            </div>
+          } @empty {
+            @if (!searching()) {
+              <div class="no-results">
+                <p>No results matching "{{ searchTerm() }}"</p>
+                <small>Try a different search term</small>
+              </div>
             }
-          </div>
+          }
         </div>
-      }
-    </div>
+      </div>
+    }
   </div>
 
   <footer>
