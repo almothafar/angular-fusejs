@@ -144,28 +144,31 @@ header {
   }
 }
 
-// Footer — pinned at the bottom of the viewport-height column
+// Footer — a compact, full-width dark bar flush at the very bottom of the viewport
 footer {
   flex: 0 0 auto;
-  margin-top: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1px solid $border-color;
-  text-align: center;
-  color: $text-medium;
-  font-size: 0.9rem;
-
-  p {
-    margin: 0.2rem 0;
-  }
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs $spacing-sm;
+  padding: $spacing-sm $spacing-lg;
+  background: #2b2d42;
+  color: rgba($white, 0.75);
+  font-size: 0.85rem;
 
   a {
-    color: $primary-color;
+    color: #c3cbff;
     text-decoration: none;
     font-weight: 500;
 
     &:hover {
       text-decoration: underline;
     }
+  }
+
+  .sep {
+    opacity: 0.4;
   }
 }
 

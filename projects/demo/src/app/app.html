@@ -53,21 +53,21 @@
       </div>
     }
   </div>
-
-  <footer>
-    <p>
-      Built with
-      <a href="https://angular.dev" target="_blank">Angular 22</a>
-      +
-      <a href="https://www.npmjs.com/package/@almothafar/angular-fusejs" target="_blank">@almothafar/angular-fusejs</a>
-      +
-      <a href="https://fusejs.io" target="_blank">Fuse.js</a>
-    </p>
-    <p>
-      <a href="https://github.com/almothafar/angular-fusejs" target="_blank"> View on GitHub </a>
-    </p>
-    @if (buildTime) {
-      <p class="build-info">Demo last built: {{ buildTime | date: 'yyyy-MM-dd HH:mm' : 'UTC' }} UTC</p>
-    }
-  </footer>
 </div>
+
+<footer>
+  <span>
+    Built with
+    <a href="https://angular.dev" target="_blank">Angular 22</a>
+    +
+    <a href="https://www.npmjs.com/package/@almothafar/angular-fusejs" target="_blank">@almothafar/angular-fusejs</a>
+    +
+    <a href="https://fusejs.io" target="_blank">Fuse.js</a>
+  </span>
+  <span class="sep">·</span>
+  <a href="https://github.com/almothafar/angular-fusejs" target="_blank">GitHub</a>
+  @if (buildTime) {
+    <span class="sep">·</span>
+    <span>Built {{ buildTime | date: 'yyyy-MM-dd HH:mm' : 'UTC' }} UTC</span>
+  }
+</footer>
