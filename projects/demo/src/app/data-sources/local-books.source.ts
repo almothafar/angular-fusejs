@@ -7,6 +7,7 @@ export const localBooksSource: DemoSource = {
   id: 'books',
   label: '📚 Local books',
   kind: 'local',
+  searchPlaceholder: 'Fuzzy-search the books… (typos welcome!)',
   mapping: {
     keys: ['title', 'author', 'year'],
     titlePath: 'title',

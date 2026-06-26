@@ -1,7 +1,9 @@
 import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
 import { AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
 import { BUILD_INFO } from './build-info';
 import { DemoRecord, DemoSource, valueAt } from './data-sources/demo-source';
@@ -21,8 +23,8 @@ interface CardVM {
   lang: string | null;
 }
 
-/** When there is no search term we show a capped sample instead of the whole dataset. */
-const EMPTY_SAMPLE_SIZE = 24;
+/** How long to wait after the user stops typing before a remote source fetches. */
+const REMOTE_DEBOUNCE_MS = 800;
 
 @Component({
   selector: 'app-root',
@@ -43,19 +45,42 @@ export class App implements OnInit {
   protected readonly activeSource = signal<DemoSource>(this.sources[0]);
 
   protected readonly searchTerm = signal('');
-  protected readonly seedQuery = signal('');
   protected readonly items = signal<DemoRecord[]>([]);
   protected readonly loading = signal(false);
   protected readonly loadError = signal<string | null>(null);
+  /** The query whose results are currently loaded (for remote sources). */
+  protected readonly loadedQuery = signal<string | null>(null);
 
   // --- View controls ------------------------------------------------------
   protected readonly density = signal<'comfortable' | 'compact'>('comfortable');
   protected readonly fontScale = signal(1);
-  /** 0 means "auto" (auto-fill columns). */
+  /** 0 means "auto" (auto-fill columns). Ignored in compact mode. */
   protected readonly columns = signal(0);
 
+  constructor() {
+    // Remote sources fetch as you type: debounced, only on change, only while a remote source is active.
+    toObservable(this.searchTerm)
+      .pipe(
+        map(term => term.trim()),
+        debounceTime(REMOTE_DEBOUNCE_MS),
+        distinctUntilChanged(),
+        filter(() => this.activeSource().kind === 'remote'),
+        takeUntilDestroyed(),
+      )
+      .subscribe(term => {
+        if (term) {
+          void this.loadFrom(term);
+        } else {
+          this.items.set([]);
+          this.loadError.set(null);
+          this.loadedQuery.set(null);
+        }
+      });
+  }
+
   ngOnInit(): void {
-    void this.reload();
+    // Default source is local books — load the full set immediately.
+    void this.loadFrom(undefined);
   }
 
   protected selectSource(source: DemoSource): void {
@@ -64,17 +89,24 @@ export class App implements OnInit {
     }
     this.activeSource.set(source);
     this.searchTerm.set('');
-    this.seedQuery.set('');
-    void this.reload();
+    this.loadError.set(null);
+    this.loadedQuery.set(null);
+    if (source.kind === 'local') {
+      void this.loadFrom(undefined);
+    } else {
+      // Remote: start empty and wait for the user to type (no prefetch).
+      this.items.set([]);
+    }
   }
 
-  protected async reload(): Promise<void> {
+  private async loadFrom(query: string | undefined): Promise<void> {
     const source = this.activeSource();
     this.loading.set(true);
     this.loadError.set(null);
     try {
-      const data = await source.load(this.http, this.seedQuery() || undefined);
+      const data = await source.load(this.http, query);
       this.items.set(data);
+      this.loadedQuery.set(query ?? null);
     } catch {
       this.items.set([]);
       this.loadError.set('Could not load data. Check your connection and try again.');
@@ -89,12 +121,30 @@ export class App implements OnInit {
 
   protected readonly totalCount = computed(() => this.items().length);
 
-  /** Raw Fuse results, or a capped sample of the dataset when there is no search term. */
+  /** Whether the active remote source has nothing loaded yet (prompt the user to type). */
+  protected readonly awaitingRemoteInput = computed(
+    () => this.activeSource().kind === 'remote' && !this.searchTerm().trim() && this.items().length === 0,
+  );
+
+  /**
+   * True while a fetch is in flight OR a remote query has been typed but not yet fetched
+   * (covers the debounce window so the user gets immediate feedback).
+   */
+  protected readonly searching = computed(() => {
+    if (this.loading()) {
+      return true;
+    }
+    const term = this.searchTerm().trim();
+    return this.activeSource().kind === 'remote' && !!term && term !== this.loadedQuery();
+  });
+
+  /** Raw Fuse results, or the whole loaded dataset when there is no search term. */
   private readonly results = computed<DemoResult[]>(() => {
-    const term = this.searchTerm();
+    const term = this.searchTerm().trim();
     const list = this.items();
     if (!term) {
-      return list.slice(0, EMPTY_SAMPLE_SIZE) as DemoResult[];
+      // Show everything (the results box scrolls) — no cap, no pagination.
+      return list as DemoResult[];
     }
     return this.fuseService.searchList(list, term, {
       keys: this.activeSource().mapping.keys,
@@ -117,7 +167,7 @@ export class App implements OnInit {
   /** View models for the template, projected through the active source's mapping. */
   protected readonly cards = computed<CardVM[]>(() => {
     const mapping = this.activeSource().mapping;
-    const hasTerm = !!this.searchTerm();
+    const hasTerm = !!this.searchTerm().trim();
     return this.results().map((result, index) => {
       const highlighted = (result.fuseJsHighlighted ?? result) as DemoRecord;
       const score = result.fuseJsScore;

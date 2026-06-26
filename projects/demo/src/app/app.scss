@@ -152,44 +152,13 @@ header {
   cursor: pointer;
 }
 
-// Remote seed query row
-.seed-row {
-  display: flex;
-  gap: $spacing-xs;
-  flex: 1 1 100%;
-  margin-top: $spacing-xs;
+// Disabled control (e.g. columns while in compact list view)
+.control.disabled {
+  opacity: 0.45;
 }
 
-.seed-input {
-  flex: 1;
-  padding: $spacing-xs $spacing-md;
-  font-size: 1rem;
-  border: 2px solid $border-color;
-  border-radius: $border-radius;
-  outline: none;
-  transition: $transition;
-
-  &:focus {
-    border-color: $primary-color;
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
-  }
-}
-
-.load-btn {
-  padding: $spacing-xs $spacing-lg;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: $border-radius;
-  @include gradient-bg;
-  color: $white;
-  cursor: pointer;
-  transition: $transition;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: progress;
-  }
+.select:disabled {
+  cursor: not-allowed;
 }
 
 // Search section
@@ -218,9 +187,42 @@ header {
   }
 }
 
+// Inline "searching…" status under the search field
+.search-status {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-top: $spacing-xs;
+  font-size: 0.875rem;
+  color: $primary-color;
+}
+
+.spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid rgba($primary-color, 0.3);
+  border-top-color: $primary-color;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 // Results
 .results-container {
   margin-top: $spacing-xl;
+}
+
+// Scrollable results box: the inner box scrolls instead of the whole page
+.results-scroll {
+  max-height: 65vh;
+  overflow-y: auto;
+  padding: $spacing-xs;
+  border-radius: $border-radius;
 }
 
 .results-header {
@@ -248,6 +250,22 @@ header {
   color: #b3261e;
   background: rgba(#b3261e, 0.08);
   border: 1px solid rgba(#b3261e, 0.2);
+}
+
+.state-prompt {
+  color: $text-medium;
+  background: #fafafe;
+  border: 1px dashed $border-color;
+
+  p {
+    font-size: 1.25rem;
+    margin: 0 0 $spacing-xs;
+  }
+
+  small {
+    font-size: 0.875rem;
+    color: $text-light;
+  }
 }
 
 .book-grid {

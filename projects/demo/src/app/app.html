@@ -2,7 +2,9 @@
   <header>
     <h1>🔍 {{ title() }}</h1>
     <p>Fuzzy-search local data or a live remote API — all matching runs client-side via Fuse.js</p>
-    <small class="disclaimer"> ⚠️ Local book dataset generated with AI assistance — data may contain inaccuracies </small>
+    @if (activeSource().kind === 'local') {
+      <small class="disclaimer"> ⚠️ Local book dataset generated with AI assistance — data may contain inaccuracies </small>
+    }
   </header>
 
   <div class="controls">
@@ -13,21 +15,6 @@
         </button>
       }
     </div>
-
-    @if (activeSource().kind === 'remote') {
-      <div class="seed-row">
-        <input
-          type="text"
-          class="seed-input"
-          [(ngModel)]="seedQuery"
-          [placeholder]="activeSource().seedPlaceholder || 'Seed query'"
-          (keyup.enter)="reload()"
-        />
-        <button type="button" class="load-btn" (click)="reload()" [disabled]="loading()">
-          {{ loading() ? 'Loading…' : 'Load' }}
-        </button>
-      </div>
-    }
 
     <div class="view-controls">
       <div class="control">
@@ -42,9 +29,16 @@
         <button type="button" class="chip" (click)="adjustFont(-0.1)" aria-label="Decrease font size">A−</button>
         <button type="button" class="chip" (click)="adjustFont(0.1)" aria-label="Increase font size">A+</button>
       </div>
-      <div class="control">
+      <div class="control" [class.disabled]="density() === 'compact'">
         <label class="control-label" for="columns">Columns</label>
-        <select id="columns" class="select" [ngModel]="columns()" (ngModelChange)="columns.set(+$event)">
+        <select
+          id="columns"
+          class="select"
+          [ngModel]="columns()"
+          (ngModelChange)="columns.set(+$event)"
+          [disabled]="density() === 'compact'"
+          [title]="density() === 'compact' ? 'Columns apply to the comfortable grid only' : 'Number of columns'"
+        >
           <option [ngValue]="0">Auto</option>
           <option [ngValue]="1">1</option>
           <option [ngValue]="2">2</option>
@@ -57,51 +51,59 @@
 
   <div class="search-section">
     <div class="search-box">
-      <input type="text" [(ngModel)]="searchTerm" placeholder="Fuzzy search the loaded data… (typos welcome!)" class="search-input" />
+      <input type="text" [(ngModel)]="searchTerm" [placeholder]="activeSource().searchPlaceholder" class="search-input" />
+      @if (searching()) {
+        <div class="search-status"><span class="spinner"></span> Searching…</div>
+      }
     </div>
 
     <div class="results-container">
-      <div class="results-header">
-        <h2>
-          @if (searchTerm()) {
-            Search Results ({{ cards().length }})
-          } @else if (totalCount()) {
-            Showing {{ cards().length }} of {{ totalCount() }} — type to fuzzy-search all
-          } @else {
-            No data loaded
-          }
-        </h2>
-      </div>
-
       @if (loadError()) {
         <div class="state state-error">{{ loadError() }}</div>
-      } @else if (loading()) {
-        <div class="state state-loading">Loading data…</div>
+      } @else if (awaitingRemoteInput()) {
+        <div class="state state-prompt">
+          <p>Type above to search {{ activeSource().label }}</p>
+          <small>Results are fetched live, then fuzzy-ranked and highlighted by the library.</small>
+        </div>
       } @else {
-        <div class="book-grid" [class.compact]="density() === 'compact'">
-          @for (card of cards(); track card.id) {
-            <div class="book-card" [attr.data-lang]="card.lang">
-              <div class="book-content">
-                <h3 class="book-title" [innerHTML]="card.title"></h3>
-                @if (card.subtitle) {
-                  <p class="book-author" [innerHTML]="card.subtitle"></p>
-                }
-                <div class="book-meta">
-                  @if (card.meta) {
-                    <span class="book-year" [innerHTML]="card.meta"></span>
+        <div class="results-header">
+          <h2>
+            @if (searchTerm().trim()) {
+              {{ cards().length }} {{ cards().length === 1 ? 'result' : 'results' }}
+            } @else {
+              Showing all {{ totalCount() }}
+            }
+          </h2>
+        </div>
+
+        <div class="results-scroll">
+          <div class="book-grid" [class.compact]="density() === 'compact'">
+            @for (card of cards(); track card.id) {
+              <div class="book-card" [attr.data-lang]="card.lang">
+                <div class="book-content">
+                  <h3 class="book-title" [innerHTML]="card.title"></h3>
+                  @if (card.subtitle) {
+                    <p class="book-author" [innerHTML]="card.subtitle"></p>
                   }
-                  @if (card.matchPercent !== null) {
-                    <span class="book-score"> Match: {{ card.matchPercent }}% </span>
-                  }
+                  <div class="book-meta">
+                    @if (card.meta) {
+                      <span class="book-year" [innerHTML]="card.meta"></span>
+                    }
+                    @if (card.matchPercent !== null) {
+                      <span class="book-score"> Match: {{ card.matchPercent }}% </span>
+                    }
+                  </div>
                 </div>
               </div>
-            </div>
-          } @empty {
-            <div class="no-results">
-              <p>No results matching "{{ searchTerm() }}"</p>
-              <small>Try a different search term</small>
-            </div>
-          }
+            } @empty {
+              @if (!searching()) {
+                <div class="no-results">
+                  <p>No results matching "{{ searchTerm() }}"</p>
+                  <small>Try a different search term</small>
+                </div>
+              }
+            }
+          </div>
         </div>
       }
     </div>

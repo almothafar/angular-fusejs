@@ -13,21 +13,24 @@ interface OpenLibraryResponse {
 
 /**
  * Remote books from the keyless, CORS-enabled Open Library search API.
- * Coarse-fetch model: one query loads up to 100 books, then all fuzzy
- * searching happens locally via the library — proving it works on remote data.
+ * Fetch-as-you-type: each (debounced) query loads up to 100 books, then the
+ * library fuzzy-highlights/ranks them locally — proving it works on remote data.
  */
 export const openLibrarySource: DemoSource = {
   id: 'open-library',
   label: '🌐 Open Library',
   kind: 'remote',
-  seedPlaceholder: 'Seed query to fetch, e.g. "tolkien", "javascript", "history"',
+  searchPlaceholder: 'Search Open Library… fetches as you type',
   mapping: {
     keys: ['title', 'author', 'year'],
     titlePath: 'title',
     subtitlePath: 'author',
     metaPath: 'year',
   },
-  async load(http: HttpClient, query = 'programming'): Promise<DemoRecord[]> {
+  async load(http: HttpClient, query = ''): Promise<DemoRecord[]> {
+    if (!query.trim()) {
+      return [];
+    }
     const url =
       `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}` +
       '&limit=100&fields=title,author_name,first_publish_year,cover_i';

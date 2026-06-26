@@ -19,12 +19,12 @@ export interface FieldMapping {
 export interface DemoSource {
   readonly id: string;
   readonly label: string;
-  /** `local` ignores the query; `remote` uses it as a seed/coarse query. */
+  /** `local` ignores the query; `remote` fetches using it (as-you-type, debounced). */
   readonly kind: 'local' | 'remote';
-  /** Placeholder shown in the remote seed-query input. */
-  readonly seedPlaceholder?: string;
+  /** Placeholder for the unified search field. */
+  readonly searchPlaceholder: string;
   readonly mapping: FieldMapping;
-  /** Load the dataset. `query` seeds remote sources; local sources ignore it. */
+  /** Load the dataset. `query` drives remote sources; local sources ignore it. */
   load(http: HttpClient, query?: string): Promise<DemoRecord[]>;
   /** Resolve a record's image URL, if any (used from Phase 2 onward). */
   imageUrl?(record: DemoRecord): string | undefined;
