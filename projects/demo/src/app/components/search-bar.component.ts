@@ -8,7 +8,15 @@ import { FormsModule } from '@angular/forms';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="search-row">
-      <input type="text" class="search-input" [ngModel]="term()" (ngModelChange)="term.set($event)" [placeholder]="placeholder()" />
+      <input
+        id="demo-search"
+        name="search"
+        type="text"
+        class="search-input"
+        [ngModel]="term()"
+        (ngModelChange)="term.set($event)"
+        [placeholder]="placeholder()"
+      />
       @if (searching()) {
         <div class="search-status"><span class="spinner"></span> Searching…</div>
       }

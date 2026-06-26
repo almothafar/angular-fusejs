@@ -44,6 +44,11 @@ header {
   background: #fafafe;
   border: 1px solid $border-light;
   border-radius: $border-radius;
+
+  // The search field takes its own full-width row below the switch + view controls
+  app-search-bar {
+    flex: 1 1 100%;
+  }
 }
 
 // Results
