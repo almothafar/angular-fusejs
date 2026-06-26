@@ -160,8 +160,11 @@ export class App implements OnInit {
 
   /** View models for the template, projected through the active source's mapping. */
   protected readonly cards = computed<CardVM[]>(() => {
-    const mapping = this.activeSource().mapping;
+    const source = this.activeSource();
+    const mapping = source.mapping;
     const hasTerm = !!this.searchTerm().trim();
+    // Only sources that resolve images get a cover slot; '' within that means "use the placeholder".
+    const resolveImage = source.imageUrl;
     return this.results().map((result, index) => {
       const highlighted = (result.fuseJsHighlighted ?? result) as DemoRecord;
       const score = result.fuseJsScore;
@@ -173,6 +176,7 @@ export class App implements OnInit {
         meta: mapping.metaPath ? valueAt(highlighted, mapping.metaPath) : '',
         matchPercent: hasTerm && score !== undefined ? Math.round((1 - score) * 100) : null,
         lang: typeof lang === 'string' ? lang : null,
+        imageUrl: resolveImage ? (resolveImage(result) ?? '') : null,
       };
     });
   });

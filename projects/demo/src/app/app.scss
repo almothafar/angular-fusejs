@@ -153,12 +153,12 @@ footer {
   justify-content: center;
   gap: $spacing-xs $spacing-sm;
   padding: $spacing-sm $spacing-lg;
-  background: #2b2d42;
-  color: rgba($white, 0.75);
+  background: $footer-bg;
+  color: $footer-text;
   font-size: 0.85rem;
 
   a {
-    color: #c3cbff;
+    color: $footer-link;
     text-decoration: none;
     font-weight: 500;
 

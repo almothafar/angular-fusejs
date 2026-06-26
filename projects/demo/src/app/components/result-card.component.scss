@@ -4,7 +4,24 @@
   display: block;
 }
 
+// Optional cover thumbnail (shown only when the source provides images)
+.book-cover {
+  flex: 0 0 auto;
+
+  img {
+    display: block;
+    width: 60px;
+    height: 88px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: $border-light;
+  }
+}
+
 .book-card {
+  display: flex;
+  gap: $spacing-md;
+  align-items: flex-start;
   background: $white;
   border: 1px solid $border-color;
   border-radius: $border-radius;
@@ -32,6 +49,13 @@
   // Compact density: a single inline row instead of a card
   &.compact {
     padding: $spacing-sm $spacing-md;
+    align-items: center;
+
+    .book-cover img {
+      width: 34px;
+      height: 50px;
+      border-radius: 4px;
+    }
 
     .book-content {
       flex-direction: row;
@@ -58,6 +82,8 @@
 }
 
 .book-content {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
