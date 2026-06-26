@@ -93,7 +93,9 @@ header {
 
 .book-grid {
   display: grid;
-  grid-template-columns: repeat(var(--columns, auto-fill), minmax(280px, 1fr));
+  // Auto mode keeps a 280px floor so auto-fill can pick a count; an explicit column
+  // count sets --col-min: 0 so the columns shrink to fit (no horizontal overflow).
+  grid-template-columns: repeat(var(--columns, auto-fill), minmax(var(--col-min, 280px), 1fr));
   gap: $spacing-lg;
 
   &.compact {
