@@ -89,6 +89,42 @@ header {
   }
 }
 
+// Optional API-key field (its own full-width row, only for sources that accept a key)
+.api-key {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $text-medium;
+  }
+
+  input {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    font-size: 0.95rem;
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+    outline: none;
+    box-sizing: border-box;
+    transition: $transition;
+
+    &:focus {
+      border-color: $primary-color;
+      box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    }
+  }
+
+  small {
+    font-size: 0.78rem;
+    color: $text-light;
+    font-style: italic;
+  }
+}
+
 // Results — flexes to fill the remaining height; the inner box scrolls
 .results-container {
   flex: 1 1 auto;

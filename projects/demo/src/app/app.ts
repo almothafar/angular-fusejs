@@ -3,6 +3,7 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { NavigationEnd, PRIMARY_OUTLET, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
 import { AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
 import { BUILD_INFO } from './build-info';
@@ -10,6 +11,8 @@ import { DemoRecord, DemoSource, readPath, valueAt } from './data-sources/demo-s
 import { localBooksSource } from './data-sources/local-books.source';
 import { countriesSource } from './data-sources/countries.source';
 import { openLibrarySource } from './data-sources/open-library.source';
+import { theMealDbSource } from './data-sources/themealdb.source';
+import { artInstituteSource } from './data-sources/art-institute.source';
 import { SourceSwitcherComponent } from './components/source-switcher.component';
 import { ViewControlsComponent } from './components/view-controls.component';
 import { SearchBarComponent, Suggestion } from './components/search-bar.component';
@@ -28,7 +31,7 @@ const MAX_SUGGESTIONS = 8;
 
 @Component({
   selector: 'app-root',
-  imports: [DatePipe, SourceSwitcherComponent, ViewControlsComponent, SearchBarComponent, ResultCardComponent],
+  imports: [DatePipe, FormsModule, SourceSwitcherComponent, ViewControlsComponent, SearchBarComponent, ResultCardComponent],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.scss',
@@ -46,8 +49,17 @@ export class App {
   protected readonly buildTime = BUILD_INFO.timestamp;
 
   // --- Data sources -------------------------------------------------------
-  protected readonly sources: readonly DemoSource[] = [localBooksSource, countriesSource, openLibrarySource];
+  protected readonly sources: readonly DemoSource[] = [
+    localBooksSource,
+    countriesSource,
+    openLibrarySource,
+    theMealDbSource,
+    artInstituteSource,
+  ];
   protected readonly activeSource = signal<DemoSource>(this.sources[0]);
+
+  /** User-supplied API key for sources that accept one (in-memory only, reset on switch). */
+  protected readonly apiKey = signal('');
 
   protected readonly searchTerm = signal('');
   protected readonly items = signal<DemoRecord[]>([]);
@@ -106,6 +118,16 @@ export class App {
     void this.router.navigate(['/', source.id]);
   }
 
+  /** Apply a user-supplied API key (in-memory only) and re-fetch if a query is active. */
+  protected onApiKeyChange(value: string): void {
+    this.apiKey.set(value);
+    this.activeSource().apiKey?.set(value);
+    const term = this.searchTerm().trim();
+    if (this.activeSource().kind === 'remote' && term.length >= MIN_REMOTE_QUERY_LENGTH) {
+      void this.loadFrom(term);
+    }
+  }
+
   /** Resolve the `:sourceId` segment to a source and activate it (normalizing unknown ids). */
   private syncSourceFromUrl(): void {
     const tree = this.router.parseUrl(this.router.url);
@@ -129,6 +151,9 @@ export class App {
     this.searchTerm.set('');
     this.loadError.set(null);
     this.loadedQuery.set(null);
+    // Reset any user-supplied key (in-memory only): clear the field and the source default.
+    this.apiKey.set('');
+    source.apiKey?.set('');
     if (source.kind === 'local') {
       void this.loadFrom(undefined);
     } else {
