@@ -16,7 +16,8 @@ describe('App', () => {
   });
 
   afterEach(() => {
-    // ngOnInit loads books.json; answer it with an empty list so no real request escapes.
+    // ngOnInit loads the default local source (books.json); answer any such
+    // request with an empty list so no real request escapes, then verify.
     httpMock.match('books.json').forEach(req => req.flush([]));
     httpMock.verify();
   });
@@ -32,5 +33,14 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Angular FuseJS Demo');
+  });
+
+  it('should render a switch button per data source', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const sourceButtons = compiled.querySelectorAll('.source-switch .chip');
+    expect(sourceButtons.length).toBe(2);
+    expect(sourceButtons[0].textContent).toContain('Local books');
   });
 });

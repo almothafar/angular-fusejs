@@ -1,56 +1,57 @@
-<div class="demo-container">
+<div class="demo-container" [style.--font-scale]="fontScale()" [style.--columns]="columns() || null">
   <header>
     <h1>🔍 {{ title() }}</h1>
-    <p>Try fuzzy searching through 260+ programming books in English & Arabic</p>
-    <small class="disclaimer"> ⚠️ Demo dataset generated with AI assistance - data may contain inaccuracies </small>
+    <p>Fuzzy-search local data or a live remote API — all matching runs client-side via Fuse.js</p>
   </header>
 
-  <div class="search-section">
-    <div class="search-box">
-      <input
-        type="text"
-        [(ngModel)]="searchTerm"
-        placeholder="Search by title, author, or year... (try 'javascript', 'martin', or '2008')"
-        class="search-input"
-      />
-      @if (!searchTerm()) {
-        <span class="search-hint"> 💡 Try: "clean code", "pragmatic", "knuth", "2008" </span>
-      }
-    </div>
+  <div class="controls">
+    <app-source-switcher [sources]="sources" [active]="activeSource()" (sourceChange)="selectSource($event)" />
+    <app-view-controls [(density)]="density" [(fontScale)]="fontScale" [(columns)]="columns" />
+    <app-search-bar
+      [(term)]="searchTerm"
+      [placeholder]="activeSource().searchPlaceholder"
+      [note]="activeSource().note"
+      [searching]="searching()"
+    />
+  </div>
 
-    <div class="results-container">
+  <div class="results-container">
+    @if (loadError()) {
+      <div class="state state-error">{{ loadError() }}</div>
+    } @else if (awaitingRemoteInput()) {
+      <div class="state state-prompt">
+        <p>Type at least {{ minRemoteChars }} characters to search {{ activeSource().label }}</p>
+      </div>
+    } @else {
       <div class="results-header">
         <h2>
-          @if (searchTerm()) {
-            Search Results
+          @if (searchTerm().trim()) {
+            @if (searching() && cards().length === 0) {
+              Searching…
+            } @else {
+              {{ cards().length }} {{ cards().length === 1 ? 'result' : 'results' }}
+            }
           } @else {
-            All Books ({{ searchResults().length }})
+            Showing all {{ totalCount() }}
           }
         </h2>
       </div>
 
-      <div class="book-grid">
-        @for (book of searchResults(); track book.isbn) {
-          <div class="book-card" [attr.data-lang]="book.language">
-            <div class="book-content">
-              <h3 class="book-title" [innerHTML]="book.fuseJsHighlighted?.title || book.title"></h3>
-              <p class="book-author" [innerHTML]="book.fuseJsHighlighted?.author || book.author"></p>
-              <div class="book-meta">
-                <span class="book-year" [innerHTML]="book.fuseJsHighlighted?.year || book.year"></span>
-                @if (book.fuseJsScore !== undefined && searchTerm()) {
-                  <span class="book-score"> Match: {{ (1 - book.fuseJsScore) * 100 | number: '1.0-0' }}% </span>
-                }
+      <div class="results-scroll">
+        <div class="book-grid" [class.compact]="density() === 'compact'">
+          @for (card of cards(); track card.id) {
+            <app-result-card [card]="card" [density]="density()" />
+          } @empty {
+            @if (!searching()) {
+              <div class="no-results">
+                <p>No results matching "{{ searchTerm() }}"</p>
+                <small>Try a different search term</small>
               </div>
-            </div>
-          </div>
-        } @empty {
-          <div class="no-results">
-            <p>No books found matching "{{ searchTerm() }}"</p>
-            <small>Try a different search term</small>
-          </div>
-        }
+            }
+          }
+        </div>
       </div>
-    </div>
+    }
   </div>
 
   <footer>

@@ -1,1 +1,25 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles. Shared UI primitives live here so components don't duplicate them. */
+@use './app/theme' as *;
+
+// Pill button shared by the source switcher and the view controls
+.chip {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-pill;
+  background: $white;
+  color: $text-medium;
+  cursor: pointer;
+  transition: $transition;
+
+  &:hover {
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+
+  &.active {
+    @include gradient-bg;
+    color: $white;
+    border-color: transparent;
+  }
+}

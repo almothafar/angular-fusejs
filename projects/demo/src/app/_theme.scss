@@ -1,0 +1,41 @@
+// Shared theme: variables + mixins used across the demo's components.
+// Components: `@use '../theme' as *;`  ·  app.scss: `@use './theme' as *;`  ·  styles.scss: `@use './app/theme' as *;`
+
+$primary-color: #667eea;
+$secondary-color: #764ba2;
+$text-dark: #333;
+$text-medium: #666;
+$text-light: #999;
+$border-color: #e0e0e0;
+$border-light: #f0f0f0;
+$white: white;
+
+$spacing-xs: 0.5rem;
+$spacing-sm: 0.75rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-2xl: 3rem;
+$spacing-3xl: 4rem;
+
+$border-radius: 12px;
+$border-radius-pill: 20px;
+
+$transition: all 0.3s ease;
+
+@mixin gradient-text {
+  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@mixin gradient-bg {
+  background: linear-gradient(135deg, $primary-color 0%, $secondary-color 100%);
+}
+
+@mixin highlight-text($weight: 700, $style: normal) {
+  @include gradient-text;
+  font-style: $style;
+  font-weight: $weight;
+}

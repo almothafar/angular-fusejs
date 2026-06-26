@@ -45,6 +45,12 @@ yarn-error.log
 testem.log
 /typings
 
+# Local-only planning docs (never committed). ADRs/decisions are tracked as GitHub
+# issues now, not files. NOTE: /docs (ignored above) is the demo's PRODUCTION BUILD
+# OUTPUT, wiped on every `build:docs` — don't author docs there.
+/.adr
+DEMO_IDEAS.md
+
 # System Files
 .DS_Store
 Thumbs.db
