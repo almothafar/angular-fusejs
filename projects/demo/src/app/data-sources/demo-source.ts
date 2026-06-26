@@ -13,6 +13,20 @@ export interface FieldMapping {
   subtitlePath?: string;
   /** Dot-path to a small meta value (year, region, ...). */
   metaPath?: string;
+  /**
+   * Dot-path whose value is used directly as an image URL. Normally unset
+   * (sources resolve images via `imageUrl()`); the introspection UI can set it
+   * to override the cover with any field the data exposes.
+   */
+  imagePath?: string;
+}
+
+/** A single leaf field discovered by `flatten`, with a sample of its value. */
+export interface FlatField {
+  /** Dot-path to the value, e.g. "name.common". */
+  path: string;
+  /** A short, human-readable sample of the value at that path. */
+  sample: string;
 }
 
 /** A switchable demo data source — either a local array or a remote fetch. */
@@ -77,4 +91,29 @@ export function valueAt(record: DemoRecord, path: string): string {
     return value.map(v => String(v ?? '')).join(', ');
   }
   return value === null || value === undefined ? '' : String(value);
+}
+
+/**
+ * Flatten a record into the leaf dot-paths it exposes, each with a sample value.
+ * Nested objects are recursed; arrays and primitives are treated as leaves
+ * (matching how `valueAt` reads them). This powers the Phase 3 introspection UI.
+ */
+export function flatten(record: DemoRecord): FlatField[] {
+  const out: FlatField[] = [];
+  const walk = (value: unknown, prefix: string): void => {
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+        walk(child, prefix ? `${prefix}.${key}` : key);
+      }
+      return;
+    }
+    const sample = Array.isArray(value)
+      ? value.map(v => String(v ?? '')).join(', ')
+      : value === null || value === undefined
+        ? ''
+        : String(value);
+    out.push({ path: prefix, sample });
+  };
+  walk(record, '');
+  return out;
 }

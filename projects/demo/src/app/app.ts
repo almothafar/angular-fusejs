@@ -7,7 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
 import { AngularFuseJsResult, AngularFuseJsService } from '@almothafar/angular-fusejs';
 import { BUILD_INFO } from './build-info';
-import { DemoRecord, DemoSource, readPath, valueAt } from './data-sources/demo-source';
+import { DemoRecord, DemoSource, FieldMapping, FlatField, flatten, readPath, valueAt } from './data-sources/demo-source';
 import { localBooksSource } from './data-sources/local-books.source';
 import { countriesSource } from './data-sources/countries.source';
 import { openLibrarySource } from './data-sources/open-library.source';
@@ -17,6 +17,7 @@ import { SourceSwitcherComponent } from './components/source-switcher.component'
 import { ViewControlsComponent } from './components/view-controls.component';
 import { SearchBarComponent, Suggestion } from './components/search-bar.component';
 import { CardVM, ResultCardComponent } from './components/result-card.component';
+import { MappingEditorComponent } from './components/mapping-editor.component';
 
 type DemoResult = AngularFuseJsResult<DemoRecord>;
 
@@ -31,7 +32,15 @@ const MAX_SUGGESTIONS = 8;
 
 @Component({
   selector: 'app-root',
-  imports: [DatePipe, FormsModule, SourceSwitcherComponent, ViewControlsComponent, SearchBarComponent, ResultCardComponent],
+  imports: [
+    DatePipe,
+    FormsModule,
+    SourceSwitcherComponent,
+    ViewControlsComponent,
+    SearchBarComponent,
+    ResultCardComponent,
+    MappingEditorComponent,
+  ],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.scss',
@@ -60,6 +69,11 @@ export class App {
 
   /** User-supplied API key for sources that accept one (in-memory only, reset on switch). */
   protected readonly apiKey = signal('');
+
+  /** Live mapping override from the introspection UI (null = use the source default). */
+  protected readonly mappingOverride = signal<FieldMapping | null>(null);
+  /** The mapping actually in effect: the introspection override, else the source default. */
+  protected readonly effectiveMapping = computed<FieldMapping>(() => this.mappingOverride() ?? this.activeSource().mapping);
 
   protected readonly searchTerm = signal('');
   protected readonly items = signal<DemoRecord[]>([]);
@@ -128,6 +142,11 @@ export class App {
     }
   }
 
+  /** Apply a live mapping change from the introspection UI (null resets to the source default). */
+  protected onMappingChange(mapping: FieldMapping | null): void {
+    this.mappingOverride.set(mapping);
+  }
+
   /** Resolve the `:sourceId` segment to a source and activate it (normalizing unknown ids). */
   private syncSourceFromUrl(): void {
     const tree = this.router.parseUrl(this.router.url);
@@ -154,6 +173,8 @@ export class App {
     // Reset any user-supplied key (in-memory only): clear the field and the source default.
     this.apiKey.set('');
     source.apiKey?.set('');
+    // Drop any field-mapping override so the new source starts from its own default.
+    this.mappingOverride.set(null);
     if (source.kind === 'local') {
       void this.loadFrom(undefined);
     } else {
@@ -192,6 +213,12 @@ export class App {
 
   protected readonly totalCount = computed(() => this.items().length);
 
+  /** Leaf field paths from the loaded data (sampled from the first record) for the introspection UI. */
+  protected readonly sampleFields = computed<FlatField[]>(() => {
+    const first = this.items()[0];
+    return first ? flatten(first) : [];
+  });
+
   /** Remote source with nothing loaded yet and not enough characters typed — prompt the user. */
   protected readonly awaitingRemoteInput = computed(
     () => this.activeSource().kind === 'remote' && this.items().length === 0 && this.searchTerm().trim().length < MIN_REMOTE_QUERY_LENGTH,
@@ -225,7 +252,7 @@ export class App {
       return list as DemoResult[];
     }
     return this.fuseService.searchList(list, term, {
-      keys: this.activeSource().mapping.keys,
+      keys: this.effectiveMapping().keys,
       supportHighlight: true,
       threshold: 0.4,
       minSearchTermLength: 2,
@@ -245,10 +272,13 @@ export class App {
   /** View models for the template, projected through the active source's mapping. */
   protected readonly cards = computed<CardVM[]>(() => {
     const source = this.activeSource();
-    const mapping = source.mapping;
+    const mapping = this.effectiveMapping();
     const hasTerm = !!this.searchTerm().trim();
-    // Only sources that resolve images get a cover slot; '' within that means "use the placeholder".
-    const resolveImage = source.imageUrl;
+    // Image resolution: an introspection-picked path wins (its value is used as a URL);
+    // otherwise the source's own resolver. Only then does a card get a cover slot.
+    // '' within that means "use the placeholder".
+    const imagePath = mapping.imagePath;
+    const resolveImage = imagePath ? (record: DemoRecord) => valueAt(record, imagePath) : source.imageUrl;
     // detailUrl reads the raw (non-highlighted) record so the link key isn't wrapped in <em>.
     const resolveLink = source.detailUrl;
     return this.results().map((result, index) => {
@@ -278,7 +308,7 @@ export class App {
     if (!source.suggestions || !this.searchTerm().trim()) {
       return [];
     }
-    const titlePath = source.mapping.titlePath;
+    const titlePath = this.effectiveMapping().titlePath;
     const resolveImage = source.imageUrl;
     return this.results()
       .slice(0, MAX_SUGGESTIONS)
