@@ -33,22 +33,35 @@
 }
 
 .book-card {
+  position: relative; // anchors the stretched .card-link overlay
   display: flex;
   gap: $spacing-md;
   align-items: flex-start;
   background: $white;
   border: 1px solid $border-color;
   border-radius: $border-radius;
-  padding: $spacing-lg;
+  padding: $spacing-sm;
   transition: $transition;
-  cursor: pointer;
   height: 100%;
   box-sizing: border-box;
+  // Subtle depth at rest so a card reads as a card before any hover.
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.06);
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
     border-color: $primary-color;
+  }
+
+  // Only cards that link out get the clickable affordance.
+  &.linkable {
+    cursor: pointer;
+
+    &:hover .card-link-icon {
+      opacity: 1;
+    }
   }
 
   // RTL support for Arabic books
@@ -64,6 +77,11 @@
   &.compact {
     padding: $spacing-sm $spacing-md;
     align-items: center;
+
+    // The dense row already ends with the match pill — no room for the ↗ hint.
+    .card-link-icon {
+      display: none;
+    }
 
     .book-cover img {
       width: 34px;
@@ -98,6 +116,7 @@
 .book-content {
   flex: 1 1 auto;
   min-width: 0;
+  align-self: stretch; // fill the card height so the meta row can pin to the bottom
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
@@ -108,6 +127,7 @@
   margin: 0;
   color: $text-dark;
   line-height: 1.4;
+  overflow-wrap: anywhere; // long unbroken titles wrap instead of overflowing
 
   ::ng-deep em {
     @include highlight-text(700, normal);
@@ -118,6 +138,7 @@
   font-size: calc(1rem * var(--font-scale, 1));
   margin: 0;
   color: $text-medium;
+  overflow-wrap: anywhere;
 
   ::ng-deep em {
     @include highlight-text(600, normal);
@@ -129,7 +150,7 @@
   justify-content: space-between;
   align-items: center;
   gap: $spacing-md;
-  margin-top: $spacing-xs;
+  margin-top: auto; // pin to the bottom so meta rows align across cards of differing heights
   padding-top: $spacing-sm;
   border-top: 1px solid $border-light;
 }
@@ -151,4 +172,33 @@
   border-radius: $border-radius-pill;
   font-weight: 500;
   white-space: nowrap;
+}
+
+// Stretched link: a transparent overlay so a click anywhere on the card opens
+// the detail page, while the visible content underneath stays as-is.
+.card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+
+  &:focus-visible {
+    outline: 2px solid $primary-color;
+    outline-offset: 2px;
+  }
+}
+
+// "Opens externally" affordance, pinned to the top-end corner (out of flow so it
+// never reserves space or narrows the content), revealed on hover. Sits under the
+// stretched link and ignores pointer events so clicks pass through.
+.card-link-icon {
+  position: absolute;
+  top: $spacing-sm;
+  inset-inline-end: $spacing-sm; // right in LTR, left for the RTL Arabic cards
+  pointer-events: none;
+  color: $primary-color;
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0;
+  transition: $transition;
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Density } from './view-controls.component';
 
 /** What the card renders — projected from a source record through its field mapping. */
@@ -16,6 +16,8 @@ export interface CardVM {
    * URL    → show the image (falls back to the placeholder on load error).
    */
   imageUrl: string | null;
+  /** External detail page (opens in a new tab), or `null` when the source has no link. */
+  detailUrl: string | null;
 }
 
 /** Served from `public/` at the app base href. */
@@ -26,7 +28,11 @@ const COVER_PLACEHOLDER = 'cover-placeholder.svg';
   selector: 'app-result-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="book-card" [class.compact]="density() === 'compact'" [attr.data-lang]="card().lang">
+    <div class="book-card" [class.compact]="density() === 'compact'" [class.linkable]="!!card().detailUrl" [attr.data-lang]="card().lang">
+      @if (card().detailUrl; as href) {
+        <!-- Stretched link: covers the whole card so a click anywhere opens the detail page. -->
+        <a class="card-link" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="linkLabel()"></a>
+      }
       @if (card().imageUrl !== null) {
         <div class="book-cover">
           <img [src]="card().imageUrl || placeholder" alt="" loading="lazy" (error)="onCoverError($event)" />
@@ -46,6 +52,9 @@ const COVER_PLACEHOLDER = 'cover-placeholder.svg';
           }
         </div>
       </div>
+      @if (card().detailUrl) {
+        <span class="card-link-icon" aria-hidden="true">↗</span>
+      }
     </div>
   `,
   styleUrl: './result-card.component.scss',
@@ -55,6 +64,12 @@ export class ResultCardComponent {
   readonly density = input.required<Density>();
 
   protected readonly placeholder = COVER_PLACEHOLDER;
+
+  /** Plain-text accessible label for the stretched link (strips the highlight <em> markup). */
+  protected readonly linkLabel = computed(() => {
+    const plain = this.card().title.replace(/<[^>]+>/g, '');
+    return `Open “${plain}” (opens in a new tab)`;
+  });
 
   /** Swap a broken image for the placeholder (guarded against an error loop). */
   protected onCoverError(event: Event): void {

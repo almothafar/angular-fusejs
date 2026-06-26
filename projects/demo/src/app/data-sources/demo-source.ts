@@ -30,6 +30,11 @@ export interface DemoSource {
   load(http: HttpClient, query?: string): Promise<DemoRecord[]>;
   /** Resolve a record's image URL, if any (used from Phase 2 onward). */
   imageUrl?(record: DemoRecord): string | undefined;
+  /**
+   * Resolve a record's external detail page, if any (opens in a new tab).
+   * Sources without trustworthy links (e.g. AI-generated local data) omit this.
+   */
+  detailUrl?(record: DemoRecord): string | undefined;
 }
 
 /**
