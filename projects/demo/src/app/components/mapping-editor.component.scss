@@ -9,142 +9,142 @@
   border-radius: $border-radius;
   background: #fafafe;
   margin-bottom: $spacing-md;
-}
 
-.fe-toggle {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  width: 100%;
-  padding: $spacing-sm $spacing-md;
-  background: none;
-  border: none;
-  font: inherit;
-  font-weight: 600;
-  color: $text-medium;
-  cursor: pointer;
-  text-align: start;
-}
-
-.fe-caret {
-  display: inline-block;
-  transition: transform 0.2s ease;
-
-  &.open {
-    transform: rotate(90deg);
-  }
-}
-
-.fe-count {
-  margin-inline-start: auto;
-  font-weight: 400;
-  font-size: 0.8rem;
-  color: $text-light;
-}
-
-.fe-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $spacing-lg;
-  padding: 0 $spacing-md $spacing-md;
-}
-
-.fe-keys {
-  flex: 1 1 320px;
-  min-width: 0;
-  margin: 0;
-  padding: $spacing-sm;
-  border: 1px solid $border-light;
-  border-radius: 8px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: $spacing-xs;
-
-  legend {
-    padding: 0 $spacing-xs;
-    font-size: 0.8rem;
+  .fe-toggle {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: none;
+    border: none;
+    font: inherit;
     font-weight: 600;
     color: $text-medium;
-  }
-}
+    cursor: pointer;
+    text-align: start;
 
-.fe-key {
-  display: flex;
-  align-items: baseline;
-  gap: $spacing-xs;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
+    .fe-caret {
+      display: inline-block;
+      transition: transform 0.2s ease;
 
-  &:hover,
-  &.checked {
-    background: rgba($primary-color, 0.08);
-  }
+      &.open {
+        transform: rotate(90deg);
+      }
+    }
 
-  input {
-    flex: 0 0 auto;
-  }
-}
-
-.fe-path {
-  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-  color: $text-dark;
-}
-
-.fe-sample {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: $text-light;
-  font-style: italic;
-}
-
-.fe-display {
-  flex: 1 1 220px;
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-}
-
-.fe-select {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  font-size: 0.85rem;
-  color: $text-medium;
-
-  span {
-    flex: 0 0 4.5rem;
-    font-weight: 600;
+    .fe-count {
+      margin-inline-start: auto;
+      font-weight: 400;
+      font-size: 0.8rem;
+      color: $text-light;
+    }
   }
 
-  select {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: $spacing-xs $spacing-sm;
-    border: 1px solid $border-color;
-    border-radius: 6px;
-    font: inherit;
-    background: $white;
-  }
-}
+  .fe-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-lg;
+    padding: 0 $spacing-md $spacing-md;
 
-.fe-reset {
-  align-self: flex-start;
-  margin-top: $spacing-xs;
-  padding: $spacing-xs $spacing-md;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-pill;
-  background: $white;
-  font: inherit;
-  font-size: 0.8rem;
-  color: $text-medium;
-  cursor: pointer;
+    .fe-keys {
+      flex: 1 1 320px;
+      min-width: 0;
+      margin: 0;
+      padding: $spacing-sm;
+      border: 1px solid $border-light;
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: $spacing-xs;
 
-  &:hover {
-    border-color: $primary-color;
-    color: $primary-color;
+      legend {
+        padding: 0 $spacing-xs;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: $text-medium;
+      }
+
+      .fe-key {
+        display: flex;
+        align-items: baseline;
+        gap: $spacing-xs;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+
+        &:hover,
+        &.checked {
+          background: rgba($primary-color, 0.08);
+        }
+
+        input {
+          flex: 0 0 auto;
+        }
+
+        .fe-path {
+          font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+          color: $text-dark;
+        }
+
+        .fe-sample {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: $text-light;
+          font-style: italic;
+        }
+      }
+    }
+
+    .fe-display {
+      flex: 1 1 220px;
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+
+      .fe-select {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        font-size: 0.85rem;
+        color: $text-medium;
+
+        span {
+          flex: 0 0 4.5rem;
+          font-weight: 600;
+        }
+
+        select {
+          flex: 1 1 auto;
+          min-width: 0;
+          padding: $spacing-xs $spacing-sm;
+          border: 1px solid $border-color;
+          border-radius: 6px;
+          font: inherit;
+          background: $white;
+        }
+      }
+
+      .fe-reset {
+        align-self: flex-start;
+        margin-top: $spacing-xs;
+        padding: $spacing-xs $spacing-md;
+        border: 1px solid $border-color;
+        border-radius: $border-radius-pill;
+        background: $white;
+        font: inherit;
+        font-size: 0.8rem;
+        color: $text-medium;
+        cursor: pointer;
+
+        &:hover {
+          border-color: $primary-color;
+          color: $primary-color;
+        }
+      }
+    }
   }
 }
