@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { FieldMapping, FlatField } from '../data-sources/demo-source';
+import { InfoTipComponent } from './info-tip.component';
 
 /**
  * Introspection UI: shows the field paths discovered in the loaded data, lets the
@@ -9,14 +10,21 @@ import { FieldMapping, FlatField } from '../data-sources/demo-source';
  */
 @Component({
   selector: 'app-mapping-editor',
+  imports: [InfoTipComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="field-editor">
-      <button type="button" class="fe-toggle" (click)="open.set(!open())" [attr.aria-expanded]="open()">
-        <span class="fe-caret" [class.open]="open()" aria-hidden="true">▸</span>
-        Customize search fields
-        <span class="fe-count">{{ mapping().keys.length }} of {{ fields().length }} keys</span>
-      </button>
+      <div class="fe-header">
+        <button type="button" class="fe-toggle" (click)="open.set(!open())" [attr.aria-expanded]="open()">
+          <span class="fe-caret" [class.open]="open()" aria-hidden="true">▸</span>
+          Customize search fields
+          <span class="fe-count">{{ mapping().keys.length }} of {{ fields().length }} keys</span>
+        </button>
+        <app-info-tip label="What does customizing search fields do?">
+          Choose which fields Fuse.js fuzzy-searches and what each result card shows (title, subtitle, meta, image). Changes re-rank the
+          results instantly.
+        </app-info-tip>
+      </div>
 
       @if (open()) {
         <div class="fe-body">
