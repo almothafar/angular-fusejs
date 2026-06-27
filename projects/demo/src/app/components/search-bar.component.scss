@@ -5,108 +5,108 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-xs;
-}
 
-.search-input {
-  width: 100%;
-  padding: $spacing-md $spacing-lg;
-  font-size: 1.125rem;
-  border: 2px solid $border-color;
-  border-radius: $border-radius;
-  outline: none;
-  transition: $transition;
-  box-sizing: border-box;
+  // Anchors the absolutely-positioned suggestions dropdown to the input.
+  .search-field {
+    position: relative;
 
-  &:focus {
-    border-color: $primary-color;
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+    .search-input {
+      width: 100%;
+      padding: $spacing-md $spacing-lg;
+      font-size: 1.125rem;
+      border: 2px solid $border-color;
+      border-radius: $border-radius;
+      outline: none;
+      transition: $transition;
+      box-sizing: border-box;
+
+      &:focus {
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+      }
+    }
+
+    // Type-ahead suggestions: overlays the content below without shifting layout.
+    .suggestions {
+      position: absolute;
+      top: calc(100% + #{$spacing-xs});
+      left: 0;
+      right: 0;
+      z-index: 20;
+      margin: 0;
+      padding: $spacing-xs;
+      list-style: none;
+      max-height: 18rem;
+      overflow-y: auto;
+      background: $white;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+
+      .suggestion {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        padding: $spacing-xs $spacing-sm;
+        border-radius: 8px;
+        cursor: pointer;
+        color: $text-dark;
+
+        &:hover,
+        &.active {
+          background: rgba($primary-color, 0.1);
+        }
+
+        ::ng-deep em {
+          @include highlight-text(700, normal);
+        }
+
+        .suggest-flag {
+          flex: 0 0 auto;
+          width: 28px;
+          height: 20px;
+          object-fit: cover;
+          border-radius: 3px;
+          border: 1px solid $border-light;
+        }
+
+        .suggest-label {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+    }
   }
-}
 
-.search-status {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
-  font-size: 0.875rem;
-  color: $primary-color;
-}
+  .search-status {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: 0.875rem;
+    color: $primary-color;
 
-.spinner {
-  width: 0.9rem;
-  height: 0.9rem;
-  border: 2px solid rgba($primary-color, 0.3);
-  border-top-color: $primary-color;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+    .spinner {
+      width: 0.9rem;
+      height: 0.9rem;
+      border: 2px solid rgba($primary-color, 0.3);
+      border-top-color: $primary-color;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+  }
+
+  // Per-source note (always present so switching sources doesn't shift layout)
+  .source-note {
+    font-size: 0.8rem;
+    color: $text-light;
+    font-style: italic;
+  }
 }
 
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
-}
-
-// Anchors the absolutely-positioned suggestions dropdown to the input.
-.search-field {
-  position: relative;
-}
-
-// Type-ahead suggestions: overlays the content below without shifting layout.
-.suggestions {
-  position: absolute;
-  top: calc(100% + #{$spacing-xs});
-  left: 0;
-  right: 0;
-  z-index: 20;
-  margin: 0;
-  padding: $spacing-xs;
-  list-style: none;
-  max-height: 18rem;
-  overflow-y: auto;
-  background: $white;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
-}
-
-.suggestion {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  padding: $spacing-xs $spacing-sm;
-  border-radius: 8px;
-  cursor: pointer;
-  color: $text-dark;
-
-  &:hover,
-  &.active {
-    background: rgba($primary-color, 0.1);
-  }
-
-  ::ng-deep em {
-    @include highlight-text(700, normal);
-  }
-}
-
-.suggest-flag {
-  flex: 0 0 auto;
-  width: 28px;
-  height: 20px;
-  object-fit: cover;
-  border-radius: 3px;
-  border: 1px solid $border-light;
-}
-
-.suggest-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-// Per-source note (always present so switching sources doesn't shift layout)
-.source-note {
-  font-size: 0.8rem;
-  color: $text-light;
-  font-style: italic;
 }
