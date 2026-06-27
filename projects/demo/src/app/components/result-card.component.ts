@@ -16,6 +16,8 @@ export interface CardVM {
    * URL    → show the image (falls back to the placeholder on load error).
    */
   imageUrl: string | null;
+  /** How the cover image fills its slot: `poster` (crop, default) or `flag` (contain). */
+  imageStyle: 'poster' | 'flag';
   /** External detail page (opens in a new tab), or `null` when the source has no link. */
   detailUrl: string | null;
 }
@@ -34,7 +36,7 @@ const COVER_PLACEHOLDER = 'cover-placeholder.svg';
         <a class="card-link" [href]="href" target="_blank" rel="noopener" [attr.aria-label]="linkLabel()"></a>
       }
       @if (card().imageUrl !== null) {
-        <div class="book-cover">
+        <div class="book-cover" [class.flag]="card().imageStyle === 'flag'">
           <img [src]="card().imageUrl || placeholder" alt="" loading="lazy" (error)="onCoverError($event)" />
         </div>
       }

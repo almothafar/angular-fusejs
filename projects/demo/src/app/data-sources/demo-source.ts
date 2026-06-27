@@ -26,6 +26,16 @@ export interface DemoSource {
   /** Short note shown under the search field (always present, so switching sources doesn't shift layout). */
   readonly note: string;
   readonly mapping: FieldMapping;
+  /**
+   * How an image (if any) should fill the card's cover slot.
+   * `poster` (default) crops to a tall thumbnail; `flag` shows the whole wide image.
+   */
+  readonly imageStyle?: 'poster' | 'flag';
+  /**
+   * Opt in to the type-ahead suggestions dropdown (top matches by title).
+   * Only worthwhile for small, local datasets where the whole list is in memory.
+   */
+  readonly suggestions?: boolean;
   /** Load the dataset. `query` drives remote sources; local sources ignore it. */
   load(http: HttpClient, query?: string): Promise<DemoRecord[]>;
   /** Resolve a record's image URL, if any (used from Phase 2 onward). */
@@ -38,12 +48,20 @@ export interface DemoSource {
 }
 
 /**
+ * Walk a dot-path (e.g. `name.common`) into a record and return the raw value.
+ * The library's PropertyAccessor is private, so the demo keeps its own small
+ * reader (this is the seed of the Phase 3 introspection helper).
+ */
+export function readPath(record: DemoRecord, path: string): unknown {
+  return path.split('.').reduce<unknown>((acc, key) => (acc as Record<string, unknown> | undefined)?.[key], record);
+}
+
+/**
  * Read a dot-path out of a record for display. Arrays are joined with ', ';
- * null/undefined become ''. The library's PropertyAccessor is private, so the
- * demo keeps its own small reader (this is the seed of the Phase 3 introspection).
+ * null/undefined become ''.
  */
 export function valueAt(record: DemoRecord, path: string): string {
-  const value = path.split('.').reduce<unknown>((acc, key) => (acc as Record<string, unknown> | undefined)?.[key], record);
+  const value = readPath(record, path);
   if (Array.isArray(value)) {
     return value.map(v => String(v ?? '')).join(', ');
   }
