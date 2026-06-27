@@ -60,13 +60,13 @@ header {
   }
 }
 
-// Controls panel: source switch + view controls (row 1) and the search field (row 2)
+// Controls panel: a column of a toolbar row (source switch + view controls) and the
+// full-width search field below. A column avoids the fragile "self-wrap via
+// flex-basis: 100%" pattern that let the search input overflow near 768px.
 .controls {
   flex: 0 0 auto;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: $spacing-md;
   margin-bottom: $spacing-lg;
   padding: $spacing-md $spacing-lg;
@@ -74,16 +74,18 @@ header {
   border: 1px solid $border-light;
   border-radius: $border-radius;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
+  // Top row: source switcher on the left, view controls on the right; wraps when narrow.
+  .controls-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
   }
 
-  // The search field takes its own full-width row below the switch + view controls.
-  // min-width: 0 lets it shrink to the row instead of overflowing the viewport.
+  // The search field is a plain full-width block below the toolbar (no flex-basis trick).
   app-search-bar {
-    flex: 1 1 100%;
-    min-width: 0;
+    width: 100%;
   }
 }
 

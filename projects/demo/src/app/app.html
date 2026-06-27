@@ -12,8 +12,10 @@
   </header>
 
   <div class="controls">
-    <app-source-switcher [sources]="sources" [active]="activeSource()" (sourceChange)="selectSource($event)" />
-    <app-view-controls [(density)]="density" [(fontScale)]="fontScale" [(columns)]="columns" />
+    <div class="controls-toolbar">
+      <app-source-switcher [sources]="sources" [active]="activeSource()" (sourceChange)="selectSource($event)" />
+      <app-view-controls [(density)]="density" [(fontScale)]="fontScale" [(columns)]="columns" />
+    </div>
     <app-search-bar
       [(term)]="searchTerm"
       [placeholder]="activeSource().searchPlaceholder"
