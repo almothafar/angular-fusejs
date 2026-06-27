@@ -1401,19 +1401,6 @@
   },
   {
     "name": {
-      "common": "Israel",
-      "official": "State of Israel",
-      "arabic": "إسرائيل"
-    },
-    "capital": [
-      "Jerusalem"
-    ],
-    "region": "Asia",
-    "subregion": "Western Asia",
-    "cca2": "il"
-  },
-  {
-    "name": {
       "common": "Italy",
       "official": "Italian Republic",
       "arabic": "إيطاليا"
@@ -2206,11 +2193,11 @@
   {
     "name": {
       "common": "Palestine",
-      "official": "State of Palestine",
+      "official": "Palestine",
       "arabic": "فلسطين"
     },
     "capital": [
-      "Ramallah"
+      "Jerusalem"
     ],
     "region": "Asia",
     "subregion": "Western Asia",
