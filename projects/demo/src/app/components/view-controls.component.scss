@@ -5,37 +5,37 @@
   flex-wrap: wrap;
   align-items: center;
   gap: $spacing-md;
-}
 
-.control {
-  display: flex;
-  align-items: center;
-  gap: $spacing-xs;
+  .control {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
 
-  // Dimmed when not applicable (e.g. columns while in compact list view)
-  &.disabled {
-    opacity: 0.45;
-  }
-}
+    // Dimmed when not applicable (e.g. columns while in compact list view)
+    &.disabled {
+      opacity: 0.45;
+    }
 
-.control-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: $text-light;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
+    .control-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
 
-.select {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.9rem;
-  border: 1px solid $border-color;
-  border-radius: $border-radius;
-  background: $white;
-  color: $text-medium;
-  cursor: pointer;
+    .select {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.9rem;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      background: $white;
+      color: $text-medium;
+      cursor: pointer;
 
-  &:disabled {
-    cursor: not-allowed;
+      &:disabled {
+        cursor: not-allowed;
+      }
+    }
   }
 }

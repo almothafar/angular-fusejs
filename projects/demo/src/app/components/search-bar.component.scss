@@ -1,7 +1,13 @@
 @use '../theme' as *;
 
+// The host is a flex item in the controls panel; make it a predictable full-width
+// block so the input below sizes to it (without this the input can overflow).
+:host {
+  display: block;
+}
+
 .search-row {
-  flex: 1 1 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: $spacing-xs;
@@ -12,6 +18,7 @@
 
     .search-input {
       width: 100%;
+      max-width: 100%;
       padding: $spacing-md $spacing-lg;
       font-size: 1.125rem;
       border: 2px solid $border-color;
