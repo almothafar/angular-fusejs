@@ -79,9 +79,11 @@ header {
     align-items: stretch;
   }
 
-  // The search field takes its own full-width row below the switch + view controls
+  // The search field takes its own full-width row below the switch + view controls.
+  // min-width: 0 lets it shrink to the row instead of overflowing the viewport.
   app-search-bar {
     flex: 1 1 100%;
+    min-width: 0;
   }
 }
 
