@@ -12,10 +12,7 @@
   </header>
 
   <div class="controls">
-    <div class="controls-toolbar">
-      <app-source-switcher [sources]="sources" [active]="activeSource()" (sourceChange)="selectSource($event)" />
-      <app-view-controls [(density)]="density" [(fontScale)]="fontScale" [(columns)]="columns" />
-    </div>
+    <app-source-switcher [sources]="sources" [active]="activeSource()" (sourceChange)="selectSource($event)" />
     <app-search-bar
       [(term)]="searchTerm"
       [placeholder]="activeSource().searchPlaceholder"
@@ -48,8 +45,8 @@
         <p>Type at least {{ minRemoteChars }} characters to search {{ activeSource().label }}</p>
       </div>
     } @else {
-      <div class="results-header">
-        <h2>
+      <div class="results-toolbar">
+        <p class="result-count" aria-live="polite">
           @if (searchTerm().trim()) {
             @if (searching() && cards().length === 0) {
               Searching…
@@ -59,7 +56,8 @@
           } @else {
             Showing all {{ totalCount() }}
           }
-        </h2>
+        </p>
+        <app-view-controls [(density)]="density" [(fontScale)]="fontScale" [(columns)]="columns" />
       </div>
 
       @if (sampleFields().length) {

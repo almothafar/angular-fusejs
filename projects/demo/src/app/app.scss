@@ -60,9 +60,9 @@ header {
   }
 }
 
-// Controls panel: a column of a toolbar row (source switch + view controls) and the
-// full-width search field below. A column avoids the fragile "self-wrap via
-// flex-basis: 100%" pattern that let the search input overflow near 768px.
+// Controls panel: the source switcher and the full-width search field stacked in a column.
+// A column avoids the fragile "self-wrap via flex-basis: 100%" pattern that let the search
+// input overflow near 768px. (View controls live in the results toolbar below, by the count.)
 .controls {
   flex: 0 0 auto;
   display: flex;
@@ -74,16 +74,7 @@ header {
   border: 1px solid $border-light;
   border-radius: $border-radius;
 
-  // Top row: source switcher on the left, view controls on the right; wraps when narrow.
-  .controls-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-md;
-  }
-
-  // The search field is a plain full-width block below the toolbar (no flex-basis trick).
+  // The search field is a plain full-width block below the switcher (no flex-basis trick).
   app-search-bar {
     width: 100%;
   }
@@ -158,13 +149,22 @@ header {
     }
   }
 
-  .results-header {
+  // Results toolbar: the live result count on the left, view controls on the right.
+  // Wraps on narrow screens (count above, controls below).
+  .results-toolbar {
     flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-xs $spacing-md;
+    margin-bottom: $spacing-md;
 
-    h2 {
-      font-size: 1.5rem;
-      margin: 0 0 $spacing-md;
-      color: $text-dark;
+    .result-count {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $text-medium;
     }
   }
 
