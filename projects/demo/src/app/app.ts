@@ -173,15 +173,22 @@ export class App {
   );
 
   /**
-   * True while a fetch is in flight OR a remote query (≥ min length) has been typed but not yet
-   * fetched — covers the debounce window so the user gets immediate feedback.
+   * True while a remote fetch is in flight OR a remote query (≥ min length) has been typed but
+   * not yet fetched — covers the debounce window so the user gets immediate feedback.
+   *
+   * Scoped to remote sources on purpose: a local source loads its bundled array effectively
+   * instantly, so the brief `loading` flip on a source switch would flash the "Searching…"
+   * status (and jump the layout) for a few ms with no real search happening.
    */
   protected readonly searching = computed(() => {
+    if (this.activeSource().kind !== 'remote') {
+      return false;
+    }
     if (this.loading()) {
       return true;
     }
     const term = this.searchTerm().trim();
-    return this.activeSource().kind === 'remote' && term.length >= MIN_REMOTE_QUERY_LENGTH && term !== this.loadedQuery();
+    return term.length >= MIN_REMOTE_QUERY_LENGTH && term !== this.loadedQuery();
   });
 
   /** Raw Fuse results, or the whole loaded dataset when there is no search term. */
