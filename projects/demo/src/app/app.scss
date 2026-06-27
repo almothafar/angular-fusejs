@@ -28,18 +28,18 @@
   }
 }
 
-// Header
+// Header — kept compact so the full-height layout gives more room to results.
 header {
   flex: 0 0 auto;
   text-align: center;
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-md;
 
   h1 {
-    font-size: 3rem;
-    margin: 0 0 $spacing-md;
+    font-size: 1.9rem;
+    margin: 0 0 $spacing-xs;
 
     @media (max-width: 768px) {
-      font-size: 2rem;
+      font-size: 1.5rem;
     }
 
     // Gradient applies to the title text only — keep the emoji out of the
@@ -50,12 +50,12 @@ header {
   }
 
   p {
-    font-size: 1.25rem;
+    font-size: 0.95rem;
     color: $text-medium;
     margin: 0;
 
     @media (max-width: 768px) {
-      font-size: 1rem;
+      font-size: 0.85rem;
     }
   }
 }
