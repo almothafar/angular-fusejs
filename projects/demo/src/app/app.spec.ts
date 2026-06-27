@@ -49,8 +49,9 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     const sourceButtons = compiled.querySelectorAll('.source-switch .chip');
-    expect(sourceButtons.length).toBe(3);
+    expect(sourceButtons.length).toBe(5);
     expect(sourceButtons[0].textContent).toContain('Local books');
     expect(sourceButtons[1].textContent).toContain('Countries');
+    expect(sourceButtons[3].textContent).toContain('Recipes');
   });
 });

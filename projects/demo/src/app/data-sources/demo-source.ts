@@ -36,6 +36,17 @@ export interface DemoSource {
    * Only worthwhile for small, local datasets where the whole list is in memory.
    */
   readonly suggestions?: boolean;
+  /**
+   * Optional user-supplied API key support. The key is held in memory only
+   * (never persisted) and an empty value falls back to the source's default.
+   */
+  readonly apiKey?: {
+    readonly label: string;
+    readonly placeholder: string;
+    readonly note: string;
+    /** Store the supplied key; an empty string resets to the default. */
+    set(key: string): void;
+  };
   /** Load the dataset. `query` drives remote sources; local sources ignore it. */
   load(http: HttpClient, query?: string): Promise<DemoRecord[]>;
   /** Resolve a record's image URL, if any (used from Phase 2 onward). */

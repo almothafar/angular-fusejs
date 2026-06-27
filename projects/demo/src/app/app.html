@@ -23,6 +23,21 @@
       [searching]="searching()"
       [suggestions]="suggestions()"
     />
+    @if (activeSource().apiKey; as keyCfg) {
+      <div class="api-key">
+        <label for="api-key-input">{{ keyCfg.label }}</label>
+        <input
+          id="api-key-input"
+          name="apiKey"
+          type="password"
+          autocomplete="off"
+          [ngModel]="apiKey()"
+          (ngModelChange)="onApiKeyChange($event)"
+          [placeholder]="keyCfg.placeholder"
+        />
+        <small>{{ keyCfg.note }}</small>
+      </div>
+    }
   </div>
 
   <div class="results-container">
