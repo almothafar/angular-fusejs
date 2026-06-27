@@ -1,4 +1,4 @@
-import { readPath, valueAt } from './demo-source';
+import { flatten, readPath, valueAt } from './demo-source';
 
 describe('readPath', () => {
   const record = {
@@ -40,5 +40,25 @@ describe('valueAt', () => {
   it('returns "" for null or missing values', () => {
     expect(valueAt(record, 'nothing')).toBe('');
     expect(valueAt(record, 'missing.path')).toBe('');
+  });
+});
+
+describe('flatten', () => {
+  const record = {
+    name: { common: 'Jordan', official: 'Hashemite Kingdom of Jordan' },
+    capital: ['Amman'],
+    region: 'Asia',
+  };
+
+  it('produces a leaf path for every nested key', () => {
+    const paths = flatten(record).map(f => f.path);
+    expect(paths).toEqual(['name.common', 'name.official', 'capital', 'region']);
+  });
+
+  it('attaches a readable sample (arrays joined)', () => {
+    const byPath = Object.fromEntries(flatten(record).map(f => [f.path, f.sample]));
+    expect(byPath['name.common']).toBe('Jordan');
+    expect(byPath['capital']).toBe('Amman');
+    expect(byPath['region']).toBe('Asia');
   });
 });
